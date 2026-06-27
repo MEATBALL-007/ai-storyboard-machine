@@ -850,6 +850,18 @@ function pixelsToPalette(samples){
 }
 function b64enc(s){ return btoa(unescape(encodeURIComponent(s))); }
 function b64dec(s){ return decodeURIComponent(escape(atob(s))); }
+function undo(store){
+  if(!store.history.past.length) return false;
+  store.history.future.push(cloneProject(store.project));
+  store.project = store.history.past.pop();
+  return true;
+}
+function redo(store){
+  if(!store.history.future.length) return false;
+  store.history.past.push(cloneProject(store.project));
+  store.project = store.history.future.pop();
+  return true;
+}
 // ==PURE-LOGIC-END==
 
 // rough hand-drawn line helper
@@ -2077,6 +2089,16 @@ function saveToLocalStorage(sb){
   renderProjectList();
 }
 function mutate(fn){ applyMutation(store, fn); saveToLocalStorage(STATE.storyboard); }
+function applyStoreToUI(){
+  APP = store.project;                 // rebind alias
+  const sc = curScene();
+  if(sc){ STATE.storyboard = sc.storyboard; STATE.settings = sc.settings; }
+  renderStoryboard(STATE.storyboard); renderColorBible(STATE.storyboard.color_bible);
+  renderShotList(); renderSceneBar(); updateSeqRuntime();
+  try { localStorage.setItem(LS_KEY, JSON.stringify(getProjects())); } catch(e){}
+}
+function doUndo(){ if(undo(store)){ applyStoreToUI(); toast('Undid last change'); } else toast('Nothing to undo'); }
+function doRedo(){ if(redo(store)){ applyStoreToUI(); toast('Redid change'); } else toast('Nothing to redo'); }
 
 function renderProjectList() {
   const projects = getProjects();
@@ -2239,6 +2261,8 @@ function wire() {
     else if (k === '2') setCols(3);
     else if (k === '3') setCols(4);
     else if (k === 'delete' && STATE.selectedPanelId) deletePanel(STATE.selectedPanelId);
+    else if((e.metaKey||e.ctrlKey) && k==='z' && !e.shiftKey){ e.preventDefault(); doUndo(); }
+    else if((e.metaKey||e.ctrlKey) && (k==='y' || (k==='z' && e.shiftKey))){ e.preventDefault(); doRedo(); }
   });
 }
 
@@ -2304,6 +2328,13 @@ function __TESTS(assert, assertEq){
   assertEq(pal.accent, '#fa0a0a', 'palette accent = most saturated');
   const round = JSON.parse(b64dec(b64enc(JSON.stringify({a:1,t:'ขอ'}))));
   assertEq(round.t, 'ขอ', 'b64 round-trip preserves unicode');
+  const u = { project:{name:'a',scenes:[],active:0}, history:{past:[],future:[]} };
+  applyMutation(u, p => p.name='b');
+  assertEq(undo(u), true, 'undo returns true when history exists');
+  assertEq(u.project.name, 'a', 'undo restores previous');
+  assertEq(redo(u), true, 'redo returns true');
+  assertEq(u.project.name, 'b', 'redo re-applies');
+  assertEq(undo({history:{past:[],future:[]},project:{}}), false, 'undo empty -> false');
 }
 // ==TESTS-END==
 
