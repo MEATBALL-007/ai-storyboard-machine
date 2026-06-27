@@ -13,6 +13,8 @@ const assertEq = (a, b, msg) =>
   assert(JSON.stringify(a) === JSON.stringify(b), `${msg||''} expected ${JSON.stringify(b)} got ${JSON.stringify(a)}`);
 
 const ctx = { console, Math, JSON, Array, Object, String, Number, structuredClone };
+ctx.btoa = s => Buffer.from(s, 'binary').toString('base64');
+ctx.atob = s => Buffer.from(s, 'base64').toString('binary');
 vm.createContext(ctx);
 vm.runInContext(extract('PURE-LOGIC') + '\n' + extract('TESTS'), ctx);
 ctx.__TESTS(assert, assertEq);

@@ -838,6 +838,18 @@ function splitScriptToSegments(text){
   if(!segs.length) segs.push({ title:'Scene 1', body:[String(text)] });
   return segs;
 }
+function _hx(p){ return '#' + [p.r,p.g,p.b].map(v => ('0'+Math.round(v).toString(16)).slice(-2)).join(''); }
+function pixelsToPalette(samples){
+  const px = samples.map(p => ({ r:p.r, g:p.g, b:p.b,
+    l: 0.299*p.r + 0.587*p.g + 0.114*p.b,
+    s: Math.max(p.r,p.g,p.b) - Math.min(p.r,p.g,p.b) }));
+  px.sort((a,b) => a.l - b.l);
+  const at = f => px[Math.round(f*(px.length-1))];
+  const accent = px.reduce((m,p) => p.s > m.s ? p : m, px[0]);
+  return { shadow:_hx(at(0.12)), midtone:_hx(at(0.5)), highlight:_hx(at(0.9)), accent:_hx(accent) };
+}
+function b64enc(s){ return btoa(unescape(encodeURIComponent(s))); }
+function b64dec(s){ return decodeURIComponent(escape(atob(s))); }
 // ==PURE-LOGIC-END==
 
 // rough hand-drawn line helper
@@ -2286,6 +2298,12 @@ function __TESTS(assert, assertEq){
   const s2 = splitScriptToSegments("para one\n\npara two\n\npara three");
   assertEq(s2.length, 3, 'no slugs -> split on blank lines');
   assertEq(splitScriptToSegments("").length, 1, 'empty -> one scene');
+  const pal = pixelsToPalette([{r:0,g:0,b:0},{r:128,g:128,b:128},{r:255,g:255,b:255},{r:250,g:10,b:10}]);
+  assertEq(pal.shadow, '#000000', 'palette shadow = darkest');
+  assertEq(pal.highlight, '#ffffff', 'palette highlight = lightest');
+  assertEq(pal.accent, '#fa0a0a', 'palette accent = most saturated');
+  const round = JSON.parse(b64dec(b64enc(JSON.stringify({a:1,t:'ขอ'}))));
+  assertEq(round.t, 'ขอ', 'b64 round-trip preserves unicode');
 }
 // ==TESTS-END==
 
@@ -2560,18 +2578,14 @@ function extractPaletteFromImage(file){
     let data;
     try { data = ctx.getImageData(0,0,cv.width,cv.height).data; }
     catch(e){ return showError('Cannot read image (CORS)'); }
-    const px = [];
+    const samples = [];
     for(let i=0;i<data.length;i+=4){
-      const r=data[i],g=data[i+1],b=data[i+2];
-      px.push({ r,g,b, l:0.299*r+0.587*g+0.114*b, s:Math.max(r,g,b)-Math.min(r,g,b) });
+      samples.push({ r:data[i], g:data[i+1], b:data[i+2] });
     }
-    px.sort((a,b)=>a.l-b.l);
-    const at = f => px[Math.floor(f*(px.length-1))];
-    const accent = px.reduce((m,p)=>p.s>m.s?p:m, px[0]);
-    const hx = p => '#'+[p.r,p.g,p.b].map(v=>('0'+Math.round(v).toString(16)).slice(-2)).join('');
+    const { shadow, midtone, highlight, accent } = pixelsToPalette(samples);
     const sb = STATE.storyboard;
     sb.color_bible = Object.assign({}, sb.color_bible, {
-      shadow: hx(at(0.12)), midtone: hx(at(0.5)), highlight: hx(at(0.9)), accent: hx(accent),
+      shadow, midtone, highlight, accent,
       film_stock: sb.color_bible.film_stock || 'Extracted from reference',
     });
     applyStoryboard(sb, true);
@@ -2733,8 +2747,6 @@ function scrubTo(v){
 }
 
 /* ════════ (#8) SHARE LINK ════════ */
-function b64enc(s){ return btoa(unescape(encodeURIComponent(s))); }
-function b64dec(s){ return decodeURIComponent(escape(atob(s))); }
 function makeShareLink(){
   const payload = { name: $('#projName').value, director: APP.director, scenes: APP.scenes, active: APP.active };
   const hash = '#s=' + b64enc(JSON.stringify(payload));
