@@ -1666,7 +1666,7 @@ async function generateStoryboard() {
     STATE.abort = false;
     renderSkeleton(parseInt(settings.panelCount)||8);
     await fakeDelay(700);
-    if (STATE.abort) { hideLoading(); toast('Cancelled'); return; }
+    if (STATE.abort) { hideLoading(); if (STATE.storyboard) renderStoryboard(STATE.storyboard); toast('Cancelled'); return; }
     const demo = buildDemoStoryboard(settings, script);
     applyStoryboard(demo);
     hideLoading();
@@ -1679,7 +1679,7 @@ async function generateStoryboard() {
   renderSkeleton(parseInt(settings.panelCount)||8);
   try {
     const storyboard = await callClaude(STORYBOARD_PROMPT(script, settings), { maxTokens: 4000 });
-    if (STATE.abort) { hideLoading(); return; }
+    if (STATE.abort) { hideLoading(); if (STATE.storyboard) renderStoryboard(STATE.storyboard); return; }
     storyboard.panels.forEach(normalizePanel);
     applyStoryboard(storyboard);
     toast('AI generated ' + storyboard.panels.length + ' panels');
@@ -2535,7 +2535,7 @@ function wire() {
 
   // generate
   $('#genBtn').onclick = generateStoryboard;
-  $('#cancelBtn').onclick = () => { STATE.abort = true; hideLoading(); toast('Cancelled'); };
+  $('#cancelBtn').onclick = () => { STATE.abort = true; hideLoading(); if (STATE.storyboard) renderStoryboard(STATE.storyboard); toast('Cancelled'); };
 
   // api key persistence
   $('#apiKey').value = localStorage.getItem(LS_API) || '';
