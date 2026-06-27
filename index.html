@@ -1777,6 +1777,8 @@ function renderPanelDetails() {
     preview.special = sp || null;
     drawPanel($('#pd-canvas'), preview);
   });
+  setupInlineEdit();
+  injectComments();
 }
 
 function selectPanel(id) {
@@ -1951,13 +1953,16 @@ function download(content, filename, type) {
    STATE APPLY + PERSISTENCE
    ════════════════════════════════════════════════════════════════ */
 
-function applyStoryboard(sb, keepSelection) {
+function applyStoryboard(sb, keepSelection){
+  if(curScene()) curScene().storyboard = sb;
   STATE.storyboard = sb;
-  if (!keepSelection) STATE.selectedPanelId = null;
+  if(!keepSelection) STATE.selectedPanelId = null;
   renderStoryboard(sb);
   renderColorBible(sb.color_bible);
   renderShotList();
   saveToLocalStorage(sb);
+  renderSceneBar();
+  updateSeqRuntime();
 }
 
 function readSettings() {
@@ -1991,14 +1996,20 @@ function getProjects() {
 }
 function saveProjects(list) { localStorage.setItem(LS_KEY, JSON.stringify(list.slice(0, 10))); }
 
-function saveToLocalStorage(sb) {
-  const projects = getProjects();
-  const name = $('#projName').value || sb.title;
-  const record = { name, settings: STATE.settings, storyboard: sb, ts: Date.now() };
-  const existing = projects.findIndex(p => p.name === name);
-  if (existing >= 0) projects[existing] = record; else projects.unshift(record);
+function saveToLocalStorage(sb){
+  if(curScene()) curScene().storyboard = sb || STATE.storyboard;
+  if(APP.readOnly) return;
+  let projects;
+  try { projects = getProjects(); } catch(e){ return; }
+  const name = $('#projName').value || APP.name || (sb && sb.title) || 'Untitled';
+  APP.name = name;
+  const record = { name, director: APP.director, schemaVersion: 2,
+    settings: STATE.settings, storyboard: STATE.storyboard,
+    scenes: APP.scenes, active: APP.active, ts: Date.now() };
+  const i = projects.findIndex(p => p.name === name);
+  if(i >= 0) projects[i] = record; else projects.unshift(record);
   saveProjects(projects);
-  localStorage.setItem(LS_CUR, name);
+  try { localStorage.setItem(LS_CUR, name); } catch(e){}
   renderProjectList();
 }
 
@@ -2021,18 +2032,16 @@ function renderProjectList() {
   });
 }
 
-function loadProject(name) {
+function loadProject(name){
   const p = getProjects().find(x => x.name === name);
-  if (!p) return;
+  if(!p) return;
   $('#projName').value = p.name;
-  STATE.settings = p.settings || readSettings();
-  loadSettings(p.settings);
+  APP.name = p.name; APP.director = p.director || 'MEATBALL-007'; APP.readOnly = false;
+  if(p.scenes && p.scenes.length){ APP.scenes = p.scenes; APP.active = Math.min(p.active||0, p.scenes.length-1); }
+  else { APP.scenes = [{ settings: p.settings || readSettings(), storyboard: p.storyboard }]; APP.active = 0; }
+  setReadOnly(false);
   localStorage.setItem(LS_CUR, name);
-  STATE.selectedPanelId = null; STATE.rightMode = 'shotlist';
-  STATE.storyboard = p.storyboard;
-  renderStoryboard(p.storyboard);
-  renderColorBible(p.storyboard.color_bible);
-  renderShotList();
+  activateScene(APP.active, true);
   renderProjectList();
   toast('Loaded "' + name + '"');
 }
@@ -2250,54 +2259,6 @@ function drawCover(ctx, img, W, H){
   if(ir > fr){ dh = H; dw = H * ir; } else { dw = W; dh = W / ir; }
   ctx.drawImage(img, (W-dw)/2, (H-dh)/2, dw, dh);
 }
-// (#6) keep active scene + sequence chrome in sync on every render
-const _applyStoryboard = applyStoryboard;
-applyStoryboard = function(sb, keep){
-  if(curScene()) curScene().storyboard = sb;
-  _applyStoryboard(sb, keep);
-  renderSceneBar(); updateSeqRuntime();
-};
-
-// (#6) scene-aware persistence
-const _saveToLocalStorage = saveToLocalStorage;
-saveToLocalStorage = function(sb){
-  if(!APP.scenes.length) return _saveToLocalStorage(sb);
-  if(curScene()) curScene().storyboard = sb || STATE.storyboard;
-  if(APP.readOnly) return;
-  const projects = getProjects();
-  const name = $('#projName').value || APP.name || sb.title;
-  APP.name = name;
-  const record = { name, director:APP.director, settings: STATE.settings,
-                   storyboard: STATE.storyboard, scenes: APP.scenes, active: APP.active, ts: Date.now() };
-  const i = projects.findIndex(p => p.name === name);
-  if(i >= 0) projects[i] = record; else projects.unshift(record);
-  saveProjects(projects);
-  localStorage.setItem(LS_CUR, name);
-  renderProjectList();
-};
-
-// (#6) scene-aware load
-loadProject = function(name){
-  const p = getProjects().find(x => x.name === name);
-  if(!p) return;
-  $('#projName').value = p.name;
-  APP.name = p.name; APP.director = p.director || 'MEATBALL-007'; APP.readOnly = false;
-  if(p.scenes && p.scenes.length){ APP.scenes = p.scenes; APP.active = Math.min(p.active||0, p.scenes.length-1); }
-  else { APP.scenes = [{ settings: p.settings || readSettings(), storyboard: p.storyboard }]; APP.active = 0; }
-  setReadOnly(false);
-  localStorage.setItem(LS_CUR, name);
-  activateScene(APP.active, true);
-  renderProjectList();
-  toast('Loaded "' + name + '"');
-};
-
-// (#3 + comments) augment the panel details editor
-const _renderPanelDetails = renderPanelDetails;
-renderPanelDetails = function(){
-  _renderPanelDetails();
-  setupInlineEdit();
-  injectComments();
-};
 
 /* ════════ (#6) MULTI-SCENE ════════ */
 function activateScene(i, silent){
@@ -2405,7 +2366,7 @@ function setupInlineEdit(){
   }
   const getP = () => STATE.storyboard.panels.find(x => x.id === STATE.selectedPanelId);
   const redraw = () => { const p = getP(); if(!p) return; drawPanel(cv, p); drawHandles(cv, p); };
-  requestAnimationFrame(redraw); // after _renderPanelDetails' own rAF so handles stay on top
+  requestAnimationFrame(redraw); // after renderPanelDetails' own rAF so handles stay on top
 
   let drag = null;
   const toFrac = e => {
