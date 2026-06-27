@@ -786,6 +786,13 @@ function hexToRgb(hex){
   const n = parseInt(hex, 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
+function cloneProject(p){ return structuredClone(p); }
+function snapshot(store){
+  store.history.past.push(cloneProject(store.project));
+  if(store.history.past.length > 30) store.history.past.shift();
+  store.history.future.length = 0;
+}
+function applyMutation(store, fn){ snapshot(store); fn(store.project); return store; }
 // ==PURE-LOGIC-END==
 
 // rough hand-drawn line helper
@@ -2012,6 +2019,7 @@ function saveToLocalStorage(sb){
   try { localStorage.setItem(LS_CUR, name); } catch(e){}
   renderProjectList();
 }
+function mutate(fn){ applyMutation(store, fn); saveToLocalStorage(STATE.storyboard); }
 
 function renderProjectList() {
   const projects = getProjects();
@@ -2213,6 +2221,11 @@ function __TESTS(assert, assertEq){
   assertEq(aspectDims('weird'), [160,100], 'aspectDims fallback');
   assertEq(hexToRgb('#FFC72C'), [255,199,44], 'hexToRgb full');
   assertEq(hexToRgb('#fff'), [255,255,255], 'hexToRgb short');
+  const st = { project:{name:'a',scenes:[],active:0}, history:{past:[],future:[]} };
+  applyMutation(st, p => { p.name = 'b'; });
+  assertEq(st.project.name, 'b', 'mutate applies fn');
+  assertEq(st.history.past.length, 1, 'mutate snapshots');
+  assertEq(st.history.past[0].name, 'a', 'snapshot is pre-mutation clone');
 }
 // ==TESTS-END==
 
@@ -2236,6 +2249,8 @@ function curScene(){ return APP.scenes[APP.active]; }
 
 /* extra UI state */
 STATE.overlays = { thirds:false, center:false, safe:false, fov:false };
+
+const store = { project: APP, ui: STATE, history: { past: [], future: [] } };
 
 /* ════════ FUNCTION WRAPPERS (hook the core engine) ════════ */
 
@@ -2287,7 +2302,7 @@ function renderSceneBar(){
     if(e.target.dataset.del !== undefined){
       if(APP.readOnly) return toast('Read-only view', true);
       const di = +e.target.dataset.del;
-      APP.scenes.splice(di, 1);
+      mutate(p => { p.scenes.splice(di, 1); });
       if(APP.active >= APP.scenes.length) APP.active = APP.scenes.length - 1;
       activateScene(APP.active);
       return;
@@ -2307,7 +2322,8 @@ function addScene(){
   settings.title = 'Scene ' + (APP.scenes.length + 1);
   const sb = buildDemoStoryboard(settings);
   sb.title = settings.title;
-  APP.scenes.push({ settings, storyboard: sb });
+  const newScene = { settings, storyboard: sb };
+  mutate(p => { p.scenes.push(newScene); });
   activateScene(APP.scenes.length - 1);
   toast('Scene added');
 }
