@@ -57,12 +57,15 @@ Landscape A4, 3×3 panels per page, dark production header (director · date · 
 
 | Key | Action |
 |-----|--------|
+| `Cmd/Ctrl+Z` | Undo |
+| `Shift+Cmd/Ctrl+Z` or `Ctrl+Y` | Redo |
 | `G` | Generate storyboard |
 | `E` | Export PDF |
 | `R` | Regenerate selected panel |
 | `P` | Play animatic |
 | `C` | Continuity check |
 | `1` / `2` / `3` | 2 / 3 / 4 columns |
+| `←` / `→` | Reorder selected panel left/right |
 | `Del` | Delete selected panel |
 | `Esc` | Close player / modal |
 
@@ -98,6 +101,56 @@ Enable **"Render AI frame art"**, then set an image endpoint, model, and key. Ex
 - [jsPDF](https://github.com/parallax/jsPDF) (via CDN) for PDF export
 - JetBrains Mono, dark cinematic theme (`#0D0D0D` / yellow-gold `#FFC72C` / orange `#FA4616`)
 - Single file: [`index.html`](index.html)
+
+---
+
+## Recent updates (hardening pass)
+
+### Undo / Redo
+- **Undo**: `Cmd+Z` (macOS) or `Ctrl+Z` (Windows/Linux)
+- **Redo**: `Shift+Cmd+Z` (macOS) or `Ctrl+Y` (Windows/Linux)
+- Covers panel delete, edit, reorder, regenerate, and scene add/delete
+- Deleting a panel shows an inline "Undo" toast for quick recovery
+
+### Responsive & Accessible UI
+- **Responsive design**: Collapsible sidebar drawers appear under 1100px screen width (☰ toggle button)
+- Grid reflows intelligently from 3 columns → 2 columns → 1 column on smaller screens
+- **Keyboard shortcuts for panel reorder**: `←` / `→` keys reorder the selected panel left/right
+- **Accessibility**: ARIA landmarks and labels, visible focus rings, WCAG-AA compliant muted-text contrast ratios
+- **Motion**: `prefers-reduced-motion` honored (disables animatic auto-play and transitions)
+
+### Hardened generation
+- **API resilience**: Claude API calls wrapped with a 30-second timeout and specific, typed error handling
+  - Distinguishes auth errors (bad/missing key), CORS errors, rate limits, and invalid JSON responses
+- **Graceful fallback**: When no API key is set or on error, uses the procedural demo generator locally
+- Consistent error UI with inline error card and Retry button
+
+### Safer storage
+- **Guarded localStorage**: Survives quota exceptions and private-mode sessions
+- **Schema versioning + migration**: Older saved projects auto-upgrade without data loss
+- **Debounced autosave**: Prevents excessive writes while editing
+
+### Upgraded canvas art
+- **Shot-size-aware framing**: Close-ups actually crop to head/shoulders; wide shots show full environments
+- **Posed figures**: Sitting, lying, reaching, and other poses inferred from the action text
+- **Depth haze**: Distant subjects rendered with atmospheric perspective
+- **Form lighting**: Directional key light reveals volume and dimension on figures
+- **Prop keywords**: Environment details (bed, window, tree, building, streetlight) drawn with shadow hatching
+
+### State feedback
+- **Empty state**: Clear prompt when no panels exist
+- **Shimmer skeletons**: Subtle loading animations during AI generation
+- **Inline error card**: Actionable feedback with a Retry button
+
+### Development / tests
+The app is a single `index.html` with no build tools — it runs instantly in any browser. For development and testing:
+
+```bash
+node tools/test.mjs      # headless logic tests (42 assertions)
+open "index.html?test"   # in-browser test panel (dev-only)
+```
+
+The test runner is dev-only and not referenced by the main app.
 
 ---
 
