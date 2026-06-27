@@ -883,6 +883,16 @@ function classifyApiError(status, bodyText){
   if(status === 0) return { kind:'cors', message:'Blocked by the browser (CORS). Direct calls from a file:// page are often blocked; use a proxy or run from a server.' };
   return { kind:'unknown', message:'Request failed (' + status + ').' };
 }
+function migrateRecord(rec){
+  if(!rec || typeof rec !== 'object') return rec;
+  if(rec.schemaVersion === 2) return rec;
+  if(!rec.scenes && rec.storyboard){
+    rec.scenes = [{ settings: rec.settings || {}, storyboard: rec.storyboard }];
+    rec.active = 0;
+  }
+  rec.schemaVersion = 2;
+  return rec;
+}
 // ==PURE-LOGIC-END==
 
 // rough hand-drawn line helper
@@ -2092,17 +2102,21 @@ function setChip(group, val) {
 /* ============ STORAGE ============ */
 /* localStorage: projects (up to 10) */
 function getProjects() {
-  try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch { return []; }
+  try { return (JSON.parse(localStorage.getItem(LS_KEY)) || []).map(migrateRecord); } catch(e){ return []; }
 }
-function saveProjects(list) { localStorage.setItem(LS_KEY, JSON.stringify(list.slice(0, 10))); }
+function saveProjects(list) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(list.slice(0, 10))); }
+  catch(e){ toast('Storage full or unavailable — changes not saved', true); }
+}
 
-function saveToLocalStorage(sb){
-  if(curScene()) curScene().storyboard = sb || STATE.storyboard;
+let _saveTimer = 0;
+function scheduleSave(){ clearTimeout(_saveTimer); _saveTimer = setTimeout(persistNow, 400); }
+
+function persistNow(){
   if(APP.readOnly) return;
-  let projects;
-  try { projects = getProjects(); } catch(e){ return; }
-  const name = $('#projName').value || APP.name || (sb && sb.title) || 'Untitled';
+  const name = $('#projName').value || APP.name || 'Untitled';
   APP.name = name;
+  const projects = getProjects();
   const record = { name, director: APP.director, schemaVersion: 2,
     settings: STATE.settings, storyboard: STATE.storyboard,
     scenes: APP.scenes, active: APP.active, ts: Date.now() };
@@ -2111,6 +2125,12 @@ function saveToLocalStorage(sb){
   saveProjects(projects);
   try { localStorage.setItem(LS_CUR, name); } catch(e){}
   renderProjectList();
+}
+
+function saveToLocalStorage(sb){
+  if(curScene()) curScene().storyboard = sb || STATE.storyboard;
+  if(APP.readOnly) return;
+  scheduleSave();
 }
 function mutate(fn){ applyMutation(store, fn); saveToLocalStorage(STATE.storyboard); }
 function applyStoreToUI(){
@@ -2366,6 +2386,11 @@ function __TESTS(assert, assertEq){
   assertEq(classifyApiError(401).kind, 'auth', '401 -> auth');
   assertEq(classifyApiError(429).kind, 'rate-limit', '429 -> rate-limit');
   assertEq(classifyApiError(0).kind, 'cors', '0 -> cors');
+  const legacy = { name:'x', storyboard:{ title:'t', panels:[] }, settings:{ title:'t' } };
+  const mig = migrateRecord(legacy);
+  assertEq(mig.schemaVersion, 2, 'migration sets version');
+  assertEq(mig.scenes.length, 1, 'legacy wrapped into one scene');
+  assertEq(mig.scenes[0].storyboard.title, 't', 'scene keeps storyboard');
 }
 // ==TESTS-END==
 
@@ -2380,6 +2405,7 @@ if (location.search.includes('test')) {
 }
 
 document.addEventListener('DOMContentLoaded', boot);
+window.addEventListener('beforeunload', () => { if(_saveTimer){ clearTimeout(_saveTimer); persistNow(); } });
 
 /* ============ FEATURES ============ */
 
