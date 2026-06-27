@@ -854,7 +854,17 @@ function drawPanel(canvas, panel) {
   const W = canvas.width, H = canvas.height;
   const comp = panel.composition || {};
   const special = panel.special || comp.special;
-
+  if(panel.image){
+    const img = getPanelImg(panel);
+    if(img && img.complete && img.naturalWidth){
+      ctx.clearRect(0,0,W,H);
+      try { drawCover(ctx, img, W, H); } catch(e){}
+      finishFrame(ctx, W, H, panel);
+      return;
+    } else if(img){
+      img.onload = () => { try { drawPanel(canvas, panel); } catch(e){} };
+    }
+  }
   ctx.clearRect(0, 0, W, H);
 
   if (special === 'split_screen') { drawSplitScreen(ctx, W, H, panel); finishFrame(ctx, W, H, panel); return; }
@@ -1063,6 +1073,7 @@ function finishFrame(ctx, W, H, panel) {
   ctx.strokeStyle = 'rgba(255,255,255,0.10)';
   ctx.lineWidth = 1;
   ctx.strokeRect(1, 1, W-2, H-2);
+  drawOverlays(ctx, W, H, panel);
 }
 
 /* ─── SPECIAL PANEL TYPES ─── */
@@ -1586,6 +1597,18 @@ function buildPanelCard(panel, idx, aw, ah) {
     reorderPanels(fromId, panel.id);
   });
 
+  const _tools = card.querySelector('.pc-tools');
+  if(_tools){
+    const ab = document.createElement('button');
+    ab.innerHTML = '✦'; ab.title = 'Generate AI frame art';
+    ab.onclick = e => { e.stopPropagation(); genPanelImage(panel.id); };
+    _tools.insertBefore(ab, _tools.firstChild);
+  }
+  if(panel.image){
+    const w = card.querySelector('.pc-canvas-wrap');
+    const bd = document.createElement('div'); bd.className = 'pc-imgbadge'; bd.textContent = 'AI ART';
+    if(w) w.appendChild(bd);
+  }
   // draw after attach (needs canvas in DOM dims fine)
   requestAnimationFrame(() => drawPanel(cv, panel));
   return card;
@@ -2207,14 +2230,7 @@ STATE.overlays = { thirds:false, center:false, safe:false, fov:false };
 
 /* ════════ FUNCTION WRAPPERS (hook the core engine) ════════ */
 
-// (#7) framing overlays — extend finishFrame
-const _finishFrame = finishFrame;
-finishFrame = function(ctx, W, H, panel){
-  _finishFrame(ctx, W, H, panel);
-  drawOverlays(ctx, W, H, panel);
-};
-
-// (#1) AI image art — extend drawPanel to paint returned frames
+// (#1) AI image art — helpers
 const IMG_CACHE = new Map();
 function getPanelImg(panel){
   if(!panel.image) return null;
@@ -2234,42 +2250,6 @@ function drawCover(ctx, img, W, H){
   if(ir > fr){ dh = H; dw = H * ir; } else { dw = W; dh = W / ir; }
   ctx.drawImage(img, (W-dw)/2, (H-dh)/2, dw, dh);
 }
-const _drawPanel = drawPanel;
-drawPanel = function(canvas, panel){
-  if(panel.image){
-    const img = getPanelImg(panel);
-    if(img && img.complete && img.naturalWidth){
-      const ctx = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
-      ctx.clearRect(0,0,W,H);
-      try { drawCover(ctx, img, W, H); } catch(e){}
-      finishFrame(ctx, W, H, panel);
-      return;
-    } else if(img){
-      img.onload = () => { try { drawPanel(canvas, panel); } catch(e){} };
-    }
-  }
-  _drawPanel(canvas, panel);
-};
-
-// (#1 badge) extend panel cards with an AI-art button + badge
-const _buildPanelCard = buildPanelCard;
-buildPanelCard = function(panel, idx, aw, ah){
-  const card = _buildPanelCard(panel, idx, aw, ah);
-  const tools = card.querySelector('.pc-tools');
-  if(tools){
-    const b = document.createElement('button');
-    b.innerHTML = '✦'; b.title = 'Generate AI frame art';
-    b.onclick = e => { e.stopPropagation(); genPanelImage(panel.id); };
-    tools.insertBefore(b, tools.firstChild);
-  }
-  if(panel.image){
-    const w = card.querySelector('.pc-canvas-wrap');
-    const bd = document.createElement('div'); bd.className = 'pc-imgbadge'; bd.textContent = 'AI ART';
-    if(w) w.appendChild(bd);
-  }
-  return card;
-};
-
 // (#6) keep active scene + sequence chrome in sync on every render
 const _applyStoryboard = applyStoryboard;
 applyStoryboard = function(sb, keep){
