@@ -909,6 +909,20 @@ function poseFromAction(action){
   if(/\b(reaches|reaching|reach|grabs|hand)\b/.test(a)) return 'reaching';
   return 'standing';
 }
+function propsFor(comp){
+  const notes = String(comp && comp.background_notes || '').toLowerCase();
+  const out = [];
+  if(comp && comp.is_interior){
+    if(/bed|pillow|sheet/.test(notes)) out.push('bed');
+    if(/window|curtain/.test(notes) || /window/.test(comp.lighting||'')) out.push('window');
+    if(/door/.test(notes)) out.push('door');
+  } else {
+    if(/tree|forest|park/.test(notes)) out.push('tree');
+    if(/building|city|street|neon/.test(notes)) out.push('building');
+    if(/lamp|streetlight|neon/.test(notes)) out.push('streetlight');
+  }
+  return out;
+}
 // ==PURE-LOGIC-END==
 
 // rough hand-drawn line helper
@@ -1215,6 +1229,91 @@ function drawPanel(canvas, panel) {
     ctx.bezierCurveTo(W*0.15, H*0.66, W*0.30, H*0.80, W*0.42, H);
     ctx.closePath();
     ctx.fill();
+  }
+
+  // 3c. Environment props (keyword-driven, drawn before subjects so they sit behind figures)
+  {
+    const props = propsFor(comp);
+    if (props.length > 0) {
+      ctx.save();
+      ctx.strokeStyle = isNight ? 'rgba(30,25,20,0.17)' : 'rgba(20,15,10,0.22)';
+      ctx.fillStyle = isNight ? 'rgba(30,25,20,0.10)' : 'rgba(20,15,10,0.09)';
+      ctx.lineWidth = 0.9;
+      props.forEach(prop => {
+        if (prop === 'bed') {
+          // Low rectangle near floor + headboard hint
+          const bw = W * 0.36, bh = H * 0.065;
+          const bx = W * 0.32, bFloor = H * 0.91;
+          roughLine(ctx, bx, bFloor - bh, bx + bw, bFloor - bh, 0.6);
+          roughLine(ctx, bx, bFloor, bx + bw, bFloor, 0.5);
+          roughLine(ctx, bx, bFloor - bh, bx, bFloor, 0.5);
+          roughLine(ctx, bx + bw, bFloor - bh, bx + bw, bFloor, 0.5);
+          // headboard at left end (slightly taller)
+          roughLine(ctx, bx, bFloor - bh * 2.5, bx, bFloor - bh, 0.6);
+          roughLine(ctx, bx - W * 0.005, bFloor - bh * 2.5, bx + W * 0.028, bFloor - bh * 2.5, 0.5);
+        } else if (prop === 'window') {
+          // Framed rectangle with cross-mullion on the lit wall side
+          const isRight = (comp.lighting || '').includes('right');
+          const wx = isRight ? W * 0.70 : W * 0.18;
+          const wy = hy * 0.38, ww = W * 0.10, wh = H * 0.15;
+          roughLine(ctx, wx, wy, wx + ww, wy, 0.5);
+          roughLine(ctx, wx, wy + wh, wx + ww, wy + wh, 0.5);
+          roughLine(ctx, wx, wy, wx, wy + wh, 0.5);
+          roughLine(ctx, wx + ww, wy, wx + ww, wy + wh, 0.5);
+          roughLine(ctx, wx + ww * 0.5, wy, wx + ww * 0.5, wy + wh, 0.3);
+          roughLine(ctx, wx, wy + wh * 0.45, wx + ww, wy + wh * 0.45, 0.3);
+        } else if (prop === 'door') {
+          // Tall narrow rectangle on left side wall
+          const dx = W * 0.10, dFloor = H * 0.90;
+          const dw = W * 0.07, dh = H * 0.28;
+          roughLine(ctx, dx, dFloor - dh, dx + dw, dFloor - dh, 0.5);
+          roughLine(ctx, dx, dFloor - dh, dx, dFloor, 0.5);
+          roughLine(ctx, dx + dw, dFloor - dh, dx + dw, dFloor, 0.5);
+          ctx.beginPath(); ctx.arc(dx + dw * 0.78, dFloor - dh * 0.42, 1.5, 0, Math.PI * 2); ctx.stroke();
+        } else if (prop === 'tree') {
+          // Trunk + triangle canopy near horizon
+          const tx = W * 0.14, trH = H * 0.15;
+          roughLine(ctx, tx, hy, tx, hy - trH, 0.7);
+          roughLine(ctx, tx + W * 0.02, hy, tx + W * 0.02, hy - trH, 0.6);
+          const cH = H * 0.17;
+          roughLine(ctx, tx - W * 0.04, hy - trH, tx + W * 0.01, hy - trH - cH, 1.0);
+          roughLine(ctx, tx + W * 0.06, hy - trH, tx + W * 0.01, hy - trH - cH, 1.0);
+          roughLine(ctx, tx - W * 0.04, hy - trH, tx + W * 0.06, hy - trH, 0.7);
+        } else if (prop === 'building') {
+          // 3 buildings of different heights sitting on the horizon
+          [[0.12, 0.11, 0.55], [0.09, 0.10, 0.69], [0.06, 0.09, 0.82]].forEach(([hFrac, wFrac, x0]) => {
+            const bx2 = W * x0, bw2 = W * wFrac, bh2 = H * hFrac, by2 = hy - bh2;
+            roughLine(ctx, bx2, hy, bx2, by2, 0.6);
+            roughLine(ctx, bx2 + bw2, hy, bx2 + bw2, by2, 0.6);
+            roughLine(ctx, bx2, by2, bx2 + bw2, by2, 0.5);
+            ctx.fillRect(bx2 + bw2 * 0.25, by2 + bh2 * 0.25, bw2 * 0.18, bh2 * 0.18);
+          });
+        } else if (prop === 'streetlight') {
+          // Vertical pole + arm + glow at top
+          const slx = W * 0.87, slH = H * 0.22;
+          roughLine(ctx, slx, hy, slx, hy - slH, 0.5);
+          roughLine(ctx, slx, hy - slH, slx + W * 0.04, hy - slH - H * 0.03, 0.4);
+          ctx.save();
+          ctx.fillStyle = isNight ? 'rgba(255,195,80,0.28)' : 'rgba(255,250,180,0.18)';
+          ctx.beginPath(); ctx.arc(slx + W * 0.04, hy - slH - H * 0.03, W * 0.028, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        }
+      });
+      ctx.restore();
+    }
+  }
+
+  // 3d. Shadow cross-hatch in lower ~30% of frame (marker-storyboard texture, deterministic)
+  {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0,0,0,0.04)';
+    ctx.lineWidth = 0.7;
+    const hatchTop = H * 0.70;
+    for (let i = 0; i < 12; i++) {
+      const sx = pseudoRand(i * 5.3 + 17.9) * W * 1.3 - W * 0.15;
+      roughLine(ctx, sx, H, sx + H * 0.38, hatchTop, 0.6);
+    }
+    ctx.restore();
   }
 
   // 4. Subjects
@@ -2575,6 +2674,9 @@ function __TESTS(assert, assertEq){
   assertEq(poseFromAction('She sits on the edge of the bed'), 'sitting', 'sitting from action');
   assertEq(poseFromAction('He lies on the floor'), 'lying', 'lying from action');
   assertEq(poseFromAction('A figure walks in'), 'standing', 'default standing');
+  assert(propsFor({is_interior:true, background_notes:'rumpled bed, one pillow'}).includes('bed'), 'bed prop');
+  assert(propsFor({is_interior:false, background_notes:'neon street'}).includes('building'), 'building prop');
+  assertEq(propsFor({is_interior:true, background_notes:''}).length, 0, 'no props when nothing matches');
 }
 // ==TESTS-END==
 
