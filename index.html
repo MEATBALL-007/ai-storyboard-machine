@@ -1222,18 +1222,66 @@ function drawPanel(canvas, panel) {
   // sort by scale so larger (closer) drawn last
   const order = { tiny:0, small:1, medium:2, large:3 };
   const frm = shotFraming(panel.shot_size);
+  const botRgb = hexToRgb(botC);
   [...subjects].sort((a,b)=> (order[a.scale]||2)-(order[b.scale]||2)).forEach(subj => {
     const [sw, sh] = SCALE_MAP[subj.scale] || SCALE_MAP.medium;
     const fw = W * sw * frm.zoom, fh = H * sh * frm.zoom;
     const cx = W * (subj.x != null ? subj.x : 0.5);
     const by = H * (subj.y != null ? subj.y : 0.95) * frm.subjectY;
     const d = isNight ? 6 : 18;
-    // contact shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    // atmospheric depth haze: far (small-scale) subjects blend silhouette toward botC
+    const depth = 1 - Math.min(1, sw / 0.16);
+    const haze = depth * 0.55;
+    const figR = Math.round(d + (botRgb[0] - d) * haze);
+    const figG = Math.round(d + (botRgb[1] - d) * haze);
+    const figB = Math.round(d + (botRgb[2] - d) * haze);
+    const figColor = `rgba(${figR},${figG},${figB},0.9)`;
+    // contact shadow (subtler for distant subjects)
+    ctx.fillStyle = `rgba(0,0,0,${(0.18 * (1 - depth * 0.5)).toFixed(2)})`;
     ctx.beginPath();
     ctx.ellipse(cx, by, fw*0.7, fh*0.04, 0, 0, Math.PI*2);
     ctx.fill();
-    drawHuman(ctx, cx, by, fw, fh, `rgba(${d},${d},${d},0.9)`, subj.facing, subj.pose || poseFromAction(panel.action));
+    drawHuman(ctx, cx, by, fw, fh, figColor, subj.facing, subj.pose || poseFromAction(panel.action));
+    // directional form lighting: shadow overlay on side opposite the key light
+    const figX = cx - fw / 2, figTop = by - fh;
+    const SHAD = 0.22;
+    if (lighting.includes('left')) {
+      // light from left → shadow darkens right side of figure
+      ctx.save();
+      ctx.beginPath(); ctx.rect(figX, figTop, fw, fh); ctx.clip();
+      const gr = ctx.createLinearGradient(figX, 0, figX + fw, 0);
+      gr.addColorStop(0, 'rgba(0,0,0,0)');
+      gr.addColorStop(1, `rgba(0,0,0,${SHAD})`);
+      ctx.fillStyle = gr; ctx.fillRect(figX, figTop, fw, fh);
+      ctx.restore();
+    } else if (lighting.includes('right')) {
+      // light from right → shadow darkens left side of figure
+      ctx.save();
+      ctx.beginPath(); ctx.rect(figX, figTop, fw, fh); ctx.clip();
+      const gr = ctx.createLinearGradient(figX, 0, figX + fw, 0);
+      gr.addColorStop(0, `rgba(0,0,0,${SHAD})`);
+      gr.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = gr; ctx.fillRect(figX, figTop, fw, fh);
+      ctx.restore();
+    } else if (lighting === 'backlit') {
+      // backlit: rim effect — darken centre of figure
+      ctx.save();
+      ctx.beginPath(); ctx.rect(figX, figTop, fw, fh); ctx.clip();
+      const gr = ctx.createRadialGradient(cx, by - fh * 0.5, 0, cx, by - fh * 0.5, fw * 0.5);
+      gr.addColorStop(0, `rgba(0,0,0,${SHAD})`);
+      gr.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = gr; ctx.fillRect(figX, figTop, fw, fh);
+      ctx.restore();
+    } else if (lighting === 'toplit') {
+      // toplit: shadow lower half of figure
+      ctx.save();
+      ctx.beginPath(); ctx.rect(figX, figTop, fw, fh); ctx.clip();
+      const gr = ctx.createLinearGradient(0, figTop, 0, by);
+      gr.addColorStop(0.4, 'rgba(0,0,0,0)');
+      gr.addColorStop(1, `rgba(0,0,0,${SHAD})`);
+      ctx.fillStyle = gr; ctx.fillRect(figX, figTop, fw, fh);
+      ctx.restore();
+    }
     // subject id label
     if (subj.id && (subj.scale === 'large' || subj.scale === 'medium')) {
       ctx.fillStyle = 'rgba(255,255,255,0.55)';
