@@ -893,6 +893,15 @@ function migrateRecord(rec){
   rec.schemaVersion = 2;
   return rec;
 }
+function shotFraming(size){
+  const M = {
+    EWS:{zoom:0.85,subjectY:0.96,cropTop:0}, WS:{zoom:1.0,subjectY:0.96,cropTop:0},
+    MLS:{zoom:1.15,subjectY:1.02,cropTop:0}, MS:{zoom:1.4,subjectY:1.15,cropTop:0},
+    MCU:{zoom:1.8,subjectY:1.35,cropTop:0.05}, CU:{zoom:2.4,subjectY:1.7,cropTop:0.1},
+    ECU:{zoom:3.2,subjectY:2.1,cropTop:0.2},
+  };
+  return M[size] || { zoom:1.2, subjectY:1.0, cropTop:0 };
+}
 // ==PURE-LOGIC-END==
 
 // rough hand-drawn line helper
@@ -1094,11 +1103,12 @@ function drawPanel(canvas, panel) {
   const subjects = comp.subjects || [];
   // sort by scale so larger (closer) drawn last
   const order = { tiny:0, small:1, medium:2, large:3 };
+  const frm = shotFraming(panel.shot_size);
   [...subjects].sort((a,b)=> (order[a.scale]||2)-(order[b.scale]||2)).forEach(subj => {
     const [sw, sh] = SCALE_MAP[subj.scale] || SCALE_MAP.medium;
-    const fw = W * sw, fh = H * sh;
+    const fw = W * sw * frm.zoom, fh = H * sh * frm.zoom;
     const cx = W * (subj.x != null ? subj.x : 0.5);
-    const by = H * (subj.y != null ? subj.y : 0.95);
+    const by = H * (subj.y != null ? subj.y : 0.95) * frm.subjectY;
     const d = isNight ? 6 : 18;
     // contact shadow
     ctx.fillStyle = 'rgba(0,0,0,0.18)';
@@ -2393,6 +2403,9 @@ function __TESTS(assert, assertEq){
   assertEq(mig.schemaVersion, 2, 'migration sets version');
   assertEq(mig.scenes.length, 1, 'legacy wrapped into one scene');
   assertEq(mig.scenes[0].storyboard.title, 't', 'scene keeps storyboard');
+  assert(shotFraming('ECU').zoom > shotFraming('WS').zoom, 'ECU zooms more than WS');
+  assertEq(shotFraming('WS').cropTop, 0, 'WS no crop');
+  assert(shotFraming('unknown').zoom > 0, 'unknown -> safe default');
 }
 // ==TESTS-END==
 
