@@ -1,0 +1,3052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Storyboard Machine · Phantom Crew OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0D0D0D; --surface:#111111; --surface2:#141414;
+    --panel:#0C0C0C; --card:#111111;
+    --accent:#FFC72C; --secondary:#FA4616;
+    --text:#E0E0E0; --muted:#555555; --dim:#2E2E2E;
+    --line:#1c1c1c;
+    --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:var(--mono); font-size:12px;
+    overflow:hidden; -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent); color:#000}
+  ::-webkit-scrollbar{width:8px; height:8px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:#222; border-radius:4px}
+  ::-webkit-scrollbar-thumb:hover{background:#333}
+  button{font-family:var(--mono); cursor:pointer; border:none; background:none; color:inherit}
+  input,textarea,select{font-family:var(--mono); color:var(--text)}
+  input:focus,textarea:focus,select:focus{outline:1px solid var(--accent); outline-offset:-1px}
+
+  /* ───── TOP BAR ───── */
+  #topbar{
+    height:38px; display:flex; align-items:center; gap:14px;
+    padding:0 12px; background:var(--panel);
+    border-bottom:1px solid var(--line); user-select:none;
+  }
+  #logo{display:flex; align-items:center; gap:7px; font-weight:800; letter-spacing:.5px}
+  #logo .mark{
+    width:16px; height:16px; background:var(--accent); color:#000;
+    display:grid; place-items:center; font-size:11px; border-radius:2px;
+    box-shadow:0 0 12px rgba(255,199,44,.4);
+  }
+  #logo .sub{color:var(--muted); font-weight:500; font-size:10px}
+  #projName{
+    background:var(--surface2); border:1px solid var(--line);
+    padding:4px 9px; border-radius:3px; font-size:11px; min-width:160px;
+    color:var(--accent);
+  }
+  .topspacer{flex:1}
+  .tab-btn{
+    padding:5px 11px; font-size:10.5px; border-radius:3px; color:var(--muted);
+    border:1px solid transparent; letter-spacing:.4px; transition:.12s;
+  }
+  .tab-btn:hover{color:var(--text); background:var(--surface)}
+  .tab-btn.active{color:var(--accent); border-color:var(--dim); background:var(--surface)}
+  #exportPdfBtn{
+    padding:5px 12px; font-size:10.5px; font-weight:700; border-radius:3px;
+    background:var(--accent); color:#000; letter-spacing:.4px;
+  }
+  #exportPdfBtn:hover{box-shadow:0 0 14px rgba(255,199,44,.45)}
+
+  /* ───── MAIN ───── */
+  #main{display:flex; height:calc(100% - 38px)}
+
+  /* ───── LEFT SIDEBAR ───── */
+  #left{
+    width:212px; flex:0 0 212px; background:var(--panel);
+    border-right:1px solid var(--line); overflow-y:auto; padding:0 0 30px;
+  }
+  .section{border-bottom:1px solid var(--line); padding:12px 12px 14px}
+  .section h3{
+    font-size:9.5px; letter-spacing:1.2px; color:var(--accent);
+    text-transform:uppercase; margin-bottom:10px; font-weight:700;
+    display:flex; align-items:center; gap:6px;
+  }
+  .section h3::before{content:''; width:5px; height:5px; background:var(--secondary); border-radius:1px}
+  .fld{margin-bottom:10px}
+  .fld:last-child{margin-bottom:0}
+  .fld label{display:block; font-size:9.5px; color:var(--muted); margin-bottom:4px; letter-spacing:.5px}
+  textarea#script{
+    width:100%; height:140px; resize:vertical; background:var(--surface);
+    border:1px solid var(--line); border-radius:3px; padding:8px;
+    font-size:11px; line-height:1.5; color:var(--text);
+  }
+  .countbar{display:flex; justify-content:space-between; font-size:9px; color:var(--muted); margin-top:4px}
+  input.ti, select.ti{
+    width:100%; background:var(--surface); border:1px solid var(--line);
+    border-radius:3px; padding:6px 8px; font-size:11px;
+  }
+  .radio-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:4px}
+  .radio-grid.cols2{grid-template-columns:repeat(2,1fr)}
+  .chip{
+    background:var(--surface); border:1px solid var(--line); border-radius:3px;
+    padding:6px 2px; text-align:center; font-size:10px; color:var(--muted); transition:.1s;
+    user-select:none;
+  }
+  .chip:hover{border-color:var(--dim); color:var(--text)}
+  .chip.sel{background:var(--accent); color:#000; border-color:var(--accent); font-weight:700}
+  #genBtn{
+    width:100%; padding:11px; background:var(--accent); color:#000;
+    font-weight:800; font-size:12px; border-radius:4px; letter-spacing:.5px;
+    box-shadow:0 0 0 rgba(255,199,44,0); transition:.15s;
+  }
+  #genBtn:hover{box-shadow:0 0 18px rgba(255,199,44,.5)}
+  #genBtn:disabled{opacity:.5; cursor:not-allowed; box-shadow:none}
+  .loading-box{display:none; text-align:center; padding:6px 0}
+  .loading-box.on{display:block}
+  .dots span{
+    display:inline-block; width:6px; height:6px; margin:0 2px; border-radius:50%;
+    background:var(--accent); animation:bounce 1s infinite ease-in-out;
+  }
+  .dots span:nth-child(2){animation-delay:.16s}
+  .dots span:nth-child(3){animation-delay:.32s}
+  @keyframes bounce{0%,80%,100%{transform:scale(.5);opacity:.4}40%{transform:scale(1);opacity:1}}
+  .loading-txt{font-size:10px; color:var(--muted); margin:8px 0}
+  #cancelBtn{
+    font-size:9.5px; color:var(--secondary); border:1px solid var(--dim);
+    padding:4px 10px; border-radius:3px;
+  }
+  #cancelBtn:hover{background:rgba(250,70,22,.1)}
+
+  /* Color bible sidebar */
+  #cbSide .swatches{display:grid; grid-template-columns:repeat(4,1fr); gap:5px; margin-bottom:9px}
+  .sw{height:34px; border-radius:3px; position:relative; border:1px solid rgba(255,255,255,.06)}
+  .sw .lab{
+    position:absolute; bottom:1px; left:0; right:0; text-align:center;
+    font-size:7px; color:rgba(255,255,255,.85); text-shadow:0 1px 2px #000; letter-spacing:.3px;
+  }
+  .cb-meta{font-size:10px; line-height:1.5; color:var(--muted)}
+  .cb-meta b{color:var(--text); font-weight:500}
+  .cb-empty{font-size:10px; color:var(--dim); font-style:italic; padding:8px 0}
+
+  .apikey-note{font-size:9px; color:var(--muted); line-height:1.5; margin-top:6px}
+  .apikey-note a{color:var(--accent)}
+
+  /* ───── CENTER ───── */
+  #center{flex:1; overflow-y:auto; background:var(--bg); position:relative}
+  .view{display:none}
+  .view.on{display:block}
+  #gridHeader{
+    position:sticky; top:0; z-index:5; background:rgba(13,13,13,.92);
+    backdrop-filter:blur(6px); border-bottom:1px solid var(--line);
+    padding:10px 16px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  }
+  #gridHeader .title{font-size:14px; font-weight:700; color:var(--text)}
+  #gridHeader .stat{font-size:10px; color:var(--muted)}
+  #gridHeader .stat b{color:var(--accent); font-weight:700}
+  .dn-toggle{
+    margin-left:auto; display:flex; gap:0; border:1px solid var(--line); border-radius:3px; overflow:hidden;
+  }
+  .dn-toggle button{padding:4px 10px; font-size:9.5px; color:var(--muted)}
+  .dn-toggle button.on{background:var(--surface2); color:var(--accent)}
+  .col-toggle{display:flex; gap:0; border:1px solid var(--line); border-radius:3px; overflow:hidden}
+  .col-toggle button{padding:4px 9px; font-size:9.5px; color:var(--muted)}
+  .col-toggle button.on{background:var(--surface2); color:var(--accent)}
+
+  #grid{
+    display:grid; gap:12px; padding:16px;
+    grid-template-columns:repeat(3,1fr);
+  }
+  #grid.cols2{grid-template-columns:repeat(2,1fr)}
+  #grid.cols4{grid-template-columns:repeat(4,1fr)}
+
+  .panel-card{
+    background:var(--card); border:1px solid var(--line); border-radius:5px;
+    overflow:hidden; transition:.12s; cursor:grab; position:relative;
+  }
+  .panel-card:hover{border-color:var(--dim); transform:translateY(-1px)}
+  .panel-card.dragging{opacity:.4; cursor:grabbing}
+  .panel-card.drag-over{border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent)}
+  .panel-card.sel{border-color:var(--accent)}
+  .pc-canvas-wrap{position:relative; background:#000; line-height:0}
+  .pc-canvas-wrap canvas{width:100%; height:auto; display:block}
+  .pc-badge{
+    position:absolute; top:5px; left:5px; background:rgba(0,0,0,.6);
+    color:var(--accent); font-size:8.5px; font-weight:700; padding:2px 5px;
+    border-radius:2px; letter-spacing:.5px; backdrop-filter:blur(2px);
+  }
+  .pc-dur{
+    position:absolute; top:5px; right:5px; background:rgba(0,0,0,.6);
+    color:var(--text); font-size:8.5px; padding:2px 5px; border-radius:2px;
+  }
+  .pc-special{
+    position:absolute; bottom:5px; right:5px; background:var(--secondary);
+    color:#000; font-size:7.5px; font-weight:700; padding:1px 5px; border-radius:2px;
+    letter-spacing:.4px; text-transform:uppercase;
+  }
+  .pc-body{padding:8px 9px 9px}
+  .pc-line1{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px}
+  .pc-id{font-weight:800; font-size:12px; color:var(--secondary); letter-spacing:.5px}
+  .pc-shot{font-size:9.5px; color:var(--accent); font-weight:500}
+  .pc-action{
+    font-size:10.5px; line-height:1.4; color:var(--text); margin-bottom:5px;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+    min-height:29px;
+  }
+  .pc-angle{font-size:9px; color:var(--muted); margin-bottom:7px}
+  .pc-dialogue{font-size:9.5px; color:var(--accent); font-style:italic; margin-bottom:6px; opacity:.8}
+  .pc-tools{
+    display:flex; gap:6px; border-top:1px solid var(--line); padding-top:7px; justify-content:center;
+  }
+  .pc-tools button{
+    flex:1; padding:4px 0; font-size:11px; color:var(--muted); border:1px solid var(--line);
+    border-radius:3px; transition:.1s;
+  }
+  .pc-tools button:hover{color:var(--text); border-color:var(--dim); background:var(--surface)}
+  .pc-tools button.del:hover{color:var(--secondary); border-color:var(--secondary)}
+
+  .empty-state{
+    text-align:center; padding:80px 20px; color:var(--dim);
+  }
+  .empty-state .big{font-size:40px; margin-bottom:14px; opacity:.5}
+  .empty-state h2{font-size:15px; color:var(--muted); margin-bottom:8px; font-weight:500}
+  .empty-state p{font-size:11px; color:var(--dim); line-height:1.6; max-width:340px; margin:0 auto}
+
+  /* Color Bible full view */
+  #cbView{padding:24px 28px}
+  #cbView h2{font-size:18px; margin-bottom:4px}
+  #cbView .sub{font-size:11px; color:var(--muted); margin-bottom:24px}
+  .cb-big-swatches{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; max-width:680px; margin-bottom:26px}
+  .cb-big-sw{height:130px; border-radius:6px; position:relative; display:flex; align-items:flex-end; padding:10px; border:1px solid var(--line)}
+  .cb-big-sw .role{font-size:9px; color:rgba(255,255,255,.7); text-transform:uppercase; letter-spacing:1px}
+  .cb-big-sw .hex{font-size:13px; font-weight:700; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.6)}
+  .cb-big-sw .cnr{position:absolute; top:8px; right:10px; font-size:9px; color:rgba(255,255,255,.6)}
+  .cb-info-grid{display:grid; grid-template-columns:1fr 1fr; gap:24px; max-width:680px; margin-bottom:24px}
+  .cb-info-block h4{font-size:10px; letter-spacing:1px; color:var(--accent); text-transform:uppercase; margin-bottom:8px}
+  .cb-info-block p{font-size:12px; line-height:1.6; color:var(--text)}
+  #copyPaletteBtn{
+    padding:8px 16px; background:var(--surface2); border:1px solid var(--dim); border-radius:4px;
+    font-size:11px; color:var(--accent); font-weight:700;
+  }
+  #copyPaletteBtn:hover{background:var(--surface); border-color:var(--accent)}
+
+  /* ───── RIGHT SIDEBAR ───── */
+  #right{
+    width:232px; flex:0 0 232px; background:var(--panel);
+    border-left:1px solid var(--line); overflow-y:auto; transition:.2s;
+  }
+  #right.collapsed{width:0; flex-basis:0; overflow:hidden}
+  .right-head{
+    display:flex; align-items:center; padding:10px 12px; border-bottom:1px solid var(--line);
+    position:sticky; top:0; background:var(--panel); z-index:2;
+  }
+  .right-head h3{font-size:10px; letter-spacing:1px; color:var(--accent); text-transform:uppercase}
+  .right-head .sub{font-size:9px; color:var(--muted); margin-left:auto}
+  #collapseRight{position:absolute; left:-26px; top:8px}
+
+  /* Shot list table */
+  table.shotlist{width:100%; border-collapse:collapse; font-size:9.5px}
+  table.shotlist th{
+    text-align:left; padding:6px 5px; color:var(--muted); border-bottom:1px solid var(--line);
+    cursor:pointer; user-select:none; position:sticky; top:39px; background:var(--panel); font-size:8.5px;
+    letter-spacing:.3px; white-space:nowrap;
+  }
+  table.shotlist th:hover{color:var(--accent)}
+  table.shotlist th .arr{color:var(--accent); font-size:8px}
+  table.shotlist td{padding:6px 5px; border-bottom:1px solid #161616; vertical-align:top}
+  table.shotlist tr{cursor:pointer}
+  table.shotlist tr:hover td{background:var(--surface)}
+  table.shotlist tr.sel td{background:rgba(255,199,44,.07)}
+  td.tid{color:var(--secondary); font-weight:700}
+  td.tshot{color:var(--accent)}
+  td.tact{color:var(--muted); max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .sl-export{padding:10px 12px; border-top:1px solid var(--line)}
+  .sl-export button{
+    width:100%; padding:7px; background:var(--surface2); border:1px solid var(--dim);
+    border-radius:3px; font-size:10px; color:var(--text);
+  }
+  .sl-export button:hover{border-color:var(--accent); color:var(--accent)}
+
+  /* Panel details (right) */
+  .pd-frame{padding:12px; line-height:0; border-bottom:1px solid var(--line)}
+  .pd-frame canvas{width:100%; border-radius:3px}
+  .pd-body{padding:12px}
+  .pd-row{margin-bottom:11px}
+  .pd-row label{display:block; font-size:8.5px; color:var(--muted); letter-spacing:.5px; margin-bottom:3px; text-transform:uppercase}
+  .pd-row input,.pd-row textarea,.pd-row select{
+    width:100%; background:var(--surface); border:1px solid var(--line); border-radius:3px;
+    padding:5px 7px; font-size:10.5px;
+  }
+  .pd-row textarea{resize:vertical; min-height:46px; line-height:1.4}
+  .pd-grid2{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+  .pd-save{
+    width:100%; padding:8px; background:var(--accent); color:#000; font-weight:700;
+    border-radius:3px; font-size:11px; margin-top:4px;
+  }
+
+  /* ───── MODAL ───── */
+  .modal-bg{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.7);
+    z-index:100; align-items:center; justify-content:center; backdrop-filter:blur(3px);
+  }
+  .modal-bg.on{display:flex}
+  .modal{
+    background:var(--surface); border:1px solid var(--dim); border-radius:6px;
+    width:420px; max-width:90vw; padding:20px; box-shadow:0 20px 60px rgba(0,0,0,.6);
+  }
+  .modal h3{font-size:13px; color:var(--accent); margin-bottom:6px; letter-spacing:.5px}
+  .modal p.m-sub{font-size:10px; color:var(--muted); margin-bottom:14px; line-height:1.5}
+  .modal textarea{
+    width:100%; min-height:80px; background:var(--bg); border:1px solid var(--line);
+    border-radius:3px; padding:9px; font-size:11px; line-height:1.5; resize:vertical;
+  }
+  .modal-actions{display:flex; gap:8px; margin-top:14px; justify-content:flex-end}
+  .modal-actions button{padding:7px 16px; border-radius:3px; font-size:11px}
+  .btn-ghost{color:var(--muted); border:1px solid var(--line)}
+  .btn-ghost:hover{color:var(--text); border-color:var(--dim)}
+  .btn-primary{background:var(--accent); color:#000; font-weight:700}
+  .btn-primary:hover{box-shadow:0 0 14px rgba(255,199,44,.4)}
+
+  /* ───── TOAST ───── */
+  #toast{
+    position:fixed; bottom:18px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--surface2); border:1px solid var(--dim); border-left:3px solid var(--accent);
+    padding:10px 16px; border-radius:4px; font-size:11px; color:var(--text);
+    opacity:0; transition:.25s; z-index:200; pointer-events:none; max-width:80vw;
+  }
+  #toast.on{opacity:1; transform:translateX(-50%) translateY(0)}
+  #toast.err{border-left-color:var(--secondary); color:#ffb4a0}
+
+  .kbd-hint{font-size:8.5px; color:var(--dim); padding:8px 12px; line-height:1.7; border-top:1px solid var(--line)}
+  .kbd-hint kbd{background:var(--surface2); border:1px solid var(--dim); border-radius:2px; padding:0 4px; color:var(--muted); font-size:8px}
+
+  .proj-list{padding:0}
+  .proj-item{
+    display:flex; align-items:center; gap:8px; padding:7px 12px; font-size:10px;
+    border-bottom:1px solid #151515; cursor:pointer; color:var(--muted);
+  }
+  .proj-item:hover{background:var(--surface); color:var(--text)}
+  .proj-item.active{color:var(--accent)}
+  .proj-item .pdel{margin-left:auto; opacity:0; color:var(--secondary); font-size:12px}
+  .proj-item:hover .pdel{opacity:.7}
+  .mini-btns{display:flex; gap:5px; margin-top:8px}
+  .mini-btns button{
+    flex:1; padding:6px; font-size:9px; background:var(--surface2); border:1px solid var(--line);
+    border-radius:3px; color:var(--muted);
+  }
+  .mini-btns button:hover{color:var(--accent); border-color:var(--dim)}
+
+  /* ───── v2: scene bar ───── */
+  #sceneBar{
+    display:flex; align-items:center; gap:6px; padding:5px 12px; background:#0a0a0a;
+    border-bottom:1px solid var(--line); overflow-x:auto; user-select:none; min-height:32px;
+  }
+  #sceneBar .lbl{font-size:8.5px; color:var(--muted); letter-spacing:1px; margin-right:4px}
+  .scene-chip{
+    display:flex; align-items:center; gap:6px; padding:4px 10px; font-size:10px; border-radius:3px;
+    background:var(--surface); border:1px solid var(--line); color:var(--muted); white-space:nowrap; cursor:pointer;
+  }
+  .scene-chip:hover{color:var(--text); border-color:var(--dim)}
+  .scene-chip.active{color:#000; background:var(--accent); border-color:var(--accent); font-weight:700}
+  .scene-chip .sx{opacity:0; font-size:11px}
+  .scene-chip:hover .sx{opacity:.6}
+  .scene-chip.active .sx{color:#000}
+  #addSceneBtn{padding:4px 9px; font-size:11px; color:var(--accent); border:1px dashed var(--dim); border-radius:3px}
+  #addSceneBtn:hover{border-color:var(--accent)}
+  #sceneBar .runtime{margin-left:auto; font-size:9px; color:var(--muted); white-space:nowrap}
+  #sceneBar .runtime b{color:var(--accent)}
+
+  /* overlay toggles in grid header */
+  .ovl-toggle{display:flex; gap:0; border:1px solid var(--line); border-radius:3px; overflow:hidden}
+  .ovl-toggle button{padding:4px 7px; font-size:9px; color:var(--muted)}
+  .ovl-toggle button.on{background:var(--surface2); color:var(--accent)}
+
+  /* export dropdown */
+  .menu-wrap{position:relative}
+  .menu-pop{
+    display:none; position:absolute; right:0; top:30px; background:var(--surface); border:1px solid var(--dim);
+    border-radius:5px; min-width:200px; z-index:60; box-shadow:0 10px 30px rgba(0,0,0,.6); overflow:hidden;
+  }
+  .menu-pop.on{display:block}
+  .menu-pop button{
+    display:block; width:100%; text-align:left; padding:8px 12px; font-size:10.5px; color:var(--text); border-bottom:1px solid var(--line);
+  }
+  .menu-pop button:last-child{border-bottom:none}
+  .menu-pop button:hover{background:var(--surface2); color:var(--accent)}
+  .menu-pop .mh{padding:6px 12px; font-size:8.5px; color:var(--muted); letter-spacing:1px; background:#0a0a0a}
+  .icon-btn{padding:5px 10px; font-size:10.5px; border-radius:3px; color:var(--muted); border:1px solid var(--line)}
+  .icon-btn:hover{color:var(--accent); border-color:var(--dim); background:var(--surface)}
+
+  /* animatic player overlay */
+  #animatic{
+    display:none; position:fixed; inset:0; background:#000; z-index:120; flex-direction:column;
+  }
+  #animatic.on{display:flex}
+  #animaticStage{flex:1; display:grid; place-items:center; overflow:hidden; position:relative}
+  #animaticStage canvas{max-width:88vw; max-height:74vh; box-shadow:0 0 80px rgba(0,0,0,.9); will-change:transform}
+  #animaticCap{position:absolute; bottom:14px; left:0; right:0; text-align:center; color:#bbb; font-size:12px; padding:0 40px}
+  #animaticCap .dlg{color:var(--accent); font-style:italic}
+  #animaticBar{
+    height:60px; background:#0a0a0a; border-top:1px solid var(--line); display:flex; align-items:center; gap:14px; padding:0 18px;
+  }
+  #animaticBar button{font-size:16px; color:var(--text); width:34px; height:34px; border-radius:50%; border:1px solid var(--dim)}
+  #animaticBar button:hover{border-color:var(--accent); color:var(--accent)}
+  #animaticBar .pp{background:var(--accent); color:#000; border-color:var(--accent)}
+  #scrub{flex:1; -webkit-appearance:none; height:4px; background:var(--dim); border-radius:2px; outline:none}
+  #scrub::-webkit-slider-thumb{-webkit-appearance:none; width:13px; height:13px; border-radius:50%; background:var(--accent); cursor:pointer}
+  #animaticTime{font-size:10px; color:var(--muted); min-width:84px; text-align:right}
+  #animaticClose{margin-left:4px; font-size:13px; width:auto; padding:0 12px; border-radius:4px}
+  #animaticTrack{display:flex; gap:3px; padding:6px 18px; background:#0a0a0a; overflow-x:auto}
+  #animaticTrack .tk{height:26px; border-radius:2px; border:1px solid var(--line); cursor:pointer; flex:0 0 auto}
+  #animaticTrack .tk.on{border-color:var(--accent)}
+  #animaticTrack .tk canvas{height:100%; display:block; border-radius:1px}
+
+  /* continuity panel */
+  .cont-item{padding:9px 12px; border-bottom:1px solid #161616; cursor:pointer; font-size:10px; line-height:1.45}
+  .cont-item:hover{background:var(--surface)}
+  .cont-item .sev{font-weight:700; letter-spacing:.5px; font-size:8.5px; padding:1px 5px; border-radius:2px; margin-right:6px}
+  .sev.warn{background:rgba(250,70,22,.18); color:var(--secondary)}
+  .sev.note{background:rgba(255,199,44,.16); color:var(--accent)}
+  .sev.ok{background:rgba(120,200,120,.15); color:#7ac87a}
+  .cont-item .tgt{color:var(--accent); font-weight:700}
+  .cont-clean{padding:20px 12px; text-align:center; color:#7ac87a; font-size:11px}
+
+  /* comments */
+  .pd-comments{border-top:1px solid var(--line); margin-top:10px; padding-top:10px}
+  .pd-comments h5{font-size:8.5px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-bottom:7px}
+  .cmt{background:var(--surface); border:1px solid var(--line); border-radius:3px; padding:6px 8px; margin-bottom:5px; font-size:10px; line-height:1.4}
+  .cmt .who{color:var(--accent); font-weight:700; font-size:9px}
+  .cmt .when{color:var(--dim); font-size:8px; float:right}
+  .cmt-add{display:flex; gap:5px; margin-top:6px}
+  .cmt-add input{flex:1; background:var(--surface); border:1px solid var(--line); border-radius:3px; padding:5px 7px; font-size:10px}
+  .cmt-add button{padding:5px 10px; background:var(--surface2); border:1px solid var(--dim); border-radius:3px; color:var(--accent); font-size:10px}
+
+  /* edit-mode handles hint */
+  .pd-frame{position:relative}
+  .pd-edit-badge{position:absolute; top:16px; right:16px; font-size:8px; background:rgba(255,199,44,.85); color:#000; padding:2px 6px; border-radius:2px; font-weight:700; letter-spacing:.5px}
+  #pd-canvas{cursor:default}
+  #pd-canvas.editing{cursor:grab}
+
+  .ro-banner{
+    background:var(--secondary); color:#000; text-align:center; font-size:10px; font-weight:700;
+    padding:4px; letter-spacing:.5px; display:none;
+  }
+  .ro-banner.on{display:block}
+  .field-mini{font-size:9.5px}
+  .field-mini label{font-size:8.5px; color:var(--muted); display:block; margin-bottom:3px; letter-spacing:.5px}
+  .field-mini input{width:100%; background:var(--surface); border:1px solid var(--line); border-radius:3px; padding:5px 7px; font-size:10px}
+  .toggle-row{display:flex; align-items:center; gap:7px; font-size:10px; color:var(--muted); cursor:pointer; margin-top:6px}
+  .toggle-row input{accent-color:var(--accent)}
+  .panel-card .pc-imgbadge{position:absolute; bottom:5px; left:5px; background:rgba(80,180,90,.85); color:#000; font-size:7px; font-weight:700; padding:1px 5px; border-radius:2px; letter-spacing:.3px}
+</style>
+</head>
+<body>
+
+<!-- ════ TOP BAR ════ -->
+<div id="topbar">
+  <div id="logo">
+    <span class="mark">✦</span>
+    <span>STORYBOARD<span class="sub"> // PHANTOM CREW OS</span></span>
+  </div>
+  <input id="projName" value='MV "ขอให้ผม"'>
+  <div class="topspacer"></div>
+  <button class="tab-btn active" data-view="grid">SHOT LIST</button>
+  <button class="tab-btn" data-view="cb">COLOR BIBLE</button>
+  <button class="icon-btn" id="animaticBtn" title="Play animatic (P)">▶ PLAY</button>
+  <button class="icon-btn" id="continuityBtn" title="Continuity check">✓ CHECK</button>
+  <button class="icon-btn" id="shareBtn" title="Copy share link">↗ SHARE</button>
+  <div class="menu-wrap">
+    <button id="exportMenuBtn" style="padding:5px 12px; font-size:10.5px; font-weight:700; border-radius:3px; background:var(--accent); color:#000; letter-spacing:.4px">⤓ EXPORT ▾</button>
+    <div class="menu-pop" id="exportMenu">
+      <div class="mh">STORYBOARD</div>
+      <button data-exp="pdf">Storyboard PDF (all scenes)</button>
+      <button data-exp="pdf-scene">This scene only — PDF</button>
+      <button data-exp="contact">Contact Sheet PNG</button>
+      <div class="mh">PRODUCTION</div>
+      <button data-exp="callsheet">Call Sheet PDF</button>
+      <button data-exp="csv">Shot List CSV</button>
+      <button data-exp="prodboard">ProductionBoard CSV</button>
+      <button data-exp="fountain">Screenplay (.fountain)</button>
+      <div class="mh">DATA</div>
+      <button data-exp="json">Project JSON</button>
+    </div>
+  </div>
+</div>
+<div class="ro-banner" id="roBanner">◉ SHARED READ-ONLY VIEW — changes won't be saved. Use “+ New” to fork your own copy.</div>
+<div id="sceneBar">
+  <span class="lbl">SCENES</span>
+  <div id="sceneChips" style="display:flex; gap:6px"></div>
+  <button id="addSceneBtn" title="Add scene">+ Scene</button>
+  <span class="runtime" id="seqRuntime"></span>
+</div>
+
+<div id="main">
+
+  <!-- ════ LEFT SIDEBAR ════ -->
+  <aside id="left">
+
+    <div class="section">
+      <h3>Script Input</h3>
+      <div class="fld">
+        <textarea id="script" placeholder="Paste raw script or scene description here..."></textarea>
+        <div class="countbar"><span id="charCount">0 chars</span><span id="wordCount">0 words</span></div>
+      </div>
+      <div class="mini-btns">
+        <button id="parseScriptBtn" title="Split screenplay into scenes by INT./EXT. sluglines">⎘ Parse → Scenes</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Settings</h3>
+      <div class="fld">
+        <label>Scene Title</label>
+        <input class="ti" id="sceneTitle" value="คนละเวลา ห้องเดียว">
+      </div>
+      <div class="fld">
+        <label>Panel Count</label>
+        <div class="radio-grid" id="panelCount">
+          <div class="chip" data-v="4">4</div>
+          <div class="chip" data-v="6">6</div>
+          <div class="chip sel" data-v="8">8</div>
+          <div class="chip" data-v="12">12</div>
+        </div>
+      </div>
+      <div class="fld">
+        <label>Aspect Ratio</label>
+        <div class="radio-grid" id="aspect">
+          <div class="chip sel" data-v="16:9">16:9</div>
+          <div class="chip" data-v="2.39:1">2.39</div>
+          <div class="chip" data-v="4:3">4:3</div>
+          <div class="chip" data-v="1:1">1:1</div>
+        </div>
+      </div>
+      <div class="fld">
+        <label>Visual Style</label>
+        <select class="ti" id="visualStyle">
+          <option>Realistic</option>
+          <option>Rough Sketch</option>
+          <option>Architectural</option>
+          <option>Minimal</option>
+        </select>
+      </div>
+      <div class="fld">
+        <label>Reference Film</label>
+        <input class="ti" id="reference" value="500 Days of Summer, La La Land">
+      </div>
+      <div class="fld">
+        <label>Mood / Tone</label>
+        <input class="ti" id="mood" value="Melancholy, bittersweet, warm but lonely">
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Generate</h3>
+      <button id="genBtn">✦ Generate Storyboard</button>
+      <div class="loading-box" id="loadingBox">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <div class="loading-txt" id="loadingTxt">Generating panels...</div>
+        <button id="cancelBtn">✕ Cancel</button>
+      </div>
+      <div class="fld" style="margin-top:10px">
+        <label>Anthropic API Key (optional — uses demo data if empty)</label>
+        <input class="ti" id="apiKey" type="password" placeholder="sk-ant-...">
+        <div class="apikey-note">Stored locally only. Leave empty to generate procedural demo storyboards.</div>
+      </div>
+      <label class="toggle-row"><input type="checkbox" id="imgGenToggle"> Render AI frame art (image model)</label>
+      <div class="fld field-mini" id="imgGenCfg" style="display:none; margin-top:8px">
+        <label>Image API endpoint</label>
+        <input id="imgEndpoint" placeholder="https://api.openai.com/v1/images/generations">
+        <label style="margin-top:6px">Image model</label>
+        <input id="imgModel" placeholder="gpt-image-1 / dall-e-3">
+        <label style="margin-top:6px">Image API key</label>
+        <input id="imgKey" type="password" placeholder="sk-...">
+        <div class="apikey-note">Posts a prompt per panel; expects b64_json or url. Canvas art shows until art returns.</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Reference Image</h3>
+      <div class="apikey-note" style="margin-bottom:8px">Upload a film still to extract its palette into the Color Bible.</div>
+      <div class="mini-btns">
+        <button id="refImgBtn">⤒ Extract Palette</button>
+      </div>
+      <input type="file" id="refImgFile" accept="image/*" style="display:none">
+      <canvas id="refCanvas" width="64" height="40" style="display:none"></canvas>
+    </div>
+
+    <div class="section" id="cbSide">
+      <h3>Color Bible</h3>
+      <div id="cbSideContent"><div class="cb-empty">Generate a storyboard to populate the color bible.</div></div>
+    </div>
+
+    <div class="section">
+      <h3>Projects</h3>
+      <div class="proj-list" id="projList"></div>
+      <div class="mini-btns">
+        <button id="newProjBtn">+ New</button>
+        <button id="exportJsonBtn">⤓ JSON</button>
+        <button id="importJsonBtn">⤒ Load</button>
+      </div>
+      <input type="file" id="importFile" accept=".json" style="display:none">
+    </div>
+
+  </aside>
+
+  <!-- ════ CENTER ════ -->
+  <section id="center">
+
+    <!-- GRID VIEW -->
+    <div class="view on" id="gridView">
+      <div id="gridHeader">
+        <span class="title" id="gh-title">—</span>
+        <span class="stat" id="gh-panels"></span>
+        <span class="stat" id="gh-dur"></span>
+        <div class="col-toggle" id="colToggle">
+          <button data-c="2">2</button>
+          <button data-c="3" class="on">3</button>
+          <button data-c="4">4</button>
+        </div>
+        <div class="dn-toggle" id="dnToggle">
+          <button data-dn="day" class="on">☀ DAY</button>
+          <button data-dn="night">☾ NIGHT</button>
+        </div>
+        <div class="ovl-toggle" id="ovlToggle" title="Framing guides">
+          <button data-ovl="thirds">⊞ 3RDS</button>
+          <button data-ovl="center">✛ CTR</button>
+          <button data-ovl="safe">▭ SAFE</button>
+          <button data-ovl="fov">◎ FOV</button>
+        </div>
+      </div>
+      <div id="grid"></div>
+    </div>
+
+    <!-- COLOR BIBLE VIEW -->
+    <div class="view" id="cbView">
+      <h2 id="cbv-title">Color Bible</h2>
+      <div class="sub" id="cbv-sub">Visual palette & cinematography reference</div>
+      <div class="cb-big-swatches" id="cbv-swatches"></div>
+      <div class="cb-info-grid">
+        <div class="cb-info-block">
+          <h4>Mood</h4>
+          <p id="cbv-mood">—</p>
+        </div>
+        <div class="cb-info-block">
+          <h4>Film Stock</h4>
+          <p id="cbv-stock">—</p>
+        </div>
+        <div class="cb-info-block">
+          <h4>Reference Films</h4>
+          <p id="cbv-ref">—</p>
+        </div>
+        <div class="cb-info-block">
+          <h4>Synopsis</h4>
+          <p id="cbv-syn">—</p>
+        </div>
+      </div>
+      <button id="copyPaletteBtn">⧉ Copy Palette to Clipboard</button>
+    </div>
+
+  </section>
+
+  <!-- ════ RIGHT SIDEBAR ════ -->
+  <aside id="right">
+    <button id="collapseRight" class="tab-btn" style="display:none"></button>
+    <div class="right-head">
+      <h3 id="rightTitle">Shot List</h3>
+      <span class="sub" id="rightSub"></span>
+    </div>
+    <div id="rightContent"></div>
+  </aside>
+
+</div>
+
+<!-- ════ ANIMATIC PLAYER ════ -->
+<div id="animatic">
+  <div id="animaticStage">
+    <canvas id="animaticCanvas" width="640" height="360"></canvas>
+    <div id="animaticCap"></div>
+  </div>
+  <div id="animaticTrack"></div>
+  <div id="animaticBar">
+    <button id="aPrev" title="Previous">⏮</button>
+    <button id="aPlay" class="pp" title="Play/Pause">▶</button>
+    <button id="aNext" title="Next">⏭</button>
+    <input type="range" id="scrub" min="0" max="1000" value="0">
+    <span id="animaticTime">00 / 00</span>
+    <button id="animaticClose" title="Close (Esc)">✕ Close</button>
+  </div>
+</div>
+
+<!-- ════ MODALS ════ -->
+<div class="modal-bg" id="regenModal">
+  <div class="modal">
+    <h3 id="regenTitle">↻ Regenerate Panel</h3>
+    <p class="m-sub">Add a direction note. Claude will re-imagine only this shot while keeping the scene continuity.</p>
+    <textarea id="regenNote" placeholder="e.g. 'Push in tighter, emphasize her hand reaching for the cup. More shadow.'"></textarea>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="regenCancel">Cancel</button>
+      <button class="btn-primary" id="regenGo">↻ Regenerate</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   AI STORYBOARD MACHINE — Phantom Crew OS
+   Single-file vanilla JS. Canvas drawing + PDF export are hero features.
+   ════════════════════════════════════════════════════════════════ */
+
+const PROJECT = { director: 'MEATBALL-007' };
+const LS_KEY = 'phantom_storyboard_projects_v1';
+const LS_CUR = 'phantom_storyboard_current_v1';
+const LS_API = 'phantom_storyboard_apikey_v1';
+
+let STATE = {
+  storyboard: null,
+  settings: {},
+  selectedPanelId: null,
+  cols: 3,
+  dayNight: 'day',
+  rightMode: 'shotlist', // shotlist | details
+  sortKey: null,
+  sortDir: 1,
+  abort: false,
+};
+
+/* ─────────── DOM helpers ─────────── */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const ce = (t, c) => { const e = document.createElement(t); if (c) e.className = c; return e; };
+
+function toast(msg, isErr) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.toggle('err', !!isErr);
+  t.classList.add('on');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('on'), 2600);
+}
+const showError = m => toast(m, true);
+
+/* ════════════════════════════════════════════════════════════════
+   CANVAS DRAWING SYSTEM  (HERO FEATURE)
+   Renders evocative, rough storyboard thumbnails.
+   ════════════════════════════════════════════════════════════════ */
+
+const BG_COLORS = {
+  warm_day:       ['#f0e4d0', '#c8a870'],
+  cool_day:       ['#dce4ec', '#9ab4c8'],
+  golden_hour:    ['#f0c060', '#a86820'],
+  night_interior: ['#0f0f1c', '#1e1e30'],
+  night_exterior: ['#080814', '#141428'],
+  overcast:       ['#d8d8d8', '#a8a8a8'],
+};
+
+const SCALE_MAP = {
+  large:  [0.16, 0.78],
+  medium: [0.10, 0.54],
+  small:  [0.065, 0.36],
+  tiny:   [0.042, 0.22],
+};
+
+const MOVEMENT_ARROWS = {
+  'Pan R':     [[0.18,0.5],[0.82,0.5]],
+  'Pan L':     [[0.82,0.5],[0.18,0.5]],
+  'Truck R':   [[0.18,0.55],[0.82,0.55]],
+  'Truck L':   [[0.82,0.55],[0.18,0.55]],
+  'Dolly In':  [[0.5,0.82],[0.5,0.35]],
+  'Zoom In':   [[0.5,0.82],[0.5,0.35]],
+  'Dolly Out': [[0.5,0.35],[0.5,0.82]],
+  'Zoom Out':  [[0.5,0.35],[0.5,0.82]],
+  'Tilt Up':   [[0.12,0.72],[0.12,0.3]],
+  'Crane Up':  [[0.12,0.72],[0.12,0.3]],
+  'Tilt Down': [[0.12,0.3],[0.12,0.72]],
+  'Crane Down':[[0.12,0.3],[0.12,0.72]],
+};
+
+// rough hand-drawn line helper
+function roughLine(ctx, x1, y1, x2, y2, jitter) {
+  jitter = jitter || 0.6;
+  const seg = 5;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  for (let i = 1; i <= seg; i++) {
+    const t = i / seg;
+    const jx = (pseudoRand(x1 + i * 7 + x2) - 0.5) * jitter * 2;
+    const jy = (pseudoRand(y1 + i * 13 + y2) - 0.5) * jitter * 2;
+    ctx.lineTo(x1 + (x2 - x1) * t + jx, y1 + (y2 - y1) * t + jy);
+  }
+  ctx.stroke();
+}
+// deterministic pseudo-random for stable rough strokes
+function pseudoRand(seed) {
+  const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+function drawHuman(ctx, cx, by, fw, fh, color, facing, dutch) {
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.strokeStyle = color;
+  const headR = fw * 0.40;
+  const bodyTop = by - fh;
+  const shoulderY = bodyTop + headR * 1.7;
+
+  // head
+  ctx.beginPath();
+  ctx.arc(cx, bodyTop + headR, headR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // torso (tapered) — rough trapezoid
+  const shoulderW = fw * 0.92;
+  const hipW = fw * 0.62;
+  const hipY = by - fh * 0.40;
+  ctx.beginPath();
+  ctx.moveTo(cx - shoulderW/2, shoulderY);
+  ctx.lineTo(cx + shoulderW/2, shoulderY);
+  ctx.lineTo(cx + hipW/2, hipY);
+  ctx.lineTo(cx - hipW/2, hipY);
+  ctx.closePath();
+  ctx.fill();
+
+  // legs
+  const legW = hipW * 0.42;
+  ctx.fillRect(cx - hipW/2, hipY, legW, by - hipY);
+  ctx.fillRect(cx + hipW/2 - legW, hipY, legW, by - hipY);
+
+  // facing nub (nose direction) — light marker
+  if (facing === 'left' || facing === 'right') {
+    const dir = facing === 'right' ? 1 : -1;
+    ctx.beginPath();
+    ctx.arc(cx + dir * headR * 0.7, bodyTop + headR, headR * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawPanel(canvas, panel) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const comp = panel.composition || {};
+  const special = panel.special || comp.special;
+
+  ctx.clearRect(0, 0, W, H);
+
+  if (special === 'split_screen') { drawSplitScreen(ctx, W, H, panel); finishFrame(ctx, W, H, panel); return; }
+  if (special === 'insert_detail') { drawInsert(ctx, W, H, panel); finishFrame(ctx, W, H, panel); return; }
+  if (special === 'ots') { drawOTS(ctx, W, H, panel); finishFrame(ctx, W, H, panel); return; }
+
+  const bgType = comp.bg_type || 'warm_day';
+  const isNight = bgType.includes('night');
+
+  // 1. Background gradient
+  const [topC, botC] = BG_COLORS[bgType] || BG_COLORS.warm_day;
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+  bgGrad.addColorStop(0, topC);
+  bgGrad.addColorStop(1, botC);
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  const hy = H * (comp.horizon_y != null ? comp.horizon_y : 0.55);
+
+  // 2. Ground / horizon
+  if (!comp.is_interior) {
+    // exterior ground plane
+    const gnd = ctx.createLinearGradient(0, hy, 0, H);
+    const gShade = isNight ? 'rgba(0,0,0,0.35)' : 'rgba(60,45,25,0.22)';
+    gnd.addColorStop(0, 'rgba(0,0,0,0)');
+    gnd.addColorStop(1, gShade);
+    ctx.fillStyle = gnd;
+    ctx.fillRect(0, hy, W, H - hy);
+    // horizon line
+    ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+    ctx.lineWidth = 0.8;
+    roughLine(ctx, 0, hy, W, hy, 0.8);
+  } else if (comp.horizon_y > 0) {
+    // 2b. Interior room perspective lines (1-pt perspective)
+    const vx = W / 2;
+    ctx.strokeStyle = 'rgba(0,0,0,0.11)';
+    ctx.lineWidth = 0.7;
+    // ceiling line
+    roughLine(ctx, 0, hy * 0.32, W, hy * 0.32, 0.5);
+    // back wall (vanishing rectangle)
+    const bw = W * 0.30, bx = vx - bw/2, byTop = hy * 0.32, byBot = hy;
+    ctx.strokeRect(bx, byTop, bw, byBot - byTop);
+    // floor + ceiling perspective to vanishing corners
+    ctx.beginPath(); ctx.moveTo(0, H); ctx.lineTo(bx, byBot); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W, H); ctx.lineTo(bx + bw, byBot); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(bx, byTop); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W, 0); ctx.lineTo(bx + bw, byTop); ctx.stroke();
+    // floor shading
+    const fl = ctx.createLinearGradient(0, byBot, 0, H);
+    fl.addColorStop(0, 'rgba(0,0,0,0.05)');
+    fl.addColorStop(1, 'rgba(0,0,0,0.18)');
+    ctx.fillStyle = fl; ctx.fillRect(0, byBot, W, H - byBot);
+  }
+
+  // 3. Lighting effects
+  const lighting = comp.lighting || 'ambient';
+  if (lighting.startsWith('window')) {
+    const side = lighting.includes('right') ? 0.85 : 0.15;
+    // window shaft rectangle
+    ctx.fillStyle = 'rgba(255,245,210,0.30)';
+    const wx = W * side - W*0.08;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(W*side, H*0.05);
+    ctx.lineTo(W*side + (side>0.5?-1:1)*W*0.32, H*0.95);
+    ctx.lineTo(W*side + (side>0.5?-1:1)*W*0.12, H*0.95);
+    ctx.lineTo(W*side, H*0.05);
+    ctx.closePath();
+    const ls = ctx.createLinearGradient(W*side, 0, W*(1-side), H);
+    ls.addColorStop(0, 'rgba(255,245,210,0.28)');
+    ls.addColorStop(1, 'rgba(255,245,210,0)');
+    ctx.fillStyle = ls; ctx.fill();
+    ctx.restore();
+    const wl = ctx.createRadialGradient(W*side, H*0.3, 0, W*side, H*0.3, W*0.6);
+    wl.addColorStop(0, 'rgba(255,240,200,0.22)');
+    wl.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = wl; ctx.fillRect(0, 0, W, H);
+  }
+  if (lighting === 'backlit') {
+    const bl = ctx.createRadialGradient(W/2, H*0.3, 0, W/2, H*0.3, W*0.55);
+    bl.addColorStop(0, 'rgba(255,230,180,0.34)');
+    bl.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = bl; ctx.fillRect(0, 0, W, H);
+  }
+  if (lighting === 'toplit') {
+    const tl = ctx.createLinearGradient(0, 0, 0, H);
+    tl.addColorStop(0, 'rgba(255,250,230,0.22)');
+    tl.addColorStop(0.5, 'rgba(0,0,0,0)');
+    ctx.fillStyle = tl; ctx.fillRect(0, 0, W, H);
+  }
+  if (lighting === 'practicals' || isNight) {
+    // warm practical glows
+    [[0.2,0.35],[0.78,0.42]].forEach((p,i) => {
+      const pg = ctx.createRadialGradient(W*p[0], H*p[1], 0, W*p[0], H*p[1], W*0.22);
+      pg.addColorStop(0, i? 'rgba(255,170,80,0.30)' : 'rgba(255,200,120,0.34)');
+      pg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = pg; ctx.fillRect(0,0,W,H);
+    });
+  }
+  if (lighting === 'key_left' || lighting === 'key_right') {
+    const side = lighting.includes('right') ? 0.8 : 0.2;
+    const kg = ctx.createRadialGradient(W*side, H*0.35, 0, W*side, H*0.35, W*0.5);
+    kg.addColorStop(0, 'rgba(255,250,235,0.18)');
+    kg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = kg; ctx.fillRect(0,0,W,H);
+  }
+
+  // 3b. foreground element hint (silhouette blob bottom)
+  if (comp.foreground_element) {
+    ctx.fillStyle = isNight ? 'rgba(0,0,0,0.7)' : 'rgba(10,8,5,0.55)';
+    ctx.beginPath();
+    ctx.moveTo(0, H);
+    ctx.lineTo(0, H*0.72);
+    ctx.bezierCurveTo(W*0.15, H*0.66, W*0.30, H*0.80, W*0.42, H);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // 4. Subjects
+  const subjects = comp.subjects || [];
+  // sort by scale so larger (closer) drawn last
+  const order = { tiny:0, small:1, medium:2, large:3 };
+  [...subjects].sort((a,b)=> (order[a.scale]||2)-(order[b.scale]||2)).forEach(subj => {
+    const [sw, sh] = SCALE_MAP[subj.scale] || SCALE_MAP.medium;
+    const fw = W * sw, fh = H * sh;
+    const cx = W * (subj.x != null ? subj.x : 0.5);
+    const by = H * (subj.y != null ? subj.y : 0.95);
+    const d = isNight ? 6 : 18;
+    // contact shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.beginPath();
+    ctx.ellipse(cx, by, fw*0.7, fh*0.04, 0, 0, Math.PI*2);
+    ctx.fill();
+    drawHuman(ctx, cx, by, fw, fh, `rgba(${d},${d},${d},0.9)`, subj.facing, false);
+    // subject id label
+    if (subj.id && (subj.scale === 'large' || subj.scale === 'medium')) {
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.font = 'bold 7px ui-monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(subj.id, cx, by - fh - 3);
+      ctx.textAlign = 'left';
+    }
+  });
+
+  // 5. Camera movement arrow
+  drawMovementArrow(ctx, W, H, panel.camera_movement);
+
+  // dutch angle hint
+  if (panel.camera_angle === 'Dutch') {
+    ctx.strokeStyle = 'rgba(250,70,22,0.4)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4,3]);
+    roughLine(ctx, 0, H*0.65, W, H*0.35, 0.5);
+    ctx.setLineDash([]);
+  }
+
+  finishFrame(ctx, W, H, panel);
+}
+
+function drawMovementArrow(ctx, W, H, movement) {
+  const a = MOVEMENT_ARROWS[movement];
+  if (!a) return;
+  const [[x1,y1],[x2,y2]] = a;
+  ctx.strokeStyle = 'rgba(255,199,44,0.6)';
+  ctx.fillStyle = 'rgba(255,199,44,0.6)';
+  ctx.lineWidth = 1.4;
+  ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(W*x1, H*y1); ctx.lineTo(W*x2, H*y2); ctx.stroke();
+  ctx.setLineDash([]);
+  const angle = Math.atan2(H*(y2-y1), W*(x2-x1));
+  const ah = 7;
+  ctx.beginPath();
+  ctx.moveTo(W*x2, H*y2);
+  ctx.lineTo(W*x2 - ah*Math.cos(angle-0.4), H*y2 - ah*Math.sin(angle-0.4));
+  ctx.lineTo(W*x2 - ah*Math.cos(angle+0.4), H*y2 - ah*Math.sin(angle+0.4));
+  ctx.closePath(); ctx.fill();
+}
+
+function finishFrame(ctx, W, H, panel) {
+  // 6. Vignette
+  const vig = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, W * 0.72);
+  vig.addColorStop(0.35, 'rgba(0,0,0,0)');
+  vig.addColorStop(1, 'rgba(0,0,0,0.40)');
+  ctx.fillStyle = vig; ctx.fillRect(0, 0, W, H);
+
+  // film grain (sparse, deterministic)
+  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  for (let i = 0; i < W*H*0.012; i++) {
+    const gx = pseudoRand(i*3.1+panel.id?.length||0) * W;
+    const gy = pseudoRand(i*7.7+2) * H;
+    ctx.fillRect(gx, gy, 1, 1);
+  }
+
+  // 7. Shot size watermark
+  ctx.fillStyle = 'rgba(255,255,255,0.16)';
+  ctx.font = 'bold 9px ui-monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(panel.shot_size || '', 5, H - 5);
+
+  // lens watermark
+  ctx.textAlign = 'right';
+  ctx.fillText((panel.lens_mm||'') + 'mm', W - 5, H - 5);
+  ctx.textAlign = 'left';
+
+  // frame border (rough)
+  ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(1, 1, W-2, H-2);
+}
+
+/* ─── SPECIAL PANEL TYPES ─── */
+function drawSplitScreen(ctx, W, H, panel) {
+  // Left warm | Right cool
+  const gL = ctx.createLinearGradient(0,0,0,H);
+  gL.addColorStop(0,'#f0e4d0'); gL.addColorStop(1,'#c8a870');
+  ctx.fillStyle = gL; ctx.fillRect(0,0,W/2,H);
+  const gR = ctx.createLinearGradient(0,0,0,H);
+  gR.addColorStop(0,'#1a1a2e'); gR.addColorStop(1,'#2a2a40');
+  ctx.fillStyle = gR; ctx.fillRect(W/2,0,W/2,H);
+
+  // window light each side
+  let wl = ctx.createRadialGradient(W*0.18, H*0.3, 0, W*0.18, H*0.3, W*0.35);
+  wl.addColorStop(0,'rgba(255,240,200,0.3)'); wl.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle = wl; ctx.fillRect(0,0,W/2,H);
+  let wr = ctx.createRadialGradient(W*0.82, H*0.35, 0, W*0.82, H*0.35, W*0.32);
+  wr.addColorStop(0,'rgba(120,140,200,0.32)'); wr.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle = wr; ctx.fillRect(W/2,0,W/2,H);
+
+  // two figures, mirrored, facing the divide (longing)
+  const subs = (panel.composition && panel.composition.subjects) || [];
+  const left = subs[0] || {scale:'medium', y:0.95};
+  const right = subs[1] || {scale:'medium', y:0.95};
+  const [lw, lh] = SCALE_MAP[left.scale] || SCALE_MAP.medium;
+  drawHuman(ctx, W*0.30, H*(left.y||0.95), W*lw, H*lh, 'rgba(20,15,10,0.88)', 'right');
+  const [rw, rh] = SCALE_MAP[right.scale] || SCALE_MAP.medium;
+  drawHuman(ctx, W*0.70, H*(right.y||0.95), W*rw, H*rh, 'rgba(5,5,12,0.92)', 'left');
+
+  // dividing line
+  ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke();
+
+  // labels
+  ctx.fillStyle='rgba(80,60,30,0.6)'; ctx.font='7px ui-monospace'; ctx.textAlign='center';
+  ctx.fillText('THEN', W*0.25, 12);
+  ctx.fillStyle='rgba(180,190,220,0.6)';
+  ctx.fillText('NOW', W*0.75, 12);
+  ctx.textAlign='left';
+}
+
+function drawInsert(ctx, W, H, panel) {
+  // dark surround + circular spotlight on detail object
+  ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0,0,W,H);
+  const cx = W/2, cy = H/2, r = Math.min(W,H)*0.32;
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r*1.6);
+  g.addColorStop(0, '#e8dcc4'); g.addColorStop(0.6,'#9a8868'); g.addColorStop(1,'#0a0a0a');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+  // detail object (abstract) — a small object on a surface
+  ctx.fillStyle = 'rgba(20,15,10,0.85)';
+  ctx.fillRect(cx-r*0.3, cy-r*0.1, r*0.6, r*0.45); // box
+  ctx.beginPath(); ctx.arc(cx, cy-r*0.1, r*0.28, Math.PI, 0); ctx.fill(); // dome
+  // circle frame
+  ctx.strokeStyle = 'rgba(255,199,44,0.5)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+  ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.arc(cx, cy, r*1.18, 0, Math.PI*2); ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawOTS(ctx, W, H, panel) {
+  const comp = panel.composition || {};
+  const [topC, botC] = BG_COLORS[comp.bg_type] || BG_COLORS.warm_day;
+  const bg = ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0, topC); bg.addColorStop(1, botC);
+  ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+
+  // far subject (the one being looked at)
+  drawHuman(ctx, W*0.58, H*0.92, W*0.09, H*0.5, 'rgba(25,20,15,0.85)', 'left');
+
+  // foreground shoulder + head (over the shoulder) — big dark mass left
+  ctx.fillStyle = 'rgba(8,8,8,0.92)';
+  ctx.beginPath();
+  ctx.ellipse(W*0.18, H*0.42, W*0.16, H*0.22, 0, 0, Math.PI*2); // head
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  ctx.lineTo(0, H*0.55);
+  ctx.bezierCurveTo(W*0.12, H*0.55, W*0.30, H*0.70, W*0.34, H);
+  ctx.closePath();
+  ctx.fill();
+
+  // vignette handled by finishFrame
+}
+
+/* ════════════════════════════════════════════════════════════════
+   CLAUDE API — Storyboard generation
+   ════════════════════════════════════════════════════════════════ */
+
+const STORYBOARD_PROMPT = (script, settings) => `
+You are a professional storyboard artist and film director.
+Generate a complete storyboard breakdown for this scene.
+
+SCRIPT:
+${script}
+
+SETTINGS:
+- Scene: ${settings.title}
+- Panels requested: ${settings.panelCount}
+- Mood: ${settings.mood}
+- Reference film: ${settings.reference}
+- Aspect ratio: ${settings.aspectRatio}
+- Visual style: ${settings.visualStyle}
+
+Return ONLY a JSON object (no markdown) with this exact structure:
+{
+  "title": "scene title",
+  "synopsis": "2-sentence scene summary",
+  "total_duration_seconds": number,
+  "color_bible": {
+    "highlight": "#hex", "midtone": "#hex", "shadow": "#hex", "accent": "#hex",
+    "mood": "mood description", "film_stock": "e.g. Kodak Portra 400"
+  },
+  "panels": [
+    {
+      "id": "F01",
+      "shot_size": "ECU|CU|MCU|MS|MLS|WS|EWS|OTS|POV|INSERT|AERIAL",
+      "camera_angle": "Eye Level|Low Angle|High Angle|Bird's Eye|Dutch|Overhead",
+      "camera_movement": "Static|Pan L|Pan R|Tilt Up|Tilt Down|Dolly In|Dolly Out|Truck L|Truck R|Handheld|Crane Up|Crane Down|Zoom In|Zoom Out|Arc",
+      "lens_mm": "14|24|28|35|50|85|100|135|200",
+      "action": "What happens visually (1-2 sentences)",
+      "dialogue": "Spoken line or null",
+      "duration_seconds": number,
+      "composition": {
+        "bg_type": "warm_day|cool_day|golden_hour|night_interior|night_exterior|overcast",
+        "is_interior": true|false,
+        "horizon_y": 0.0 to 1.0,
+        "subjects": [{"id":"NAME","x":0.0-1.0,"y":0.0-1.0,"scale":"large|medium|small|tiny","facing":"left|right|camera|away"}],
+        "lighting": "key_left|key_right|backlit|toplit|ambient|practicals|window_right|window_left",
+        "foreground_element": "description or null",
+        "background_notes": "what's in the background"
+      },
+      "director_note": "note or null",
+      "special": null
+    }
+  ]
+}
+Make exactly ${settings.panelCount} panels.`;
+
+function getApiKey() {
+  return $('#apiKey').value.trim() || localStorage.getItem(LS_API) || '';
+}
+
+async function generateStoryboard() {
+  const script = $('#script').value.trim();
+  const settings = readSettings();
+  STATE.settings = settings;
+  const apiKey = getApiKey();
+
+  if (!script && !apiKey) {
+    // no script + no key → just (re)load demo with current settings
+    const demo = buildDemoStoryboard(settings);
+    applyStoryboard(demo);
+    toast('Loaded procedural demo storyboard');
+    return;
+  }
+
+  if (!apiKey) {
+    // procedural generation from the script locally
+    showLoading('Generating ' + settings.panelCount + ' panels...');
+    STATE.abort = false;
+    await fakeDelay(700);
+    if (STATE.abort) { hideLoading(); toast('Cancelled'); return; }
+    const demo = buildDemoStoryboard(settings, script);
+    applyStoryboard(demo);
+    hideLoading();
+    toast('Generated ' + demo.panels.length + ' panels (demo mode — add API key for AI)');
+    return;
+  }
+
+  showLoading('Generating ' + settings.panelCount + ' panels...');
+  STATE.abort = false;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4000,
+        messages: [{ role: 'user', content: STORYBOARD_PROMPT(script, settings) }]
+      })
+    });
+    if (STATE.abort) { hideLoading(); return; }
+    if (!res.ok) {
+      const errTxt = await res.text();
+      throw new Error('HTTP ' + res.status + ' — ' + errTxt.slice(0, 120));
+    }
+    const data = await res.json();
+    let text = data.content[0].text.replace(/```json|```/g, '').trim();
+    // grab JSON object boundaries defensively
+    const s = text.indexOf('{'), e = text.lastIndexOf('}');
+    if (s >= 0 && e >= 0) text = text.slice(s, e + 1);
+    const storyboard = JSON.parse(text);
+    storyboard.panels.forEach(normalizePanel);
+    applyStoryboard(storyboard);
+    toast('AI generated ' + storyboard.panels.length + ' panels');
+  } catch (err) {
+    showError('Generation failed: ' + err.message);
+    console.error(err);
+  } finally {
+    hideLoading();
+  }
+}
+
+function normalizePanel(p) {
+  p.composition = p.composition || {};
+  p.composition.subjects = p.composition.subjects || [];
+  if (p.composition.horizon_y == null) p.composition.horizon_y = 0.55;
+  if (p.composition.lighting == null) p.composition.lighting = 'ambient';
+  if (p.composition.bg_type == null) p.composition.bg_type = 'warm_day';
+  if (p.dialogue === undefined) p.dialogue = null;
+  return p;
+}
+
+async function regeneratePanel(panelId, note) {
+  const sb = STATE.storyboard;
+  const idx = sb.panels.findIndex(p => p.id === panelId);
+  if (idx < 0) return;
+  const orig = sb.panels[idx];
+  const apiKey = getApiKey();
+
+  if (!apiKey) {
+    // procedural re-shuffle
+    const variant = proceduralPanel(idx, sb.panels.length, STATE.settings, orig.id);
+    variant.id = orig.id;
+    if (note) variant.director_note = note;
+    sb.panels[idx] = normalizePanel(variant);
+    applyStoryboard(sb, true);
+    toast('Panel ' + orig.id + ' regenerated (demo)');
+    return;
+  }
+
+  toast('Regenerating ' + orig.id + '...');
+  try {
+    const prompt = `Regenerate only this ONE storyboard shot, keeping continuity with the scene "${sb.title}" (mood: ${sb.color_bible.mood}).
+Original shot: ${JSON.stringify(orig)}
+Director note: ${note || '(none — give a fresh take)'}.
+Return ONLY a single JSON object for ONE panel with the same structure (keep id "${orig.id}"). No markdown.`;
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6', max_tokens: 1200,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    let text = data.content[0].text.replace(/```json|```/g, '').trim();
+    const s = text.indexOf('{'), e = text.lastIndexOf('}');
+    if (s >= 0) text = text.slice(s, e + 1);
+    const np = normalizePanel(JSON.parse(text));
+    np.id = orig.id;
+    sb.panels[idx] = np;
+    applyStoryboard(sb, true);
+    toast('Panel ' + orig.id + ' regenerated');
+  } catch (err) {
+    showError('Regenerate failed: ' + err.message);
+  }
+}
+
+function fakeDelay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+/* ─── Loading UI ─── */
+function showLoading(txt) {
+  $('#loadingTxt').textContent = txt;
+  $('#loadingBox').classList.add('on');
+  $('#genBtn').disabled = true;
+  $('#genBtn').style.display = 'none';
+}
+function hideLoading() {
+  $('#loadingBox').classList.remove('on');
+  $('#genBtn').disabled = false;
+  $('#genBtn').style.display = '';
+}
+
+/* ════════════════════════════════════════════════════════════════
+   PROCEDURAL DEMO GENERATOR (no API key needed)
+   ════════════════════════════════════════════════════════════════ */
+
+const SHOT_SIZES = ['EWS','WS','MLS','MS','MCU','CU','ECU','OTS','POV','INSERT'];
+const ANGLES = ['Eye Level','Low Angle','High Angle','Dutch','Overhead'];
+const MOVES = ['Static','Pan R','Pan L','Dolly In','Dolly Out','Tilt Up','Handheld','Truck R','Zoom In'];
+const LENSES = ['24','28','35','50','85','100','135'];
+const BGS = ['warm_day','cool_day','golden_hour','night_interior','overcast'];
+const LIGHTS = ['window_left','window_right','backlit','toplit','practicals','key_left','ambient'];
+
+function proceduralPanel(i, total, settings, forceId) {
+  const r = (n) => pseudoRand(i * 13.7 + n * 1.31 + (forceId? forceId.charCodeAt(forceId.length-1):0));
+  const id = forceId || ('F' + String(i + 1).padStart(2, '0'));
+  const shot = SHOT_SIZES[Math.floor(r(1) * 7)];
+  const close = ['CU','ECU','MCU'].includes(shot);
+  const wide = ['EWS','WS','MLS'].includes(shot);
+  const scale = close ? 'large' : wide ? 'small' : 'medium';
+  const bg = BGS[Math.floor(r(2) * BGS.length)];
+  const interior = r(3) > 0.45;
+  const nSub = wide ? 2 : 1;
+  const subjects = [];
+  for (let s = 0; s < nSub; s++) {
+    subjects.push({
+      id: s === 0 ? 'A' : 'B',
+      x: 0.30 + s * 0.40 + (r(4 + s) - 0.5) * 0.1,
+      y: 0.88 + (r(6 + s) - 0.5) * 0.1,
+      scale: s === 0 ? scale : (scale === 'large' ? 'medium' : 'small'),
+      facing: s === 0 ? 'right' : 'left',
+    });
+  }
+  return {
+    id,
+    shot_size: shot,
+    camera_angle: ANGLES[Math.floor(r(7) * ANGLES.length)],
+    camera_movement: MOVES[Math.floor(r(8) * MOVES.length)],
+    lens_mm: LENSES[Math.floor(r(9) * LENSES.length)],
+    action: 'Beat ' + (i + 1) + ' — the subject moves through the space as the moment unfolds.',
+    dialogue: r(10) > 0.6 ? null : '...',
+    duration_seconds: 2 + Math.floor(r(11) * 5),
+    composition: {
+      bg_type: bg,
+      is_interior: interior,
+      horizon_y: 0.45 + r(12) * 0.2,
+      subjects,
+      lighting: LIGHTS[Math.floor(r(13) * LIGHTS.length)],
+      foreground_element: r(14) > 0.7 ? 'foreground silhouette' : null,
+      background_notes: 'environment supports the mood',
+    },
+    director_note: r(15) > 0.6 ? 'Hold the frame; let the silence breathe.' : null,
+    special: null,
+  };
+}
+
+function buildDemoStoryboard(settings, script) {
+  const count = parseInt(settings.panelCount) || 8;
+  const panels = [];
+  for (let i = 0; i < count; i++) panels.push(proceduralPanel(i, count, settings));
+  return {
+    title: settings.title || 'Untitled Scene',
+    synopsis: (script ? script.slice(0, 140) : 'A procedurally generated scene breakdown awaiting your direction.'),
+    total_duration_seconds: panels.reduce((a, p) => a + p.duration_seconds, 0),
+    color_bible: {
+      highlight: '#f0e4d0', midtone: '#c8a870', shadow: '#2a2436', accent: '#FA4616',
+      mood: settings.mood || 'Cinematic, evocative',
+      film_stock: 'Kodak Vision3 500T',
+    },
+    panels,
+  };
+}
+
+/* ─── The hand-authored sample MV storyboard (8 panels, split-screen concept) ─── */
+function buildSampleStoryboard() {
+  return {
+    title: 'คนละเวลา ห้องเดียว',
+    synopsis: 'In the same room across two timelines, a couple lives parallel mornings — together then, alone now. The split-screen holds them apart even as the frame keeps them close.',
+    total_duration_seconds: 31,
+    color_bible: {
+      highlight: '#F0E4D0', midtone: '#C8A870', shadow: '#23202E', accent: '#FA4616',
+      mood: 'Melancholy, bittersweet — warm sunlight bleeding into cold, lonely blue. Memory in amber, present in slate.',
+      film_stock: 'Kodak Portra 400 (warm) / CineStill 800T (cool)',
+    },
+    panels: [
+      {
+        id:'F01', shot_size:'EWS', camera_angle:'Eye Level', camera_movement:'Dolly In', lens_mm:'24',
+        action:'Establishing the bedroom at dawn. Curtains glow; the bed is a small island in a wide, quiet room.',
+        dialogue:null, duration_seconds:4,
+        composition:{ bg_type:'golden_hour', is_interior:true, horizon_y:0.5,
+          subjects:[{id:'BANK',x:0.5,y:0.78,scale:'tiny',facing:'camera'}],
+          lighting:'window_right', foreground_element:'bedframe silhouette', background_notes:'soft curtains, dust in light' },
+        director_note:'Open wide and lonely. The room should feel too big for one person.', special:null
+      },
+      {
+        id:'F02', shot_size:'MS', camera_angle:'Eye Level', camera_movement:'Static', lens_mm:'50',
+        action:'BANK sits on the edge of the bed, back to camera, head bowed in the morning light.',
+        dialogue:'ขอให้ผม... ได้อยู่ตรงนี้อีกครั้ง', duration_seconds:4,
+        composition:{ bg_type:'warm_day', is_interior:true, horizon_y:0.55,
+          subjects:[{id:'BANK',x:0.45,y:0.95,scale:'large',facing:'away'}],
+          lighting:'window_right', foreground_element:null, background_notes:'rumpled sheets, one pillow' },
+        director_note:'Warmth, but the empty side of the bed is in frame.', special:null
+      },
+      {
+        id:'F03', shot_size:'CU', camera_angle:'Eye Level', camera_movement:'Static', lens_mm:'85',
+        action:"Close on BANK's face — eyes closed, remembering. A faint, sad smile.",
+        dialogue:null, duration_seconds:3,
+        composition:{ bg_type:'golden_hour', is_interior:true, horizon_y:0.5,
+          subjects:[{id:'BANK',x:0.5,y:1.05,scale:'large',facing:'right'}],
+          lighting:'key_right', foreground_element:null, background_notes:'soft bokeh window' },
+        director_note:'The moment memory takes over.', special:null
+      },
+      {
+        id:'F04', shot_size:'OTS', camera_angle:'Eye Level', camera_movement:'Static', lens_mm:'50',
+        action:'Over BANK\'s shoulder — the other side of the bed, where SHE used to be. Empty now, sheets cold.',
+        dialogue:null, duration_seconds:3,
+        composition:{ bg_type:'cool_day', is_interior:true, horizon_y:0.55,
+          subjects:[{id:'SHE',x:0.6,y:0.92,scale:'small',facing:'camera'}],
+          lighting:'window_left', foreground_element:'BANK shoulder', background_notes:'empty pillow' },
+        director_note:'OTS into absence. The space where a person was.', special:'ots'
+      },
+      {
+        id:'F05', shot_size:'WS', camera_angle:'Eye Level', camera_movement:'Static', lens_mm:'35',
+        action:'THE CONCEPT SHOT. Split-screen: left, the warm past — the couple in bed together. Right, the cold present — BANK alone, same frame, same pose.',
+        dialogue:'เราเคยอยู่ห้องเดียวกัน... คนละเวลา', duration_seconds:5,
+        composition:{ bg_type:'warm_day', is_interior:true, horizon_y:0.55,
+          subjects:[{id:'PAST',x:0.3,y:0.95,scale:'medium',facing:'right'},{id:'NOW',x:0.7,y:0.95,scale:'medium',facing:'left'}],
+          lighting:'window_left', foreground_element:null, background_notes:'mirror composition across the divide' },
+        director_note:'HERO FRAME. Warm vs cool. Two times, one room. They almost touch across the seam.', special:'split_screen'
+      },
+      {
+        id:'F06', shot_size:'INSERT', camera_angle:'Overhead', camera_movement:'Static', lens_mm:'100',
+        action:"Insert: two coffee cups on the nightstand — but one is clean, untouched, dusty. Detail of what's gone.",
+        dialogue:null, duration_seconds:3,
+        composition:{ bg_type:'overcast', is_interior:true, horizon_y:0.5,
+          subjects:[], lighting:'toplit', foreground_element:null, background_notes:'nightstand, one ring stain' },
+        director_note:'Object tells the story. One cup for two people.', special:'insert_detail'
+      },
+      {
+        id:'F07', shot_size:'MLS', camera_angle:'High Angle', camera_movement:'Crane Up', lens_mm:'28',
+        action:'Crane lifts away from BANK as he lies back on the bed, arms out, taking the whole space — finally alone with it.',
+        dialogue:null, duration_seconds:5,
+        composition:{ bg_type:'cool_day', is_interior:true, horizon_y:0.4,
+          subjects:[{id:'BANK',x:0.5,y:0.7,scale:'medium',facing:'camera'}],
+          lighting:'window_left', foreground_element:null, background_notes:'floorboards, lifting view' },
+        director_note:'Rising god\'s-eye remove. Let him get small in the frame.', special:null
+      },
+      {
+        id:'F08', shot_size:'ECU', camera_angle:'Eye Level', camera_movement:'Dolly Out', lens_mm:'135',
+        action:"Extreme close on BANK's hand opening on the empty sheet, then pulling back to fist. Light fades to cool.",
+        dialogue:'...ก็แค่ขอให้ผม จำมันได้', duration_seconds:4,
+        composition:{ bg_type:'night_interior', is_interior:true, horizon_y:0.5,
+          subjects:[{id:'HAND',x:0.5,y:0.85,scale:'large',facing:'camera'}],
+          lighting:'practicals', foreground_element:'bedsheet folds', background_notes:'darkening room' },
+        director_note:'End on the hand. Warm memory finally going cold. Cut to black.', special:null
+      },
+    ],
+  };
+}
+
+/* ════════════════════════════════════════════════════════════════
+   RENDERING — Grid, panels, color bible, shot list
+   ════════════════════════════════════════════════════════════════ */
+
+function aspectDims(ratio) {
+  const map = { '16:9':[160,90], '2.39:1':[160,67], '4:3':[160,120], '1:1':[120,120] };
+  return map[ratio] || [160,100];
+}
+
+function renderStoryboard(sb) {
+  const grid = $('#grid');
+  grid.innerHTML = '';
+  const [aw, ah] = aspectDims(STATE.settings.aspectRatio || '16:9');
+
+  // header
+  $('#gh-title').textContent = sb.title;
+  $('#gh-panels').innerHTML = '<b>' + sb.panels.length + '</b> panels';
+  $('#gh-dur').innerHTML = '~<b>' + sb.total_duration_seconds + 's</b> total est.';
+
+  sb.panels.forEach((panel, idx) => {
+    grid.appendChild(buildPanelCard(panel, idx, aw, ah));
+  });
+}
+
+function buildPanelCard(panel, idx, aw, ah) {
+  const card = ce('div', 'panel-card');
+  card.dataset.id = panel.id;
+  card.draggable = true;
+  if (panel.id === STATE.selectedPanelId) card.classList.add('sel');
+
+  const wrap = ce('div', 'pc-canvas-wrap');
+  const cv = ce('canvas');
+  // hi-dpi crisp
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = aw * 2; cv.height = ah * 2;
+  cv.id = 'canvas-' + panel.id;
+  cv.style.aspectRatio = aw + '/' + ah;
+  wrap.appendChild(cv);
+
+  const badge = ce('div', 'pc-badge'); badge.textContent = panel.id;
+  const dur = ce('div', 'pc-dur'); dur.textContent = panel.duration_seconds + 's';
+  wrap.appendChild(badge); wrap.appendChild(dur);
+  if (panel.special) {
+    const sp = ce('div', 'pc-special'); sp.textContent = (panel.special || '').replace('_',' ');
+    wrap.appendChild(sp);
+  }
+  card.appendChild(wrap);
+
+  const body = ce('div', 'pc-body');
+  body.innerHTML = `
+    <div class="pc-line1">
+      <span class="pc-id">${panel.id}</span>
+      <span class="pc-shot">${panel.shot_size} · ${panel.lens_mm}mm</span>
+    </div>
+    <div class="pc-action">${escapeHtml(panel.action || '')}</div>
+    ${panel.dialogue && panel.dialogue !== '...' ? `<div class="pc-dialogue">"${escapeHtml(panel.dialogue)}"</div>` : ''}
+    <div class="pc-angle">${panel.camera_angle} · ${panel.camera_movement}</div>
+  `;
+  const tools = ce('div', 'pc-tools');
+  const bR = ce('button'); bR.innerHTML = '↻'; bR.title = 'Regenerate';
+  const bE = ce('button'); bE.innerHTML = '✎'; bE.title = 'Edit / details';
+  const bX = ce('button', 'del'); bX.innerHTML = '✕'; bX.title = 'Delete';
+  bR.onclick = e => { e.stopPropagation(); openRegen(panel.id); };
+  bE.onclick = e => { e.stopPropagation(); selectPanel(panel.id); };
+  bX.onclick = e => { e.stopPropagation(); deletePanel(panel.id); };
+  tools.append(bR, bE, bX);
+  body.appendChild(tools);
+  card.appendChild(body);
+
+  card.onclick = () => selectPanel(panel.id);
+
+  // drag reorder
+  card.addEventListener('dragstart', e => { card.classList.add('dragging'); e.dataTransfer.setData('text/plain', panel.id); });
+  card.addEventListener('dragend', () => card.classList.remove('dragging'));
+  card.addEventListener('dragover', e => { e.preventDefault(); card.classList.add('drag-over'); });
+  card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+  card.addEventListener('drop', e => {
+    e.preventDefault(); card.classList.remove('drag-over');
+    const fromId = e.dataTransfer.getData('text/plain');
+    reorderPanels(fromId, panel.id);
+  });
+
+  // draw after attach (needs canvas in DOM dims fine)
+  requestAnimationFrame(() => drawPanel(cv, panel));
+  return card;
+}
+
+function escapeHtml(s) {
+  return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+function reorderPanels(fromId, toId) {
+  if (fromId === toId) return;
+  const ps = STATE.storyboard.panels;
+  const fi = ps.findIndex(p => p.id === fromId);
+  const ti = ps.findIndex(p => p.id === toId);
+  if (fi < 0 || ti < 0) return;
+  const [moved] = ps.splice(fi, 1);
+  ps.splice(ti, 0, moved);
+  applyStoryboard(STATE.storyboard, true);
+}
+
+function deletePanel(id) {
+  const ps = STATE.storyboard.panels;
+  const i = ps.findIndex(p => p.id === id);
+  if (i < 0) return;
+  ps.splice(i, 1);
+  if (STATE.selectedPanelId === id) { STATE.selectedPanelId = null; STATE.rightMode = 'shotlist'; }
+  applyStoryboard(STATE.storyboard, true);
+  toast('Deleted ' + id);
+}
+
+/* ─── Color Bible ─── */
+function renderColorBible(cb) {
+  const roles = [['highlight','HIGH'],['midtone','MID'],['shadow','SHAD'],['accent','ACC']];
+  // sidebar
+  const side = $('#cbSideContent');
+  side.innerHTML = `
+    <div class="swatches">
+      ${roles.map(([k,l]) => `<div class="sw" style="background:${cb[k]}"><span class="lab">${l}</span></div>`).join('')}
+    </div>
+    <div class="cb-meta"><b>Mood:</b> ${escapeHtml(cb.mood)}<br><b>Stock:</b> ${escapeHtml(cb.film_stock)}</div>
+  `;
+  // full view
+  $('#cbv-title').textContent = (STATE.storyboard?.title || 'Color Bible');
+  $('#cbv-swatches').innerHTML = roles.map(([k,l]) =>
+    `<div class="cb-big-sw" style="background:${cb[k]}">
+       <span class="cnr">${l}</span>
+       <div><div class="role">${k}</div><div class="hex">${cb[k]}</div></div>
+     </div>`).join('');
+  $('#cbv-mood').textContent = cb.mood;
+  $('#cbv-stock').textContent = cb.film_stock;
+  $('#cbv-ref').textContent = $('#reference').value || '—';
+  $('#cbv-syn').textContent = STATE.storyboard?.synopsis || '—';
+}
+
+/* ─── Shot List (right sidebar) ─── */
+function renderShotList() {
+  if (STATE.rightMode === 'details' && STATE.selectedPanelId) { renderPanelDetails(); return; }
+  $('#rightTitle').textContent = 'Shot List';
+  const sb = STATE.storyboard;
+  $('#rightSub').textContent = sb ? sb.panels.length + ' shots' : '';
+  if (!sb) { $('#rightContent').innerHTML = ''; return; }
+
+  let panels = [...sb.panels];
+  if (STATE.sortKey) {
+    panels.sort((a, b) => {
+      let av = a[STATE.sortKey], bv = b[STATE.sortKey];
+      if (typeof av === 'number') return (av - bv) * STATE.sortDir;
+      return String(av).localeCompare(String(bv)) * STATE.sortDir;
+    });
+  }
+  const cols = [
+    ['id','#'], ['shot_size','SHOT'], ['camera_angle','ANGLE'],
+    ['lens_mm','LENS'], ['camera_movement','MOVE'], ['duration_seconds','SEC'], ['action','ACTION']
+  ];
+  const arrow = k => STATE.sortKey === k ? `<span class="arr">${STATE.sortDir>0?'▲':'▼'}</span>` : '';
+  let html = '<table class="shotlist"><thead><tr>';
+  cols.forEach(([k,l]) => html += `<th data-k="${k}">${l}${arrow(k)}</th>`);
+  html += '</tr></thead><tbody>';
+  panels.forEach(p => {
+    const sel = p.id === STATE.selectedPanelId ? ' class="sel"' : '';
+    html += `<tr data-id="${p.id}"${sel}>
+      <td class="tid">${p.id}</td>
+      <td class="tshot">${p.shot_size}</td>
+      <td>${p.camera_angle}</td>
+      <td>${p.lens_mm}</td>
+      <td>${p.camera_movement}</td>
+      <td>${p.duration_seconds}</td>
+      <td class="tact" title="${escapeHtml(p.action)}">${escapeHtml((p.action||'').slice(0,40))}</td>
+    </tr>`;
+  });
+  html += '</tbody></table><div class="sl-export"><button id="csvBtn">⤓ Export CSV</button></div>';
+  $('#rightContent').innerHTML = html;
+
+  $$('#rightContent th').forEach(th => th.onclick = () => {
+    const k = th.dataset.k;
+    if (STATE.sortKey === k) STATE.sortDir *= -1; else { STATE.sortKey = k; STATE.sortDir = 1; }
+    renderShotList();
+  });
+  $$('#rightContent tr[data-id]').forEach(tr => tr.onclick = () => selectPanel(tr.dataset.id));
+  $('#csvBtn').onclick = exportCSV;
+}
+
+/* ─── Panel Details (right sidebar editor) ─── */
+function renderPanelDetails() {
+  const sb = STATE.storyboard;
+  const p = sb.panels.find(x => x.id === STATE.selectedPanelId);
+  if (!p) { STATE.rightMode = 'shotlist'; renderShotList(); return; }
+  $('#rightTitle').textContent = 'Panel ' + p.id;
+  $('#rightSub').innerHTML = '<span style="cursor:pointer;color:var(--accent)" id="backToList">← list</span>';
+
+  const sel = (cur, opts) => opts.map(o => `<option ${o===cur?'selected':''}>${o}</option>`).join('');
+  const c = p.composition;
+  $('#rightContent').innerHTML = `
+    <div class="pd-frame"><canvas id="pd-canvas" width="320" height="180"></canvas></div>
+    <div class="pd-body">
+      <div class="pd-grid2">
+        <div class="pd-row"><label>Shot Size</label><select data-f="shot_size">${sel(p.shot_size,['ECU','CU','MCU','MS','MLS','WS','EWS','OTS','POV','INSERT','AERIAL'])}</select></div>
+        <div class="pd-row"><label>Lens</label><select data-f="lens_mm">${sel(String(p.lens_mm),['14','24','28','35','50','85','100','135','200'])}</select></div>
+      </div>
+      <div class="pd-grid2">
+        <div class="pd-row"><label>Angle</label><select data-f="camera_angle">${sel(p.camera_angle,["Eye Level","Low Angle","High Angle","Bird's Eye","Dutch","Overhead"])}</select></div>
+        <div class="pd-row"><label>Movement</label><select data-f="camera_movement">${sel(p.camera_movement,['Static','Pan L','Pan R','Tilt Up','Tilt Down','Dolly In','Dolly Out','Truck L','Truck R','Handheld','Crane Up','Crane Down','Zoom In','Zoom Out','Arc'])}</select></div>
+      </div>
+      <div class="pd-row"><label>Action</label><textarea data-f="action">${escapeHtml(p.action||'')}</textarea></div>
+      <div class="pd-row"><label>Dialogue</label><input data-f="dialogue" value="${escapeHtml(p.dialogue||'')}"></div>
+      <div class="pd-grid2">
+        <div class="pd-row"><label>Duration (s)</label><input type="number" data-f="duration_seconds" value="${p.duration_seconds}"></div>
+        <div class="pd-row"><label>Special</label><select data-f="special">${sel(p.special||'',['','split_screen','insert_detail','ots'])}</select></div>
+      </div>
+      <div class="pd-grid2">
+        <div class="pd-row"><label>Background</label><select data-cf="bg_type">${sel(c.bg_type,['warm_day','cool_day','golden_hour','night_interior','night_exterior','overcast'])}</select></div>
+        <div class="pd-row"><label>Lighting</label><select data-cf="lighting">${sel(c.lighting,['key_left','key_right','backlit','toplit','ambient','practicals','window_right','window_left'])}</select></div>
+      </div>
+      <div class="pd-row"><label>Director Note</label><textarea data-f="director_note">${escapeHtml(p.director_note||'')}</textarea></div>
+      <button class="pd-save" id="pdSave">✓ Apply Changes</button>
+      <div class="mini-btns" style="margin-top:8px">
+        <button id="pdRegen">↻ Regenerate</button>
+        <button id="pdDel" style="color:var(--secondary)">✕ Delete</button>
+      </div>
+    </div>
+  `;
+  requestAnimationFrame(() => drawPanel($('#pd-canvas'), p));
+
+  $('#backToList').onclick = () => { STATE.rightMode = 'shotlist'; renderShotList(); };
+  $('#pdSave').onclick = () => {
+    $$('#rightContent [data-f]').forEach(el => {
+      const f = el.dataset.f;
+      let v = el.value;
+      if (f === 'duration_seconds') v = parseInt(v) || 0;
+      if (f === 'special' && v === '') v = null;
+      if (f === 'dialogue' && v === '') v = null;
+      if (f === 'director_note' && v === '') v = null;
+      p[f] = v;
+    });
+    $$('#rightContent [data-cf]').forEach(el => { p.composition[el.dataset.cf] = el.value; });
+    applyStoryboard(sb, true);
+    toast('Panel ' + p.id + ' updated');
+  };
+  $('#pdRegen').onclick = () => openRegen(p.id);
+  $('#pdDel').onclick = () => deletePanel(p.id);
+  // live preview on bg/lighting change
+  $$('#rightContent [data-cf], #rightContent [data-f="special"]').forEach(el => el.onchange = () => {
+    const preview = JSON.parse(JSON.stringify(p));
+    $$('#rightContent [data-cf]').forEach(e2 => preview.composition[e2.dataset.cf] = e2.value);
+    const sp = $('#rightContent [data-f="special"]').value;
+    preview.special = sp || null;
+    drawPanel($('#pd-canvas'), preview);
+  });
+}
+
+function selectPanel(id) {
+  STATE.selectedPanelId = id;
+  STATE.rightMode = 'details';
+  $('#right').classList.remove('collapsed');
+  renderShotList();
+  $$('.panel-card').forEach(c => c.classList.toggle('sel', c.dataset.id === id));
+}
+
+/* ════════════════════════════════════════════════════════════════
+   PDF EXPORT  (HERO FEATURE)
+   ════════════════════════════════════════════════════════════════ */
+
+function exportPDF() {
+  const sb = STATE.storyboard;
+  if (!sb) { showError('Nothing to export'); return; }
+  if (!window.jspdf) { showError('jsPDF not loaded'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+  const COLS = 3, ROWS = 3;
+  const pageW = 297, pageH = 210;
+  const margin = 10, headerH = 16;
+  const cellW = (pageW - margin * 2 - (COLS - 1) * 4) / COLS;
+  const cellH = (pageH - margin * 2 - headerH - (ROWS - 1) * 4) / ROWS;
+  const frameH = cellH * 0.60;
+
+  const panels = sb.panels;
+  let panelIdx = 0, pageNum = 1;
+  const dateStr = new Date().toLocaleDateString();
+  const totalPages = Math.ceil(panels.length / (COLS * ROWS));
+
+  while (panelIdx < panels.length) {
+    if (pageNum > 1) doc.addPage();
+
+    // header bar
+    doc.setFillColor(15, 15, 15);
+    doc.rect(0, 0, pageW, headerH, 'F');
+    doc.setTextColor(255, 199, 44);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text(sb.title, margin, 10);
+    doc.setTextColor(100, 100, 100);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Director: ${PROJECT.director}  |  Date: ${dateStr}  |  Page ${pageNum}/${totalPages}`,
+      pageW - margin, 10, { align: 'right' });
+
+    for (let r = 0; r < ROWS && panelIdx < panels.length; r++) {
+      for (let c = 0; c < COLS && panelIdx < panels.length; c++) {
+        const panel = panels[panelIdx];
+        const x = margin + c * (cellW + 4);
+        const y = margin + headerH + 2 + r * (cellH + 4);
+
+        // render a fresh hi-res canvas for crisp PDF output
+        const canvas = renderExportCanvas(panel);
+        const imgData = canvas.toDataURL('image/jpeg', 0.88);
+
+        // cell frame
+        doc.setDrawColor(40, 40, 40);
+        doc.setLineWidth(0.3);
+        doc.rect(x, y, cellW, cellH);
+
+        // image
+        doc.addImage(imgData, 'JPEG', x, y, cellW, frameH);
+
+        // metadata
+        const ty = y + frameH + 4;
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(250, 70, 22);
+        doc.text(panel.id, x + 1, ty);
+        doc.setTextColor(60, 60, 60);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6.5);
+        doc.text(`${panel.shot_size} · ${panel.lens_mm}mm · ${panel.camera_movement} · ${panel.duration_seconds}s`, x + 11, ty);
+
+        // action wrap
+        doc.setFontSize(6.5);
+        doc.setTextColor(80, 80, 80);
+        const lines = doc.splitTextToSize(panel.action || '', cellW - 2);
+        doc.text(lines.slice(0, 2), x + 1, ty + 4.5);
+
+        // dialogue
+        if (panel.dialogue && panel.dialogue !== '...') {
+          doc.setTextColor(40, 40, 40);
+          doc.setFont('helvetica', 'italic');
+          const dl = doc.splitTextToSize(`"${panel.dialogue}"`, cellW - 2);
+          doc.text(dl.slice(0, 1), x + 1, ty + 11.5);
+          doc.setFont('helvetica', 'normal');
+        }
+        panelIdx++;
+      }
+    }
+
+    // footer
+    doc.setFontSize(7);
+    doc.setTextColor(120, 120, 120);
+    doc.text('PHANTOM CREW OS · AI STORYBOARD MACHINE', pageW / 2, pageH - 4, { align: 'center' });
+    pageNum++;
+  }
+
+  // color bible page
+  doc.addPage();
+  doc.setFillColor(15, 15, 15); doc.rect(0, 0, pageW, headerH, 'F');
+  doc.setTextColor(255, 199, 44); doc.setFontSize(11); doc.setFont('helvetica', 'bold');
+  doc.text('COLOR BIBLE — ' + sb.title, margin, 10);
+  const cb = sb.color_bible;
+  const roles = [['highlight','HIGHLIGHT'],['midtone','MIDTONE'],['shadow','SHADOW'],['accent','ACCENT']];
+  const swW = 50, swH = 50, swY = 30;
+  roles.forEach(([k, l], i) => {
+    const sx = margin + i * (swW + 8);
+    const rgb = hexToRgb(cb[k]);
+    doc.setFillColor(rgb[0], rgb[1], rgb[2]);
+    doc.rect(sx, swY, swW, swH, 'F');
+    doc.setTextColor(40, 40, 40); doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+    doc.text(l, sx, swY + swH + 6);
+    doc.setFont('helvetica', 'normal'); doc.setTextColor(90, 90, 90);
+    doc.text(cb[k], sx, swY + swH + 11);
+  });
+  doc.setTextColor(40, 40, 40); doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+  doc.text('Mood', margin, 110);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(70, 70, 70);
+  doc.text(doc.splitTextToSize(cb.mood, 260), margin, 116);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(40, 40, 40);
+  doc.text('Film Stock', margin, 135);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(70, 70, 70);
+  doc.text(cb.film_stock, margin, 141);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(40, 40, 40);
+  doc.text('Synopsis', margin, 156);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(70, 70, 70);
+  doc.text(doc.splitTextToSize(sb.synopsis || '', 260), margin, 162);
+  doc.setFontSize(7); doc.setTextColor(120, 120, 120);
+  doc.text('PHANTOM CREW OS · AI STORYBOARD MACHINE', pageW / 2, pageH - 4, { align: 'center' });
+
+  const safeTitle = (sb.title || 'storyboard').replace(/[^a-z0-9]/gi, '_').slice(0, 30);
+  doc.save(`storyboard-${safeTitle}-${Date.now()}.pdf`);
+  toast('PDF exported · ' + (totalPages + 1) + ' pages');
+}
+
+function renderExportCanvas(panel) {
+  const [aw, ah] = aspectDims(STATE.settings.aspectRatio || '16:9');
+  const cv = ce('canvas');
+  cv.width = aw * 4; cv.height = ah * 4; // hi-res for print
+  drawPanel(cv, panel);
+  return cv;
+}
+
+function hexToRgb(hex) {
+  hex = (hex || '#000').replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  const n = parseInt(hex, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+/* ─── CSV export ─── */
+function exportCSV() {
+  const sb = STATE.storyboard;
+  if (!sb) return;
+  const head = ['ID','Shot','Angle','Lens','Movement','Duration','Action','Dialogue','Director Note'];
+  const rows = sb.panels.map(p => [
+    p.id, p.shot_size, p.camera_angle, p.lens_mm, p.camera_movement,
+    p.duration_seconds, p.action, p.dialogue || '', p.director_note || ''
+  ]);
+  const csv = [head, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  download(csv, `shotlist-${(sb.title||'scene').replace(/[^a-z0-9]/gi,'_')}.csv`, 'text/csv');
+  toast('Shot list CSV exported');
+}
+
+function download(content, filename, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = ce('a'); a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   STATE APPLY + PERSISTENCE
+   ════════════════════════════════════════════════════════════════ */
+
+function applyStoryboard(sb, keepSelection) {
+  STATE.storyboard = sb;
+  if (!keepSelection) STATE.selectedPanelId = null;
+  renderStoryboard(sb);
+  renderColorBible(sb.color_bible);
+  renderShotList();
+  saveToLocalStorage(sb);
+}
+
+function readSettings() {
+  return {
+    title: $('#sceneTitle').value,
+    panelCount: $('#panelCount .sel')?.dataset.v || '8',
+    aspectRatio: $('#aspect .sel')?.dataset.v || '16:9',
+    visualStyle: $('#visualStyle').value,
+    reference: $('#reference').value,
+    mood: $('#mood').value,
+  };
+}
+
+function loadSettings(s) {
+  if (!s) return;
+  $('#sceneTitle').value = s.title || '';
+  $('#reference').value = s.reference || '';
+  $('#mood').value = s.mood || '';
+  if (s.visualStyle) $('#visualStyle').value = s.visualStyle;
+  setChip('#panelCount', s.panelCount || '8');
+  setChip('#aspect', s.aspectRatio || '16:9');
+}
+function setChip(group, val) {
+  $$(group + ' .chip').forEach(c => c.classList.toggle('sel', c.dataset.v === String(val)));
+}
+
+/* localStorage: projects (up to 10) */
+function getProjects() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch { return []; }
+}
+function saveProjects(list) { localStorage.setItem(LS_KEY, JSON.stringify(list.slice(0, 10))); }
+
+function saveToLocalStorage(sb) {
+  const projects = getProjects();
+  const name = $('#projName').value || sb.title;
+  const record = { name, settings: STATE.settings, storyboard: sb, ts: Date.now() };
+  const existing = projects.findIndex(p => p.name === name);
+  if (existing >= 0) projects[existing] = record; else projects.unshift(record);
+  saveProjects(projects);
+  localStorage.setItem(LS_CUR, name);
+  renderProjectList();
+}
+
+function renderProjectList() {
+  const projects = getProjects();
+  const cur = localStorage.getItem(LS_CUR);
+  const el = $('#projList');
+  if (!projects.length) { el.innerHTML = '<div class="cb-empty" style="padding:4px 0">No saved projects yet.</div>'; return; }
+  el.innerHTML = projects.map(p =>
+    `<div class="proj-item ${p.name===cur?'active':''}" data-name="${escapeHtml(p.name)}">
+       <span>${p.name === cur ? '▸ ' : ''}${escapeHtml(p.name)} · ${p.storyboard.panels.length}p</span>
+       <span class="pdel" data-del="${escapeHtml(p.name)}">✕</span>
+     </div>`).join('');
+  $$('#projList .proj-item').forEach(it => it.onclick = e => {
+    if (e.target.dataset.del !== undefined) {
+      const list = getProjects().filter(p => p.name !== e.target.dataset.del);
+      saveProjects(list); renderProjectList(); toast('Project deleted'); return;
+    }
+    loadProject(it.dataset.name);
+  });
+}
+
+function loadProject(name) {
+  const p = getProjects().find(x => x.name === name);
+  if (!p) return;
+  $('#projName').value = p.name;
+  STATE.settings = p.settings || readSettings();
+  loadSettings(p.settings);
+  localStorage.setItem(LS_CUR, name);
+  STATE.selectedPanelId = null; STATE.rightMode = 'shotlist';
+  STATE.storyboard = p.storyboard;
+  renderStoryboard(p.storyboard);
+  renderColorBible(p.storyboard.color_bible);
+  renderShotList();
+  renderProjectList();
+  toast('Loaded "' + name + '"');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   VIEW / TAB switching
+   ════════════════════════════════════════════════════════════════ */
+function switchView(v) {
+  $$('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+  $('#gridView').classList.toggle('on', v === 'grid');
+  $('#cbView').classList.toggle('on', v === 'cb');
+}
+
+/* ─── Regenerate modal ─── */
+let regenTargetId = null;
+function openRegen(id) {
+  regenTargetId = id;
+  $('#regenTitle').textContent = '↻ Regenerate Panel ' + id;
+  $('#regenNote').value = '';
+  $('#regenModal').classList.add('on');
+  setTimeout(() => $('#regenNote').focus(), 50);
+}
+function closeRegen() { $('#regenModal').classList.remove('on'); }
+
+/* ════════════════════════════════════════════════════════════════
+   EVENT WIRING
+   ════════════════════════════════════════════════════════════════ */
+function wire() {
+  // script counts
+  const sc = $('#script');
+  const updateCount = () => {
+    const t = sc.value;
+    $('#charCount').textContent = t.length + ' chars';
+    $('#wordCount').textContent = (t.trim() ? t.trim().split(/\s+/).length : 0) + ' words';
+  };
+  sc.addEventListener('input', updateCount); updateCount();
+
+  // chip groups
+  $$('#panelCount .chip, #aspect .chip').forEach(chip => chip.onclick = () => {
+    setChip('#' + chip.parentElement.id, chip.dataset.v);
+    if (chip.parentElement.id === 'aspect' && STATE.storyboard) {
+      STATE.settings.aspectRatio = chip.dataset.v;
+      renderStoryboard(STATE.storyboard);
+    }
+  });
+
+  // generate
+  $('#genBtn').onclick = generateStoryboard;
+  $('#cancelBtn').onclick = () => { STATE.abort = true; hideLoading(); toast('Cancelled'); };
+
+  // api key persistence
+  $('#apiKey').value = localStorage.getItem(LS_API) || '';
+  $('#apiKey').addEventListener('change', e => localStorage.setItem(LS_API, e.target.value.trim()));
+
+  // tabs
+  $$('.tab-btn').forEach(b => b.onclick = () => switchView(b.dataset.view));
+  const _epb = $('#exportPdfBtn'); if (_epb) _epb.onclick = exportPDF;
+
+  // column toggle
+  $$('#colToggle button').forEach(b => b.onclick = () => setCols(parseInt(b.dataset.c)));
+  // day/night
+  $$('#dnToggle button').forEach(b => b.onclick = () => {
+    STATE.dayNight = b.dataset.dn;
+    $$('#dnToggle button').forEach(x => x.classList.toggle('on', x === b));
+  });
+
+  // copy palette
+  $('#copyPaletteBtn').onclick = () => {
+    const cb = STATE.storyboard?.color_bible; if (!cb) return;
+    const payload = { highlight: cb.highlight, midtone: cb.midtone, shadow: cb.shadow, accent: cb.accent };
+    navigator.clipboard.writeText(JSON.stringify(payload, null, 2))
+      .then(() => toast('Palette copied to clipboard'))
+      .catch(() => toast('Copy failed', true));
+  };
+
+  // regen modal
+  $('#regenCancel').onclick = closeRegen;
+  $('#regenGo').onclick = () => { const note = $('#regenNote').value.trim(); closeRegen(); regeneratePanel(regenTargetId, note); };
+  $('#regenModal').onclick = e => { if (e.target.id === 'regenModal') closeRegen(); };
+
+  // projects
+  $('#newProjBtn').onclick = () => {
+    const name = 'Project ' + (getProjects().length + 1);
+    $('#projName').value = name;
+    const sb = buildDemoStoryboard(readSettings());
+    STATE.settings = readSettings();
+    applyStoryboard(sb);
+    toast('New project created');
+  };
+  $('#exportJsonBtn').onclick = () => {
+    if (!STATE.storyboard) return;
+    const payload = { name: $('#projName').value, settings: STATE.settings, storyboard: STATE.storyboard };
+    download(JSON.stringify(payload, null, 2), ($('#projName').value || 'project') + '.json', 'application/json');
+    toast('Project JSON exported');
+  };
+  $('#importJsonBtn').onclick = () => $('#importFile').click();
+  $('#importFile').onchange = e => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        const sb = data.storyboard || data;
+        sb.panels.forEach(normalizePanel);
+        if (data.name) $('#projName').value = data.name;
+        if (data.settings) { STATE.settings = data.settings; loadSettings(data.settings); }
+        else STATE.settings = readSettings();
+        applyStoryboard(sb);
+        toast('Imported "' + (data.name || sb.title) + '"');
+      } catch (err) { showError('Import failed: ' + err.message); }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  // project name save
+  $('#projName').addEventListener('change', () => { if (STATE.storyboard) saveToLocalStorage(STATE.storyboard); });
+
+  // keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+    if (e.key === 'Escape') { closeRegen(); return; }
+    if (typing) return;
+    const k = e.key.toLowerCase();
+    if (k === 'g') { e.preventDefault(); generateStoryboard(); }
+    else if (k === 'e') { e.preventDefault(); exportPDF(); }
+    else if (k === 'r' && STATE.selectedPanelId) { e.preventDefault(); openRegen(STATE.selectedPanelId); }
+    else if (k === '1') setCols(2);
+    else if (k === '2') setCols(3);
+    else if (k === '3') setCols(4);
+    else if (k === 'delete' && STATE.selectedPanelId) deletePanel(STATE.selectedPanelId);
+  });
+}
+
+function setCols(n) {
+  STATE.cols = n;
+  const grid = $('#grid');
+  grid.classList.remove('cols2', 'cols4');
+  if (n === 2) grid.classList.add('cols2');
+  if (n === 4) grid.classList.add('cols4');
+  $$('#colToggle button').forEach(b => b.classList.toggle('on', parseInt(b.dataset.c) === n));
+}
+
+/* ════════════════════════════════════════════════════════════════
+   BOOT
+   ════════════════════════════════════════════════════════════════ */
+function boot() {
+  wire();
+  // load last project or sample
+  const cur = localStorage.getItem(LS_CUR);
+  const projects = getProjects();
+  if (cur && projects.find(p => p.name === cur)) {
+    loadProject(cur);
+  } else {
+    const sb = buildSampleStoryboard();
+    STATE.settings = readSettings();
+    applyStoryboard(sb);
+  }
+  renderProjectList();
+}
+
+document.addEventListener('DOMContentLoaded', boot);
+</script>
+
+<!-- ════════════════════════════════════════════════════════════════
+     v2 FEATURE LAYER — 10 enhancements, additive over the core engine
+     ════════════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+'use strict';
+
+/* ─── multi-scene container (#6) ─── */
+let APP = { name:'', director:'MEATBALL-007', scenes:[], active:0, readOnly:false };
+function curScene(){ return APP.scenes[APP.active]; }
+
+/* extra UI state */
+STATE.overlays = { thirds:false, center:false, safe:false, fov:false };
+
+/* ════════ FUNCTION WRAPPERS (hook the core engine) ════════ */
+
+// (#7) framing overlays — extend finishFrame
+const _finishFrame = finishFrame;
+finishFrame = function(ctx, W, H, panel){
+  _finishFrame(ctx, W, H, panel);
+  drawOverlays(ctx, W, H, panel);
+};
+
+// (#1) AI image art — extend drawPanel to paint returned frames
+const IMG_CACHE = new Map();
+function getPanelImg(panel){
+  if(!panel.image) return null;
+  let rec = IMG_CACHE.get(panel.id);
+  if(!rec || rec.src !== panel.image){
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = panel.image;
+    rec = { src: panel.image, img };
+    IMG_CACHE.set(panel.id, rec);
+  }
+  return rec.img;
+}
+function drawCover(ctx, img, W, H){
+  const ir = img.naturalWidth / img.naturalHeight, fr = W / H;
+  let dw, dh;
+  if(ir > fr){ dh = H; dw = H * ir; } else { dw = W; dh = W / ir; }
+  ctx.drawImage(img, (W-dw)/2, (H-dh)/2, dw, dh);
+}
+const _drawPanel = drawPanel;
+drawPanel = function(canvas, panel){
+  if(panel.image){
+    const img = getPanelImg(panel);
+    if(img && img.complete && img.naturalWidth){
+      const ctx = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      ctx.clearRect(0,0,W,H);
+      try { drawCover(ctx, img, W, H); } catch(e){}
+      finishFrame(ctx, W, H, panel);
+      return;
+    } else if(img){
+      img.onload = () => { try { drawPanel(canvas, panel); } catch(e){} };
+    }
+  }
+  _drawPanel(canvas, panel);
+};
+
+// (#1 badge) extend panel cards with an AI-art button + badge
+const _buildPanelCard = buildPanelCard;
+buildPanelCard = function(panel, idx, aw, ah){
+  const card = _buildPanelCard(panel, idx, aw, ah);
+  const tools = card.querySelector('.pc-tools');
+  if(tools){
+    const b = document.createElement('button');
+    b.innerHTML = '✦'; b.title = 'Generate AI frame art';
+    b.onclick = e => { e.stopPropagation(); genPanelImage(panel.id); };
+    tools.insertBefore(b, tools.firstChild);
+  }
+  if(panel.image){
+    const w = card.querySelector('.pc-canvas-wrap');
+    const bd = document.createElement('div'); bd.className = 'pc-imgbadge'; bd.textContent = 'AI ART';
+    if(w) w.appendChild(bd);
+  }
+  return card;
+};
+
+// (#6) keep active scene + sequence chrome in sync on every render
+const _applyStoryboard = applyStoryboard;
+applyStoryboard = function(sb, keep){
+  if(curScene()) curScene().storyboard = sb;
+  _applyStoryboard(sb, keep);
+  renderSceneBar(); updateSeqRuntime();
+};
+
+// (#6) scene-aware persistence
+const _saveToLocalStorage = saveToLocalStorage;
+saveToLocalStorage = function(sb){
+  if(!APP.scenes.length) return _saveToLocalStorage(sb);
+  if(curScene()) curScene().storyboard = sb || STATE.storyboard;
+  if(APP.readOnly) return;
+  const projects = getProjects();
+  const name = $('#projName').value || APP.name || sb.title;
+  APP.name = name;
+  const record = { name, director:APP.director, settings: STATE.settings,
+                   storyboard: STATE.storyboard, scenes: APP.scenes, active: APP.active, ts: Date.now() };
+  const i = projects.findIndex(p => p.name === name);
+  if(i >= 0) projects[i] = record; else projects.unshift(record);
+  saveProjects(projects);
+  localStorage.setItem(LS_CUR, name);
+  renderProjectList();
+};
+
+// (#6) scene-aware load
+loadProject = function(name){
+  const p = getProjects().find(x => x.name === name);
+  if(!p) return;
+  $('#projName').value = p.name;
+  APP.name = p.name; APP.director = p.director || 'MEATBALL-007'; APP.readOnly = false;
+  if(p.scenes && p.scenes.length){ APP.scenes = p.scenes; APP.active = Math.min(p.active||0, p.scenes.length-1); }
+  else { APP.scenes = [{ settings: p.settings || readSettings(), storyboard: p.storyboard }]; APP.active = 0; }
+  setReadOnly(false);
+  localStorage.setItem(LS_CUR, name);
+  activateScene(APP.active, true);
+  renderProjectList();
+  toast('Loaded "' + name + '"');
+};
+
+// (#3 + comments) augment the panel details editor
+const _renderPanelDetails = renderPanelDetails;
+renderPanelDetails = function(){
+  _renderPanelDetails();
+  setupInlineEdit();
+  injectComments();
+};
+
+/* ════════ (#6) MULTI-SCENE ════════ */
+function activateScene(i, silent){
+  if(i < 0 || i >= APP.scenes.length) return;
+  APP.active = i;
+  const sc = APP.scenes[i];
+  STATE.settings = sc.settings || readSettings();
+  loadSettings(sc.settings);
+  STATE.storyboard = sc.storyboard;
+  STATE.selectedPanelId = null; STATE.rightMode = 'shotlist';
+  renderStoryboard(sc.storyboard);
+  renderColorBible(sc.storyboard.color_bible);
+  renderShotList();
+  renderSceneBar(); updateSeqRuntime();
+  if(!silent && !APP.readOnly) saveToLocalStorage(sc.storyboard);
+}
+function renderSceneBar(){
+  const wrap = $('#sceneChips');
+  if(!wrap) return;
+  wrap.innerHTML = APP.scenes.map((s,i) =>
+    `<div class="scene-chip ${i===APP.active?'active':''}" data-i="${i}">
+       <span>S${i+1} · ${escapeHtml((s.storyboard.title||'Scene').slice(0,18))}</span>
+       ${APP.scenes.length>1?`<span class="sx" data-del="${i}">✕</span>`:''}
+     </div>`).join('');
+  $$('#sceneChips .scene-chip').forEach(ch => ch.onclick = e => {
+    if(e.target.dataset.del !== undefined){
+      if(APP.readOnly) return toast('Read-only view', true);
+      const di = +e.target.dataset.del;
+      APP.scenes.splice(di, 1);
+      if(APP.active >= APP.scenes.length) APP.active = APP.scenes.length - 1;
+      activateScene(APP.active);
+      return;
+    }
+    activateScene(+ch.dataset.i);
+  });
+}
+function updateSeqRuntime(){
+  const total = APP.scenes.reduce((a,s) => a + (s.storyboard.total_duration_seconds||0), 0);
+  const panels = APP.scenes.reduce((a,s) => a + (s.storyboard.panels?.length||0), 0);
+  const el = $('#seqRuntime');
+  if(el) el.innerHTML = `${APP.scenes.length} scene${APP.scenes.length>1?'s':''} · <b>${panels}</b> panels · <b>${total}s</b> total`;
+}
+function addScene(){
+  if(APP.readOnly) return toast('Read-only view', true);
+  const settings = readSettings();
+  settings.title = 'Scene ' + (APP.scenes.length + 1);
+  const sb = buildDemoStoryboard(settings);
+  sb.title = settings.title;
+  APP.scenes.push({ settings, storyboard: sb });
+  activateScene(APP.scenes.length - 1);
+  toast('Scene added');
+}
+
+/* ════════ (#7) FRAMING OVERLAYS ════════ */
+function drawOverlays(ctx, W, H, panel){
+  const o = STATE.overlays;
+  if(!o.thirds && !o.center && !o.safe && !o.fov) return;
+  ctx.save();
+  ctx.lineWidth = Math.max(1, W/320);
+  if(o.thirds){
+    ctx.strokeStyle = 'rgba(255,199,44,0.35)';
+    [1/3,2/3].forEach(f => {
+      ctx.beginPath(); ctx.moveTo(W*f,0); ctx.lineTo(W*f,H); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,H*f); ctx.lineTo(W,H*f); ctx.stroke();
+    });
+  }
+  if(o.center){
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    const c = W*0.03;
+    ctx.beginPath(); ctx.moveTo(W/2-c,H/2); ctx.lineTo(W/2+c,H/2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W/2,H/2-c); ctx.lineTo(W/2,H/2+c); ctx.stroke();
+  }
+  if(o.safe){
+    ctx.strokeStyle = 'rgba(255,255,255,0.32)';
+    [0.9,0.8].forEach(s => ctx.strokeRect(W*(1-s)/2, H*(1-s)/2, W*s, H*s));
+  }
+  if(o.fov){
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(W/2-W*0.16, 2, W*0.32, H*0.085);
+    ctx.fillStyle = 'rgba(255,199,44,0.95)';
+    ctx.font = `bold ${Math.round(H*0.06)}px ui-monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText(`◎ ${panel.lens_mm}mm`, W/2, H*0.075);
+    ctx.textAlign = 'left';
+  }
+  ctx.restore();
+}
+function toggleOverlay(name){
+  STATE.overlays[name] = !STATE.overlays[name];
+  $$('#ovlToggle button').forEach(b => b.classList.toggle('on', STATE.overlays[b.dataset.ovl]));
+  if(STATE.storyboard) renderStoryboard(STATE.storyboard);
+  if(STATE.rightMode === 'details') renderPanelDetails();
+}
+
+/* ════════ (#3) INLINE PANEL EDITING (drag subjects + horizon) ════════ */
+function setupInlineEdit(){
+  const cv = $('#pd-canvas');
+  if(!cv) return;
+  cv.classList.add('editing');
+  const frame = cv.closest('.pd-frame');
+  if(frame && !frame.querySelector('.pd-edit-badge')){
+    const badge = document.createElement('div');
+    badge.className = 'pd-edit-badge'; badge.textContent = 'DRAG TO POSE';
+    frame.appendChild(badge);
+  }
+  const getP = () => STATE.storyboard.panels.find(x => x.id === STATE.selectedPanelId);
+  const redraw = () => { const p = getP(); if(!p) return; drawPanel(cv, p); drawHandles(cv, p); };
+  requestAnimationFrame(redraw); // after _renderPanelDetails' own rAF so handles stay on top
+
+  let drag = null;
+  const toFrac = e => {
+    const r = cv.getBoundingClientRect();
+    return { x: Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),
+             y: Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)) };
+  };
+  cv.onpointerdown = e => {
+    const p = getP(); if(!p) return;
+    const f = toFrac(e);
+    // hit-test subjects
+    let hit = null, best = 0.08;
+    (p.composition.subjects||[]).forEach((s,si) => {
+      const d = Math.hypot((s.x||0.5)-f.x, (s.y||0.9)-f.y);
+      if(d < best){ best = d; hit = { type:'subj', si }; }
+    });
+    if(!hit && Math.abs(f.y - (p.composition.horizon_y||0.55)) < 0.05){ hit = { type:'horizon' }; }
+    if(hit){ drag = hit; cv.setPointerCapture(e.pointerId); cv.style.cursor='grabbing'; }
+  };
+  cv.onpointermove = e => {
+    if(!drag) return;
+    const p = getP(); if(!p) return;
+    const f = toFrac(e);
+    if(drag.type === 'subj'){ const s = p.composition.subjects[drag.si]; s.x = +f.x.toFixed(3); s.y = +f.y.toFixed(3); }
+    else if(drag.type === 'horizon'){ p.composition.horizon_y = +f.y.toFixed(3); }
+    redraw();
+  };
+  cv.onpointerup = e => {
+    if(!drag) return;
+    drag = null; cv.style.cursor='grab';
+    try{ cv.releasePointerCapture(e.pointerId); }catch(_){}
+    applyStoryboard(STATE.storyboard, true);
+  };
+}
+function drawHandles(cv, p){
+  const ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
+  ctx.save();
+  // horizon handle
+  const hy = H*(p.composition.horizon_y||0.55);
+  ctx.strokeStyle = 'rgba(255,199,44,0.5)'; ctx.setLineDash([4,3]); ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,hy); ctx.lineTo(W,hy); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(255,199,44,0.9)';
+  ctx.fillRect(W-12, hy-3, 8, 6);
+  // subject handles
+  (p.composition.subjects||[]).forEach(s => {
+    const cx = W*(s.x||0.5), by = H*(s.y||0.9);
+    ctx.beginPath(); ctx.arc(cx, by, 6, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,199,44,0.85)'; ctx.fill();
+    ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.stroke();
+  });
+  ctx.restore();
+}
+
+/* ════════ comments (#8) ════════ */
+function injectComments(){
+  const body = $('#rightContent .pd-body');
+  if(!body) return;
+  const p = STATE.storyboard.panels.find(x => x.id === STATE.selectedPanelId);
+  if(!p) return;
+  p.comments = p.comments || [];
+  const box = document.createElement('div');
+  box.className = 'pd-comments';
+  box.innerHTML = `<h5>Notes & Comments (${p.comments.length})</h5>
+    <div id="cmtList">${p.comments.map(c =>
+      `<div class="cmt"><span class="when">${c.when}</span><span class="who">${escapeHtml(c.who)}</span><br>${escapeHtml(c.text)}</div>`).join('')}</div>
+    <div class="cmt-add"><input id="cmtInput" placeholder="Add a note…"><button id="cmtAdd">＋</button></div>`;
+  body.appendChild(box);
+  const add = () => {
+    const v = $('#cmtInput').value.trim(); if(!v) return;
+    p.comments.push({ who: APP.director, text: v, when: shortNow() });
+    applyStoryboard(STATE.storyboard, true);
+    renderPanelDetails();
+  };
+  $('#cmtAdd').onclick = add;
+  $('#cmtInput').onkeydown = e => { if(e.key==='Enter') add(); };
+}
+function shortNow(){
+  const d = new Date();
+  return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+}
+
+/* ════════ (#4) CONTINUITY CHECKER ════════ */
+function runContinuity(){
+  const sb = STATE.storyboard; if(!sb) return;
+  const warns = analyzeContinuity(sb.panels);
+  STATE.rightMode = 'continuity';
+  $('#right').classList.remove('collapsed');
+  $('#rightTitle').textContent = 'Continuity';
+  $('#rightSub').innerHTML = '<span style="cursor:pointer;color:var(--accent)" id="contBack">← list</span>';
+  const rc = $('#rightContent');
+  if(!warns.length){
+    rc.innerHTML = '<div class="cont-clean">✓ No continuity issues detected.<br>Coverage flows cleanly.</div>';
+  } else {
+    rc.innerHTML = warns.map(w =>
+      `<div class="cont-item" data-id="${w.id||''}">
+         <span class="sev ${w.sev}">${w.sev.toUpperCase()}</span>
+         ${w.id?`<span class="tgt">${w.id}</span> `:''}${escapeHtml(w.msg)}
+       </div>`).join('');
+    $$('#rightContent .cont-item').forEach(it => it.onclick = () => { if(it.dataset.id) selectPanel(it.dataset.id); });
+  }
+  $('#contBack').onclick = () => { STATE.rightMode='shotlist'; renderShotList(); };
+  toast(warns.length ? warns.length + ' continuity note' + (warns.length>1?'s':'') : 'Continuity clean ✓');
+}
+function analyzeContinuity(panels){
+  const out = [];
+  if(!panels.length) return out;
+  const first = panels[0];
+  if(!['EWS','WS','MLS','AERIAL'].includes(first.shot_size))
+    out.push({ sev:'note', id:first.id, msg:'Scene opens tight — consider a wider establishing shot first.' });
+  for(let i=1;i<panels.length;i++){
+    const a = panels[i-1], b = panels[i];
+    if(a.shot_size === b.shot_size)
+      out.push({ sev:'warn', id:b.id, msg:`Repeated ${b.shot_size} after ${a.id} — vary the coverage.` });
+    const fa = (a.composition.subjects||[])[0], fb = (b.composition.subjects||[])[0];
+    if(fa && fb && (fa.facing==='left'&&fb.facing==='right' || fa.facing==='right'&&fb.facing==='left') && b.special!=='ots')
+      out.push({ sev:'warn', id:b.id, msg:`Subject facing flips ${fa.facing}→${fb.facing} — possible 180° line cross.` });
+    const sm = { tiny:0, small:1, medium:2, large:3 };
+    const fas = (fa&&sm[fa.scale]) ?? 2, fbs = (fb&&sm[fb.scale]) ?? 2;
+    if(Math.abs(fas - fbs) >= 3)
+      out.push({ sev:'note', id:b.id, msg:`Large size jump from ${a.id} — may feel like a cut on the same axis.` });
+    if(b.duration_seconds > 8)
+      out.push({ sev:'note', id:b.id, msg:`Long take (${b.duration_seconds}s) — confirm it earns the hold.` });
+  }
+  // angle monotony
+  for(let i=2;i<panels.length;i++){
+    if(panels[i].camera_angle===panels[i-1].camera_angle && panels[i-1].camera_angle===panels[i-2].camera_angle)
+      out.push({ sev:'note', id:panels[i].id, msg:`Three ${panels[i].camera_angle} angles in a row — break the rhythm.` });
+  }
+  return out;
+}
+
+/* ════════ (#5) REFERENCE IMAGE → PALETTE ════════ */
+function extractPaletteFromImage(file){
+  const img = new Image();
+  img.onload = () => {
+    const cv = $('#refCanvas'), ctx = cv.getContext('2d');
+    ctx.drawImage(img, 0, 0, cv.width, cv.height);
+    let data;
+    try { data = ctx.getImageData(0,0,cv.width,cv.height).data; }
+    catch(e){ return showError('Cannot read image (CORS)'); }
+    const px = [];
+    for(let i=0;i<data.length;i+=4){
+      const r=data[i],g=data[i+1],b=data[i+2];
+      px.push({ r,g,b, l:0.299*r+0.587*g+0.114*b, s:Math.max(r,g,b)-Math.min(r,g,b) });
+    }
+    px.sort((a,b)=>a.l-b.l);
+    const at = f => px[Math.floor(f*(px.length-1))];
+    const accent = px.reduce((m,p)=>p.s>m.s?p:m, px[0]);
+    const hx = p => '#'+[p.r,p.g,p.b].map(v=>('0'+Math.round(v).toString(16)).slice(-2)).join('');
+    const sb = STATE.storyboard;
+    sb.color_bible = Object.assign({}, sb.color_bible, {
+      shadow: hx(at(0.12)), midtone: hx(at(0.5)), highlight: hx(at(0.9)), accent: hx(accent),
+      film_stock: sb.color_bible.film_stock || 'Extracted from reference',
+    });
+    applyStoryboard(sb, true);
+    renderColorBible(sb.color_bible);
+    toast('Palette extracted from reference');
+  };
+  img.onerror = () => showError('Could not load image');
+  img.src = URL.createObjectURL(file);
+}
+
+/* ════════ (#1) AI IMAGE GENERATION ════════ */
+function imgPrompt(panel){
+  const sb = STATE.storyboard, cb = sb.color_bible, st = STATE.settings;
+  return `Cinematic storyboard frame, ${st.visualStyle||'realistic'} style. ${panel.shot_size} shot, ${panel.camera_angle}, ${panel.lens_mm}mm lens. ${panel.action} `
+    + `Lighting: ${panel.composition.lighting}. Mood: ${cb.mood}. Palette ${cb.highlight}/${cb.shadow}. `
+    + `Film look: ${cb.film_stock}. Aspect ${st.aspectRatio||'16:9'}. No text, no watermark.`;
+}
+async function genPanelImage(id){
+  if(APP.readOnly) return toast('Read-only view', true);
+  const sb = STATE.storyboard;
+  const panel = sb.panels.find(p => p.id === id); if(!panel) return;
+  const endpoint = $('#imgEndpoint').value.trim();
+  const key = $('#imgKey').value.trim();
+  const model = $('#imgModel').value.trim() || 'gpt-image-1';
+  if(!endpoint || !key){
+    $('#imgGenToggle').checked = true; $('#imgGenCfg').style.display = '';
+    return showError('Set image endpoint + key in the left panel first');
+  }
+  toast('Rendering art for ' + id + '…');
+  try {
+    const res = await fetch(endpoint, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+key },
+      body: JSON.stringify({ model, prompt: imgPrompt(panel), n:1, size:'1024x1024', response_format:'b64_json' })
+    });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    const d = data.data && data.data[0];
+    if(d && d.b64_json) panel.image = 'data:image/png;base64,' + d.b64_json;
+    else if(d && d.url) panel.image = d.url;
+    else throw new Error('No image in response');
+    IMG_CACHE.delete(panel.id);
+    applyStoryboard(sb, true);
+    toast('Art rendered for ' + id);
+  } catch(err){ showError('Image gen failed: ' + err.message); }
+}
+
+/* ════════ (#9) SCRIPT → SCENES ════════ */
+function parseScriptToScenes(){
+  if(APP.readOnly) return toast('Read-only view', true);
+  const text = $('#script').value.trim();
+  if(!text) return showError('Paste a script first');
+  const lines = text.split(/\r?\n/);
+  const slugRe = /^\s*(INT\.?|EXT\.?|INT\.?\/EXT\.?|I\/E)\b/i;
+  const segs = []; let cur = null;
+  lines.forEach(ln => {
+    if(slugRe.test(ln)){ cur = { title: ln.trim().replace(/^\s*/,''), body:[] }; segs.push(cur); }
+    else if(cur){ cur.body.push(ln); }
+    else { if(!cur){ cur = { title:'Scene 1', body:[] }; segs.push(cur); } cur.body.push(ln); }
+  });
+  if(segs.length < 2){
+    // fallback: split on blank-line paragraph clusters into ~4 scenes
+    const paras = text.split(/\n\s*\n/).filter(p=>p.trim());
+    const per = Math.max(1, Math.ceil(paras.length / Math.min(4, Math.max(1,paras.length))));
+    segs.length = 0;
+    for(let i=0;i<paras.length;i+=per)
+      segs.push({ title:'Scene '+(segs.length+1), body: paras.slice(i,i+per) });
+    if(!segs.length) segs.push({ title:'Scene 1', body:[text] });
+  }
+  const base = readSettings();
+  APP.scenes = segs.map((s,i) => {
+    const wordCt = s.body.join(' ').split(/\s+/).filter(Boolean).length;
+    const panelCount = Math.max(4, Math.min(12, Math.round(wordCt/35)||4));
+    const settings = Object.assign({}, base, { title: s.title.slice(0,60), panelCount: String(panelCount<=4?4:panelCount<=6?6:panelCount<=8?8:12) });
+    const sb = buildDemoStoryboard(settings, s.body.join('\n'));
+    sb.title = settings.title;
+    sb.synopsis = s.body.join(' ').slice(0,150) || sb.synopsis;
+    return { settings, storyboard: sb };
+  });
+  APP.active = 0;
+  activateScene(0);
+  toast('Parsed ' + APP.scenes.length + ' scene' + (APP.scenes.length>1?'s':''));
+}
+
+/* ════════ (#2) ANIMATIC PLAYER ════════ */
+const player = { frames:[], idx:0, playing:false, t0:0, raf:0, total:0 };
+function aspectFromSettings(){ return (STATE.settings && STATE.settings.aspectRatio) || '16:9'; }
+function exportCanvasFor(panel, ratio){
+  const [aw, ah] = aspectDims(ratio || '16:9');
+  const cv = ce('canvas'); cv.width = aw*4; cv.height = ah*4;
+  drawPanel(cv, panel);
+  return cv;
+}
+function openAnimatic(){
+  const sb = STATE.storyboard; if(!sb || !sb.panels.length) return showError('Nothing to play');
+  const ratio = aspectFromSettings();
+  player.frames = sb.panels.map(p => ({ panel:p, canvas: exportCanvasFor(p, ratio), dur: Math.max(1, p.duration_seconds||3) }));
+  player.total = player.frames.reduce((a,f)=>a+f.dur,0);
+  player.idx = 0;
+  // track thumbnails
+  const tk = $('#animaticTrack');
+  tk.innerHTML = '';
+  player.frames.forEach((f,i) => {
+    const d = ce('div', 'tk'); d.dataset.i = i;
+    const tc = ce('canvas'); tc.width = 80; tc.height = Math.round(80 * f.canvas.height / f.canvas.width);
+    tc.getContext('2d').drawImage(f.canvas, 0, 0, tc.width, tc.height);
+    d.appendChild(tc);
+    d.onclick = () => { gotoFrame(i); };
+    tk.appendChild(d);
+  });
+  $('#animatic').classList.add('on');
+  gotoFrame(0);
+  playPause(true);
+}
+function closeAnimatic(){ playPause(false); $('#animatic').classList.remove('on'); }
+function gotoFrame(i){
+  player.idx = Math.max(0, Math.min(player.frames.length-1, i));
+  player.t0 = performance.now();
+  const f = player.frames[player.idx];
+  const ac = $('#animaticCanvas');
+  ac.width = f.canvas.width; ac.height = f.canvas.height;
+  ac.getContext('2d').drawImage(f.canvas, 0, 0);
+  $$('#animaticTrack .tk').forEach(t => t.classList.toggle('on', +t.dataset.i === player.idx));
+  const p = f.panel;
+  $('#animaticCap').innerHTML = `<b>${p.id}</b> · ${p.shot_size} ${p.camera_movement} — ${escapeHtml(p.action||'')}`
+    + (p.dialogue && p.dialogue!=='...' ? `<br><span class="dlg">"${escapeHtml(p.dialogue)}"</span>` : '');
+  applyKenBurns(0);
+}
+function applyKenBurns(t){ // t: 0..1 within frame
+  const p = player.frames[player.idx].panel;
+  const m = p.camera_movement || 'Static';
+  const ac = $('#animaticCanvas');
+  let tx=0, ty=0, sc=1.04;
+  if(m.includes('Dolly In')||m.includes('Zoom In')) sc = 1.0 + 0.14*t;
+  else if(m.includes('Dolly Out')||m.includes('Zoom Out')) sc = 1.14 - 0.14*t;
+  else if(m.includes('Pan R')||m.includes('Truck R')){ sc=1.1; tx = (0.5-t)*8; }
+  else if(m.includes('Pan L')||m.includes('Truck L')){ sc=1.1; tx = (t-0.5)*8; }
+  else if(m.includes('Tilt Up')||m.includes('Crane Up')){ sc=1.1; ty = (0.5-t)*8; }
+  else if(m.includes('Tilt Down')||m.includes('Crane Down')){ sc=1.1; ty = (t-0.5)*8; }
+  else sc = 1.03 + 0.04*t; // subtle drift for static
+  ac.style.transform = `translate(${tx}%,${ty}%) scale(${sc})`;
+}
+function playPause(force){
+  player.playing = (force!==undefined) ? force : !player.playing;
+  $('#aPlay').textContent = player.playing ? '⏸' : '▶';
+  if(player.playing){ player.t0 = performance.now() - (player._elapsed||0); tick(); }
+  else { cancelAnimationFrame(player.raf); player._elapsed = performance.now() - player.t0; }
+}
+function tick(){
+  if(!player.playing) return;
+  const f = player.frames[player.idx];
+  const elapsed = (performance.now() - player.t0) / 1000;
+  const t = Math.min(1, elapsed / f.dur);
+  applyKenBurns(t);
+  // global scrub position
+  let acc = 0; for(let i=0;i<player.idx;i++) acc += player.frames[i].dur;
+  const globalT = acc + Math.min(elapsed, f.dur);
+  $('#scrub').value = Math.round(globalT / player.total * 1000);
+  $('#animaticTime').textContent = fmtT(globalT) + ' / ' + fmtT(player.total);
+  if(elapsed >= f.dur){
+    if(player.idx < player.frames.length-1){ player._elapsed=0; gotoFrame(player.idx+1); player.t0=performance.now(); }
+    else { playPause(false); player._elapsed=0; return; }
+  }
+  player.raf = requestAnimationFrame(tick);
+}
+function fmtT(s){ s=Math.round(s); return ('0'+Math.floor(s/60)).slice(-2)+':'+('0'+(s%60)).slice(-2); }
+function scrubTo(v){
+  const target = v/1000 * player.total;
+  let acc=0, i=0;
+  while(i<player.frames.length-1 && acc+player.frames[i].dur < target){ acc+=player.frames[i].dur; i++; }
+  player._elapsed = 0;
+  gotoFrame(i);
+  player.t0 = performance.now() - (target-acc)*1000;
+  applyKenBurns(Math.min(1,(target-acc)/player.frames[i].dur));
+}
+
+/* ════════ (#8) SHARE LINK ════════ */
+function b64enc(s){ return btoa(unescape(encodeURIComponent(s))); }
+function b64dec(s){ return decodeURIComponent(escape(atob(s))); }
+function makeShareLink(){
+  const payload = { name: $('#projName').value, director: APP.director, scenes: APP.scenes, active: APP.active };
+  const hash = '#s=' + b64enc(JSON.stringify(payload));
+  const url = location.origin + location.pathname + hash;
+  navigator.clipboard.writeText(url)
+    .then(() => toast('Share link copied (' + Math.round(url.length/1024) + 'kb)'))
+    .catch(() => { location.hash = hash.slice(1); toast('Link set in URL bar — copy it'); });
+}
+function tryLoadShared(){
+  const h = location.hash;
+  if(!h.startsWith('#s=')) return false;
+  try {
+    const data = JSON.parse(b64dec(h.slice(3)));
+    data.scenes.forEach(s => s.storyboard.panels.forEach(normalizePanel));
+    APP.name = data.name || 'Shared'; APP.director = data.director || 'GUEST';
+    APP.scenes = data.scenes; APP.active = data.active || 0;
+    $('#projName').value = APP.name;
+    setReadOnly(true);
+    activateScene(APP.active, true);
+    toast('Loaded shared storyboard (read-only)');
+    return true;
+  } catch(e){ showError('Bad share link'); return false; }
+}
+function setReadOnly(ro){
+  APP.readOnly = ro;
+  $('#roBanner').classList.toggle('on', ro);
+}
+
+/* ════════ (#10) RICHER EXPORTS ════════ */
+function exportContactSheet(){
+  const sb = STATE.storyboard; if(!sb) return;
+  const ratio = aspectFromSettings(), [aw,ah] = aspectDims(ratio);
+  const cols = 4, cell = 300, pad = 16, labelH = 46, header = 70;
+  const rows = Math.ceil(sb.panels.length/cols);
+  const cw = cell, chh = Math.round(cell*ah/aw);
+  const W = cols*cw + (cols+1)*pad;
+  const H = header + rows*(chh+labelH+pad) + pad;
+  const cv = ce('canvas'); cv.width=W; cv.height=H;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle='#0D0D0D'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#FFC72C'; ctx.font='bold 26px ui-monospace'; ctx.fillText(sb.title, pad, 38);
+  ctx.fillStyle='#555'; ctx.font='13px ui-monospace';
+  ctx.fillText(`${PROJECT.director} · ${sb.panels.length} panels · ${sb.total_duration_seconds}s · PHANTOM CREW OS`, pad, 58);
+  sb.panels.forEach((p,i) => {
+    const c=i%cols, r=Math.floor(i/cols);
+    const x = pad + c*(cw+pad), y = header + r*(chh+labelH+pad);
+    const fc = exportCanvasFor(p, ratio);
+    ctx.drawImage(fc, x, y, cw, chh);
+    ctx.strokeStyle='#222'; ctx.strokeRect(x,y,cw,chh);
+    ctx.fillStyle='#FA4616'; ctx.font='bold 14px ui-monospace'; ctx.fillText(p.id, x, y+chh+18);
+    ctx.fillStyle='#FFC72C'; ctx.font='12px ui-monospace'; ctx.fillText(`${p.shot_size}·${p.lens_mm}mm·${p.duration_seconds}s`, x+34, y+chh+18);
+    ctx.fillStyle='#999'; ctx.font='11px ui-monospace';
+    ctx.fillText((p.action||'').slice(0,40), x, y+chh+36);
+  });
+  cv.toBlob(b => { const u=URL.createObjectURL(b); const a=ce('a'); a.href=u; a.download=`contactsheet-${safeName(sb.title)}.png`; a.click(); setTimeout(()=>URL.revokeObjectURL(u),1000); });
+  toast('Contact sheet PNG exported');
+}
+function exportCallSheet(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const pageW=210, m=12; let y=0;
+  doc.setFillColor(15,15,15); doc.rect(0,0,pageW,20,'F');
+  doc.setTextColor(255,199,44); doc.setFont('helvetica','bold'); doc.setFontSize(13);
+  doc.text('CALL SHEET — ' + ($('#projName').value||'Project'), m, 13);
+  doc.setTextColor(120,120,120); doc.setFontSize(8); doc.setFont('helvetica','normal');
+  doc.text(`Director: ${APP.director}  |  ${new Date().toLocaleDateString()}`, pageW-m, 13, {align:'right'});
+  y = 28;
+  const cols = [['#',m,12],['SCENE',m+12,40],['SHOT',m+52,18],['LENS',m+70,16],['MOVE',m+86,28],['SEC',m+114,12],['ACTION',m+126,60]];
+  let order = 1;
+  APP.scenes.forEach((sc,si) => {
+    doc.setFillColor(250,70,22); doc.rect(m, y-4, pageW-2*m, 6, 'F');
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(8.5);
+    doc.text(`SCENE ${si+1} — ${sc.storyboard.title}`, m+2, y);
+    y += 6;
+    doc.setFontSize(7); doc.setTextColor(90,90,90); doc.setFont('helvetica','bold');
+    cols.forEach(([h,x]) => doc.text(h, x, y));
+    y += 4;
+    doc.setFont('helvetica','normal'); doc.setTextColor(40,40,40);
+    sc.storyboard.panels.forEach(p => {
+      if(y > 282){ doc.addPage(); y = 16; }
+      const row = [String(order++), p.id+' '+p.shot_size, p.shot_size, p.lens_mm+'mm', p.camera_movement, String(p.duration_seconds), (p.action||'').slice(0,42)];
+      cols.forEach(([h,x,w],ci) => {
+        const txt = ci===1 ? sc.storyboard.title.slice(0,20) : row[ci];
+        doc.text(doc.splitTextToSize(String(txt), w)[0]||'', x, y);
+      });
+      y += 5;
+    });
+    y += 4;
+  });
+  doc.save(`callsheet-${safeName($('#projName').value)}.pdf`);
+  toast('Call sheet PDF exported');
+}
+function exportProdBoardCSV(){
+  const head = ['Scene','Shot','Shot Size','Lens','Movement','Angle','Est. Seconds','INT/EXT','Day/Night','Description','Cast','Dialogue'];
+  const rows = [];
+  APP.scenes.forEach((sc,si) => sc.storyboard.panels.forEach(p => {
+    const interior = p.composition.is_interior ? 'INT' : 'EXT';
+    const dn = (p.composition.bg_type||'').includes('night') ? 'NIGHT' : 'DAY';
+    const cast = (p.composition.subjects||[]).map(s=>s.id).join(';');
+    rows.push([`S${si+1} ${sc.storyboard.title}`, p.id, p.shot_size, p.lens_mm+'mm', p.camera_movement, p.camera_angle, p.duration_seconds, interior, dn, p.action, cast, p.dialogue||'']);
+  }));
+  csvDownload([head, ...rows], `prodboard-${safeName($('#projName').value)}.csv`);
+  toast('ProductionBoard CSV exported');
+}
+function exportFountain(){
+  let out = `Title: ${$('#projName').value}\nCredit: Storyboard by\nAuthor: ${APP.director}\nDraft date: ${new Date().toLocaleDateString()}\n\n====\n\n`;
+  APP.scenes.forEach(sc => {
+    const sb = sc.storyboard;
+    sb.panels.forEach(p => {
+      const interior = p.composition.is_interior ? 'INT' : 'EXT';
+      const dn = (p.composition.bg_type||'').includes('night') ? 'NIGHT' : 'DAY';
+      out += `${interior}. ${sb.title.toUpperCase()} - ${dn}\n\n`;
+      out += `${p.action}\n\n`;
+      out += `[[ ${p.id} · ${p.shot_size} · ${p.lens_mm}mm · ${p.camera_movement}${p.director_note?' — '+p.director_note:''} ]]\n\n`;
+      if(p.dialogue && p.dialogue!=='...'){
+        const who = (p.composition.subjects||[])[0];
+        out += `${(who&&who.id)||'CHARACTER'}\n${p.dialogue}\n\n`;
+      }
+    });
+  });
+  download(out, `${safeName($('#projName').value)}.fountain`, 'text/plain');
+  toast('Fountain screenplay exported');
+}
+function exportStoryboardPDF(scenes, tag){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
+  const COLS=3, ROWS=3, pageW=297, pageH=210, margin=10, headerH=16;
+  const cellW=(pageW-margin*2-(COLS-1)*4)/COLS, cellH=(pageH-margin*2-headerH-(ROWS-1)*4)/ROWS, frameH=cellH*0.6;
+  const dateStr=new Date().toLocaleDateString();
+  let pageNum=0, firstPage=true;
+  scenes.forEach((sc,si) => {
+    const sb = sc.storyboard, ratio = (sc.settings&&sc.settings.aspectRatio)||'16:9';
+    let idx=0;
+    while(idx < sb.panels.length){
+      if(!firstPage) doc.addPage(); firstPage=false; pageNum++;
+      doc.setFillColor(15,15,15); doc.rect(0,0,pageW,headerH,'F');
+      doc.setTextColor(255,199,44); doc.setFontSize(11); doc.setFont('helvetica','bold');
+      doc.text(`S${si+1} · ${sb.title}`, margin, 10);
+      doc.setTextColor(100,100,100); doc.setFontSize(8); doc.setFont('helvetica','normal');
+      doc.text(`Director: ${APP.director}  |  ${dateStr}  |  Page ${pageNum}`, pageW-margin, 10, {align:'right'});
+      for(let r=0;r<ROWS && idx<sb.panels.length;r++){
+        for(let c=0;c<COLS && idx<sb.panels.length;c++){
+          const panel=sb.panels[idx];
+          const x=margin+c*(cellW+4), y=margin+headerH+2+r*(cellH+4);
+          const canvas=exportCanvasFor(panel, ratio);
+          let imgData; try { imgData=canvas.toDataURL('image/jpeg',0.88); } catch(e){ imgData=null; }
+          doc.setDrawColor(40,40,40); doc.setLineWidth(0.3); doc.rect(x,y,cellW,cellH);
+          if(imgData) doc.addImage(imgData,'JPEG',x,y,cellW,frameH);
+          const ty=y+frameH+4;
+          doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(250,70,22); doc.text(panel.id,x+1,ty);
+          doc.setTextColor(60,60,60); doc.setFont('helvetica','normal'); doc.setFontSize(6.5);
+          doc.text(`${panel.shot_size}·${panel.lens_mm}mm·${panel.camera_movement}·${panel.duration_seconds}s`,x+11,ty);
+          doc.setTextColor(80,80,80);
+          doc.text(doc.splitTextToSize(panel.action||'',cellW-2).slice(0,2), x+1, ty+4.5);
+          if(panel.dialogue && panel.dialogue!=='...'){
+            doc.setTextColor(40,40,40); doc.setFont('helvetica','italic');
+            doc.text(doc.splitTextToSize(`"${panel.dialogue}"`,cellW-2).slice(0,1), x+1, ty+11.5);
+            doc.setFont('helvetica','normal');
+          }
+          idx++;
+        }
+      }
+      doc.setFontSize(7); doc.setTextColor(120,120,120);
+      doc.text('PHANTOM CREW OS · AI STORYBOARD MACHINE', pageW/2, pageH-4, {align:'center'});
+    }
+  });
+  // color bible page (active scene)
+  const cb = STATE.storyboard.color_bible;
+  doc.addPage();
+  doc.setFillColor(15,15,15); doc.rect(0,0,pageW,headerH,'F');
+  doc.setTextColor(255,199,44); doc.setFontSize(11); doc.setFont('helvetica','bold');
+  doc.text('COLOR BIBLE — ' + STATE.storyboard.title, margin, 10);
+  [['highlight','HIGHLIGHT'],['midtone','MIDTONE'],['shadow','SHADOW'],['accent','ACCENT']].forEach(([k,l],i)=>{
+    const sx=margin+i*58, sy=30, rgb=hexToRgb(cb[k]);
+    doc.setFillColor(rgb[0],rgb[1],rgb[2]); doc.rect(sx,sy,50,50,'F');
+    doc.setTextColor(40,40,40); doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.text(l,sx,sy+56);
+    doc.setFont('helvetica','normal'); doc.setTextColor(90,90,90); doc.text(cb[k],sx,sy+61);
+  });
+  doc.setTextColor(40,40,40); doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.text('Mood',margin,110);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(70,70,70);
+  doc.text(doc.splitTextToSize(cb.mood,260),margin,116);
+  doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(40,40,40); doc.text('Film Stock',margin,135);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(70,70,70); doc.text(cb.film_stock,margin,141);
+  doc.setFontSize(7); doc.setTextColor(120,120,120);
+  doc.text('PHANTOM CREW OS · AI STORYBOARD MACHINE', pageW/2, pageH-4, {align:'center'});
+  doc.save(`storyboard-${tag}-${safeName($('#projName').value)}.pdf`);
+  toast('PDF exported · ' + (pageNum+1) + ' pages');
+}
+
+/* ─── export helpers ─── */
+function safeName(s){ return (s||'project').replace(/[^a-z0-9]/gi,'_').slice(0,30); }
+function csvDownload(rows, filename){
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  download(csv, filename, 'text/csv');
+}
+function runExport(kind){
+  $('#exportMenu').classList.remove('on');
+  if(!STATE.storyboard) return showError('Nothing to export');
+  try {
+    if(kind==='pdf') exportStoryboardPDF(APP.scenes, 'all');
+    else if(kind==='pdf-scene') exportStoryboardPDF([curScene()], 'scene');
+    else if(kind==='contact') exportContactSheet();
+    else if(kind==='callsheet') exportCallSheet();
+    else if(kind==='csv') exportCSV();
+    else if(kind==='prodboard') exportProdBoardCSV();
+    else if(kind==='fountain') exportFountain();
+    else if(kind==='json'){
+      const payload = { name:$('#projName').value, director:APP.director, scenes:APP.scenes, active:APP.active };
+      download(JSON.stringify(payload,null,2), safeName($('#projName').value)+'.json', 'application/json');
+      toast('Project JSON exported');
+    }
+  } catch(err){ showError('Export failed: ' + err.message); console.error(err); }
+}
+
+/* ════════ INIT / WIRING ════════ */
+function initV2(){
+  // build APP if boot didn't (sample path or single-scene legacy)
+  if(tryLoadShared()){ /* shared view loaded */ }
+  else if(!APP.scenes.length){
+    APP.name = $('#projName').value;
+    APP.scenes = [{ settings: STATE.settings || readSettings(), storyboard: STATE.storyboard }];
+    APP.active = 0;
+  }
+  renderSceneBar(); updateSeqRuntime();
+  // re-render grid so wrapped drawPanel (overlays/images) applies
+  if(STATE.storyboard) renderStoryboard(STATE.storyboard);
+
+  // scene bar
+  $('#addSceneBtn').onclick = addScene;
+  // overlays
+  $$('#ovlToggle button').forEach(b => b.onclick = () => toggleOverlay(b.dataset.ovl));
+  // top bar
+  $('#animaticBtn').onclick = openAnimatic;
+  $('#continuityBtn').onclick = runContinuity;
+  $('#shareBtn').onclick = makeShareLink;
+  // export menu
+  $('#exportMenuBtn').onclick = e => { e.stopPropagation(); $('#exportMenu').classList.toggle('on'); };
+  $$('#exportMenu button').forEach(b => b.onclick = () => runExport(b.dataset.exp));
+  document.addEventListener('click', e => { if(!e.target.closest('.menu-wrap')) $('#exportMenu').classList.remove('on'); });
+  // image gen toggle
+  $('#imgGenToggle').onchange = e => $('#imgGenCfg').style.display = e.target.checked ? '' : 'none';
+  // reference palette
+  $('#refImgBtn').onclick = () => $('#refImgFile').click();
+  $('#refImgFile').onchange = e => { if(e.target.files[0]) extractPaletteFromImage(e.target.files[0]); e.target.value=''; };
+  // parse script
+  $('#parseScriptBtn').onclick = parseScriptToScenes;
+  // animatic controls
+  $('#aPlay').onclick = () => playPause();
+  $('#aPrev').onclick = () => { player._elapsed=0; gotoFrame(player.idx-1); player.t0=performance.now(); };
+  $('#aNext').onclick = () => { player._elapsed=0; gotoFrame(player.idx+1); player.t0=performance.now(); };
+  $('#animaticClose').onclick = closeAnimatic;
+  $('#scrub').oninput = e => { playPause(false); scrubTo(+e.target.value); };
+
+  // keyboard: P play, C continuity, S share (avoid when typing)
+  document.addEventListener('keydown', e => {
+    if($('#animatic').classList.contains('on')){
+      if(e.key==='Escape') closeAnimatic();
+      else if(e.key===' '){ e.preventDefault(); playPause(); }
+      else if(e.key==='ArrowRight'){ player._elapsed=0; gotoFrame(player.idx+1); player.t0=performance.now(); }
+      else if(e.key==='ArrowLeft'){ player._elapsed=0; gotoFrame(player.idx-1); player.t0=performance.now(); }
+      return;
+    }
+    if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+    const k = e.key.toLowerCase();
+    if(k==='p'){ e.preventDefault(); openAnimatic(); }
+    else if(k==='c'){ e.preventDefault(); runContinuity(); }
+  });
+
+  // re-bind "New" to reset to single-scene project
+  const newBtn = $('#newProjBtn');
+  if(newBtn) newBtn.onclick = () => {
+    const name = 'Project ' + (getProjects().length + 1);
+    $('#projName').value = name;
+    setReadOnly(false);
+    const settings = readSettings();
+    const sb = buildDemoStoryboard(settings);
+    APP = { name, director:'MEATBALL-007', scenes:[{ settings, storyboard: sb }], active:0, readOnly:false };
+    STATE.settings = settings;
+    activateScene(0);
+    toast('New project created');
+  };
+
+  // import → wrap into scenes
+  const impFile = $('#importFile');
+  if(impFile) impFile.onchange = e => {
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        setReadOnly(false);
+        if(data.scenes && data.scenes.length){
+          data.scenes.forEach(s => s.storyboard.panels.forEach(normalizePanel));
+          APP = { name:data.name||'Imported', director:data.director||'MEATBALL-007', scenes:data.scenes, active:0, readOnly:false };
+          $('#projName').value = APP.name;
+          activateScene(0);
+        } else {
+          const sb = data.storyboard || data;
+          sb.panels.forEach(normalizePanel);
+          APP = { name:data.name||sb.title, director:'MEATBALL-007', scenes:[{settings:data.settings||readSettings(), storyboard:sb}], active:0, readOnly:false };
+          if(data.name) $('#projName').value = data.name;
+          if(data.settings) loadSettings(data.settings);
+          activateScene(0);
+        }
+        toast('Imported "' + APP.name + '"');
+      } catch(err){ showError('Import failed: ' + err.message); }
+    };
+    reader.readAsText(file); e.target.value='';
+  };
+}
+document.addEventListener('DOMContentLoaded', initV2);
+
+})();
+</script>
+</body>
+</html>
