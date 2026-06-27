@@ -1457,7 +1457,7 @@ function finishFrame(ctx, W, H, panel) {
   // film grain (sparse, deterministic)
   ctx.fillStyle = 'rgba(255,255,255,0.04)';
   for (let i = 0; i < W*H*0.012; i++) {
-    const gx = pseudoRand(i*3.1+panel.id?.length||0) * W;
+    const gx = pseudoRand(i*3.1 + (panel.id?.length || 0)) * W;
     const gy = pseudoRand(i*7.7+2) * H;
     ctx.fillRect(gx, gy, 1, 1);
   }
@@ -2445,6 +2445,7 @@ function saveToLocalStorage(sb){
   scheduleSave();
 }
 function mutate(fn){ applyMutation(store, fn); saveToLocalStorage(STATE.storyboard); }
+function setActiveProject(obj){ APP = obj; store.project = obj; store.history.past.length = 0; store.history.future.length = 0; }
 function applyStoreToUI(){
   APP = store.project;                 // rebind alias
   const sc = curScene();
@@ -2463,7 +2464,7 @@ function renderProjectList() {
   if (!projects.length) { el.innerHTML = '<div class="cb-empty" style="padding:4px 0">No saved projects yet.</div>'; return; }
   el.innerHTML = projects.map(p =>
     `<div class="proj-item ${p.name===cur?'active':''}" data-name="${escapeHtml(p.name)}">
-       <span>${p.name === cur ? '▸ ' : ''}${escapeHtml(p.name)} · ${p.storyboard.panels.length}p</span>
+       <span>${p.name === cur ? '▸ ' : ''}${escapeHtml(p.name)} · ${p.storyboard?.panels?.length ?? 0}p</span>
        <span class="pdel" data-del="${escapeHtml(p.name)}">✕</span>
      </div>`).join('');
   $$('#projList .proj-item').forEach(it => it.onclick = e => {
@@ -2479,6 +2480,7 @@ function renderProjectList() {
 function loadProject(name){
   const p = getProjects().find(x => x.name === name);
   if(!p) return;
+  store.history.past.length = 0; store.history.future.length = 0;
   $('#projName').value = p.name;
   APP.name = p.name; APP.director = p.director || 'MEATBALL-007'; APP.readOnly = false;
   if(p.scenes && p.scenes.length){ APP.scenes = p.scenes; APP.active = Math.min(p.active||0, p.scenes.length-1); }
@@ -3185,6 +3187,7 @@ function tryLoadShared(){
   if(!h.startsWith('#s=')) return false;
   try {
     const data = JSON.parse(b64dec(h.slice(3)));
+    store.history.past.length = 0; store.history.future.length = 0;
     data.scenes.forEach(s => s.storyboard.panels.forEach(normalizePanel));
     APP.name = data.name || 'Shared'; APP.director = data.director || 'GUEST';
     APP.scenes = data.scenes; APP.active = data.active || 0;
@@ -3450,7 +3453,7 @@ function initV2(){
     setReadOnly(false);
     const settings = readSettings();
     const sb = buildDemoStoryboard(settings);
-    APP = { name, director:'MEATBALL-007', scenes:[{ settings, storyboard: sb }], active:0, readOnly:false };
+    setActiveProject({ name, director:'MEATBALL-007', scenes:[{ settings, storyboard: sb }], active:0, readOnly:false });
     STATE.settings = settings;
     activateScene(0);
     toast('New project created');
@@ -3467,13 +3470,13 @@ function initV2(){
         setReadOnly(false);
         if(data.scenes && data.scenes.length){
           data.scenes.forEach(s => s.storyboard.panels.forEach(normalizePanel));
-          APP = { name:data.name||'Imported', director:data.director||'MEATBALL-007', scenes:data.scenes, active:0, readOnly:false };
+          setActiveProject({ name:data.name||'Imported', director:data.director||'MEATBALL-007', scenes:data.scenes, active:0, readOnly:false });
           $('#projName').value = APP.name;
           activateScene(0);
         } else {
           const sb = data.storyboard || data;
           sb.panels.forEach(normalizePanel);
-          APP = { name:data.name||sb.title, director:'MEATBALL-007', scenes:[{settings:data.settings||readSettings(), storyboard:sb}], active:0, readOnly:false };
+          setActiveProject({ name:data.name||sb.title, director:'MEATBALL-007', scenes:[{settings:data.settings||readSettings(), storyboard:sb}], active:0, readOnly:false });
           if(data.name) $('#projName').value = data.name;
           if(data.settings) loadSettings(data.settings);
           activateScene(0);
