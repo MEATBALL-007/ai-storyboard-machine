@@ -737,6 +737,14 @@ function toast(msg, isErr) {
 }
 const showError = m => toast(m, true);
 
+function toastUndo(msg){
+  const t = $('#toast');
+  t.innerHTML = escapeHtml(msg) + ' · <span id="toastUndo" style="color:var(--accent);cursor:pointer;text-decoration:underline">Undo</span>';
+  t.classList.remove('err'); t.classList.add('on');
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('on'), 5000);
+  const u = $('#toastUndo'); if(u) u.onclick = () => { doUndo(); t.classList.remove('on'); };
+}
+
 /* ============ ENGINE ============ */
 /* ════════════════════════════════════════════════════════════════
    CANVAS DRAWING SYSTEM  (HERO FEATURE)
@@ -1382,8 +1390,10 @@ async function regeneratePanel(panelId, note) {
     const variant = proceduralPanel(idx, sb.panels.length, STATE.settings, orig.id);
     variant.id = orig.id;
     if (note) variant.director_note = note;
-    sb.panels[idx] = normalizePanel(variant);
-    applyStoryboard(sb, true);
+    const newDemoPanel = normalizePanel(variant);
+    const demoIdx = idx;
+    mutate(proj => { proj.scenes[proj.active].storyboard.panels[demoIdx] = newDemoPanel; });
+    applyStoreToUI();
     toast('Panel ' + orig.id + ' regenerated (demo)');
     return;
   }
@@ -1414,8 +1424,9 @@ Return ONLY a single JSON object for ONE panel with the same structure (keep id 
     if (s >= 0) text = text.slice(s, e + 1);
     const np = normalizePanel(JSON.parse(text));
     np.id = orig.id;
-    sb.panels[idx] = np;
-    applyStoryboard(sb, true);
+    const apiIdx = idx;
+    mutate(proj => { proj.scenes[proj.active].storyboard.panels[apiIdx] = np; });
+    applyStoreToUI();
     toast('Panel ' + orig.id + ' regenerated');
   } catch (err) {
     showError('Regenerate failed: ' + err.message);
@@ -1696,23 +1707,31 @@ function escapeHtml(s) {
 
 function reorderPanels(fromId, toId) {
   if (fromId === toId) return;
-  const ps = STATE.storyboard.panels;
-  const fi = ps.findIndex(p => p.id === fromId);
-  const ti = ps.findIndex(p => p.id === toId);
-  if (fi < 0 || ti < 0) return;
-  const [moved] = ps.splice(fi, 1);
-  ps.splice(ti, 0, moved);
-  applyStoryboard(STATE.storyboard, true);
+  const fi0 = STATE.storyboard.panels.findIndex(p => p.id === fromId);
+  const ti0 = STATE.storyboard.panels.findIndex(p => p.id === toId);
+  if (fi0 < 0 || ti0 < 0) return;
+  mutate(proj => {
+    const ps = proj.scenes[proj.active].storyboard.panels;
+    const fi = ps.findIndex(p => p.id === fromId);
+    const ti = ps.findIndex(p => p.id === toId);
+    if (fi < 0 || ti < 0) return;
+    const [moved] = ps.splice(fi, 1);
+    ps.splice(ti, 0, moved);
+  });
+  applyStoreToUI();
 }
 
 function deletePanel(id) {
-  const ps = STATE.storyboard.panels;
-  const i = ps.findIndex(p => p.id === id);
-  if (i < 0) return;
-  ps.splice(i, 1);
+  const before = STATE.storyboard.panels.find(p => p.id === id);
+  if (!before) return;
+  mutate(proj => {
+    const sb = proj.scenes[proj.active].storyboard;
+    const i = sb.panels.findIndex(x => x.id === id);
+    if (i >= 0) sb.panels.splice(i, 1);
+  });
   if (STATE.selectedPanelId === id) { STATE.selectedPanelId = null; STATE.rightMode = 'shotlist'; }
-  applyStoryboard(STATE.storyboard, true);
-  toast('Deleted ' + id);
+  applyStoreToUI();
+  toastUndo('Deleted ' + id);
 }
 
 /* ─── Color Bible ─── */
@@ -1830,6 +1849,8 @@ function renderPanelDetails() {
 
   $('#backToList').onclick = () => { STATE.rightMode = 'shotlist'; renderShotList(); };
   $('#pdSave').onclick = () => {
+    const edits = {};
+    const compEdits = {};
     $$('#rightContent [data-f]').forEach(el => {
       const f = el.dataset.f;
       let v = el.value;
@@ -1837,10 +1858,17 @@ function renderPanelDetails() {
       if (f === 'special' && v === '') v = null;
       if (f === 'dialogue' && v === '') v = null;
       if (f === 'director_note' && v === '') v = null;
-      p[f] = v;
+      edits[f] = v;
     });
-    $$('#rightContent [data-cf]').forEach(el => { p.composition[el.dataset.cf] = el.value; });
-    applyStoryboard(sb, true);
+    $$('#rightContent [data-cf]').forEach(el => { compEdits[el.dataset.cf] = el.value; });
+    const panelId = p.id;
+    mutate(proj => {
+      const panel = proj.scenes[proj.active].storyboard.panels.find(x => x.id === panelId);
+      if (!panel) return;
+      Object.assign(panel, edits);
+      Object.assign(panel.composition, compEdits);
+    });
+    applyStoreToUI();
     toast('Panel ' + p.id + ' updated');
   };
   $('#pdRegen').onclick = () => openRegen(p.id);
