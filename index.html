@@ -444,12 +444,28 @@
   .toggle-row{display:flex; align-items:center; gap:7px; font-size:10px; color:var(--muted); cursor:pointer; margin-top:6px}
   .toggle-row input{accent-color:var(--accent)}
   .panel-card .pc-imgbadge{position:absolute; bottom:5px; left:5px; background:rgba(80,180,90,.85); color:#000; font-size:7px; font-weight:700; padding:1px 5px; border-radius:2px; letter-spacing:.3px}
+
+  /* ───── RESPONSIVE ───── */
+  #sidebarToggle{display:none}
+  @media(max-width:1100px){
+    #sidebarToggle{display:inline-block;padding:5px 10px;border:1px solid var(--line);border-radius:3px;color:var(--muted)}
+    #left{position:fixed;left:0;top:70px;bottom:0;z-index:40;transform:translateX(-100%);transition:.2s;box-shadow:8px 0 24px rgba(0,0,0,.5)}
+    #left.open{transform:translateX(0)}
+    #right{position:fixed;right:0;top:70px;bottom:0;z-index:40}
+    #grid{grid-template-columns:repeat(2,1fr)}
+  }
+  @media(max-width:700px){
+    #grid,#grid.cols2,#grid.cols3{grid-template-columns:1fr}
+    #sceneBar{overflow-x:auto}
+    #topbar{gap:6px} #projName{min-width:90px}
+  }
 </style>
 </head>
 <body>
 
 <!-- ════ TOP BAR ════ -->
 <div id="topbar">
+  <button id="sidebarToggle" aria-label="Toggle script &amp; settings panel">☰</button>
   <div id="logo">
     <span class="mark">✦</span>
     <span>STORYBOARD<span class="sub"> // PHANTOM CREW OS</span></span>
@@ -2504,6 +2520,9 @@ function wire() {
   // api key persistence
   $('#apiKey').value = localStorage.getItem(LS_API) || '';
   $('#apiKey').addEventListener('change', e => localStorage.setItem(LS_API, e.target.value.trim()));
+
+  // responsive sidebar toggle
+  $('#sidebarToggle').onclick = () => $('#left').classList.toggle('open');
 
   // tabs
   $$('.tab-btn').forEach(b => b.onclick = () => switchView(b.dataset.view));
