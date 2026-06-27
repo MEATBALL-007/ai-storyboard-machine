@@ -2113,6 +2113,7 @@ let _saveTimer = 0;
 function scheduleSave(){ clearTimeout(_saveTimer); _saveTimer = setTimeout(persistNow, 400); }
 
 function persistNow(){
+  _saveTimer = 0;
   if(APP.readOnly) return;
   const name = $('#projName').value || APP.name || 'Untitled';
   APP.name = name;
@@ -2157,6 +2158,7 @@ function renderProjectList() {
   $$('#projList .proj-item').forEach(it => it.onclick = e => {
     if (e.target.dataset.del !== undefined) {
       const list = getProjects().filter(p => p.name !== e.target.dataset.del);
+      clearTimeout(_saveTimer); _saveTimer = 0;
       saveProjects(list); renderProjectList(); toast('Project deleted'); return;
     }
     loadProject(it.dataset.name);
