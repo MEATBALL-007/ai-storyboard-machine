@@ -117,6 +117,7 @@
   .dots span:nth-child(2){animation-delay:.16s}
   .dots span:nth-child(3){animation-delay:.32s}
   @keyframes bounce{0%,80%,100%{transform:scale(.5);opacity:.4}40%{transform:scale(1);opacity:1}}
+  @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
   .loading-txt{font-size:10px; color:var(--muted); margin:8px 0}
   #cancelBtn{
     font-size:9.5px; color:var(--secondary); border:1px solid var(--dim);
@@ -169,10 +170,12 @@
   .panel-card{
     background:var(--card); border:1px solid var(--line); border-radius:5px;
     overflow:hidden; transition:.12s; cursor:grab; position:relative;
+    animation:cardIn .25s ease both;
   }
+  @keyframes cardIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
   .panel-card:hover{border-color:var(--dim); transform:translateY(-1px)}
   .panel-card.dragging{opacity:.4; cursor:grabbing}
-  .panel-card.drag-over{border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent)}
+  .panel-card.drag-over{border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); outline:2px dashed var(--accent); outline-offset:-2px}
   .panel-card.sel{border-color:var(--accent)}
   .pc-canvas-wrap{position:relative; background:#000; line-height:0}
   .pc-canvas-wrap canvas{width:100%; height:auto; display:block}
@@ -1661,6 +1664,7 @@ async function generateStoryboard() {
     // procedural generation from the script locally
     showLoading('Generating ' + settings.panelCount + ' panels...');
     STATE.abort = false;
+    renderSkeleton(parseInt(settings.panelCount)||8);
     await fakeDelay(700);
     if (STATE.abort) { hideLoading(); toast('Cancelled'); return; }
     const demo = buildDemoStoryboard(settings, script);
@@ -1672,6 +1676,7 @@ async function generateStoryboard() {
 
   showLoading('Generating ' + settings.panelCount + ' panels...');
   STATE.abort = false;
+  renderSkeleton(parseInt(settings.panelCount)||8);
   try {
     const storyboard = await callClaude(STORYBOARD_PROMPT(script, settings), { maxTokens: 4000 });
     if (STATE.abort) { hideLoading(); return; }
@@ -1679,7 +1684,7 @@ async function generateStoryboard() {
     applyStoryboard(storyboard);
     toast('AI generated ' + storyboard.panels.length + ' panels');
   } catch (err) {
-    showError('Generation failed: ' + err.message);
+    renderErrorCard(err.message, generateStoryboard);
     console.error(err);
   } finally {
     hideLoading();
@@ -1913,14 +1918,16 @@ function buildSampleStoryboard() {
 
 function renderStoryboard(sb) {
   const grid = $('#grid');
-  grid.innerHTML = '';
   const [aw, ah] = aspectDims(STATE.settings.aspectRatio || '16:9');
 
-  // header
+  // header (always update, even for empty)
   $('#gh-title').textContent = sb.title;
-  $('#gh-panels').innerHTML = '<b>' + sb.panels.length + '</b> panels';
-  $('#gh-dur').innerHTML = '~<b>' + sb.total_duration_seconds + 's</b> total est.';
+  $('#gh-panels').innerHTML = '<b>' + (sb.panels ? sb.panels.length : 0) + '</b> panels';
+  $('#gh-dur').innerHTML = '~<b>' + (sb.total_duration_seconds || 0) + 's</b> total est.';
 
+  if(!sb.panels || !sb.panels.length){ renderEmptyState(); return; }
+
+  grid.innerHTML = '';
   sb.panels.forEach((panel, idx) => {
     grid.appendChild(buildPanelCard(panel, idx, aw, ah));
   });
@@ -2004,6 +2011,16 @@ function buildPanelCard(panel, idx, aw, ah) {
 function escapeHtml(s) {
   return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 }
+
+function renderEmptyState(){ $('#grid').innerHTML =
+  `<div class="empty-state" style="grid-column:1/-1"><div class="big">✦</div>
+   <h2>No storyboard yet</h2><p>Write a scene on the left and press <b>✦ Generate</b> (or G).</p></div>`; }
+function renderSkeleton(n){ $('#grid').innerHTML = Array.from({length:n}, () =>
+  `<div class="panel-card"><div class="pc-canvas-wrap" style="aspect-ratio:16/9;background:linear-gradient(90deg,#111,#161616,#111);background-size:200% 100%;animation:shimmer 1.2s infinite"></div></div>`).join(''); }
+function renderErrorCard(msg, retry){ $('#grid').innerHTML =
+  `<div class="empty-state" style="grid-column:1/-1"><div class="big" style="color:var(--secondary)">⚠</div>
+   <h2>Generation failed</h2><p>${escapeHtml(msg)}</p><button id="retryGen" class="tab-btn" style="margin-top:12px">↻ Retry</button></div>`;
+  const r = $('#retryGen'); if(r && retry) r.onclick = retry; }
 
 function reorderPanels(fromId, toId) {
   if (fromId === toId) return;
