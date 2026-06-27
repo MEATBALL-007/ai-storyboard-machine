@@ -793,6 +793,33 @@ function snapshot(store){
   store.history.future.length = 0;
 }
 function applyMutation(store, fn){ snapshot(store); fn(store.project); return store; }
+function analyzeContinuity(panels){
+  const out = [];
+  if(!panels.length) return out;
+  const first = panels[0];
+  if(!['EWS','WS','MLS','AERIAL'].includes(first.shot_size))
+    out.push({ sev:'note', id:first.id, msg:'Scene opens tight — consider a wider establishing shot first.' });
+  for(let i=1;i<panels.length;i++){
+    const a = panels[i-1], b = panels[i];
+    if(a.shot_size === b.shot_size)
+      out.push({ sev:'warn', id:b.id, msg:`Repeated ${b.shot_size} after ${a.id} — vary the coverage.` });
+    const fa = (a.composition.subjects||[])[0], fb = (b.composition.subjects||[])[0];
+    if(fa && fb && (fa.facing==='left'&&fb.facing==='right' || fa.facing==='right'&&fb.facing==='left') && b.special!=='ots')
+      out.push({ sev:'warn', id:b.id, msg:`Subject facing flips ${fa.facing}→${fb.facing} — possible 180° line cross.` });
+    const sm = { tiny:0, small:1, medium:2, large:3 };
+    const fas = (fa&&sm[fa.scale]) ?? 2, fbs = (fb&&sm[fb.scale]) ?? 2;
+    if(Math.abs(fas - fbs) >= 3)
+      out.push({ sev:'note', id:b.id, msg:`Large size jump from ${a.id} — may feel like a cut on the same axis.` });
+    if(b.duration_seconds > 8)
+      out.push({ sev:'note', id:b.id, msg:`Long take (${b.duration_seconds}s) — confirm it earns the hold.` });
+  }
+  // angle monotony
+  for(let i=2;i<panels.length;i++){
+    if(panels[i].camera_angle===panels[i-1].camera_angle && panels[i-1].camera_angle===panels[i-2].camera_angle)
+      out.push({ sev:'note', id:panels[i].id, msg:`Three ${panels[i].camera_angle} angles in a row — break the rhythm.` });
+  }
+  return out;
+}
 // ==PURE-LOGIC-END==
 
 // rough hand-drawn line helper
@@ -2226,6 +2253,15 @@ function __TESTS(assert, assertEq){
   assertEq(st.project.name, 'b', 'mutate applies fn');
   assertEq(st.history.past.length, 1, 'mutate snapshots');
   assertEq(st.history.past[0].name, 'a', 'snapshot is pre-mutation clone');
+  const mk = (o) => Object.assign({ shot_size:'MS', camera_angle:'Eye Level', duration_seconds:3, special:null, composition:{subjects:[]} }, o);
+  const rep = analyzeContinuity([ mk({id:'F01',shot_size:'CU'}), mk({id:'F02',shot_size:'CU'}) ]);
+  assert(rep.some(w => w.id==='F02' && /Repeated CU/.test(w.msg)), 'flags repeated shot size');
+  const line = analyzeContinuity([
+    mk({id:'F01',shot_size:'WS',composition:{subjects:[{facing:'left',scale:'medium'}]}}),
+    mk({id:'F02',shot_size:'MS',composition:{subjects:[{facing:'right',scale:'medium'}]}}),
+  ]);
+  assert(line.some(w => w.id==='F02' && /180/.test(w.msg)), 'flags 180-line cross');
+  assertEq(analyzeContinuity([]).length, 0, 'empty -> no warnings');
 }
 // ==TESTS-END==
 
@@ -2491,34 +2527,6 @@ function runContinuity(){
   $('#contBack').onclick = () => { STATE.rightMode='shotlist'; renderShotList(); };
   toast(warns.length ? warns.length + ' continuity note' + (warns.length>1?'s':'') : 'Continuity clean ✓');
 }
-function analyzeContinuity(panels){
-  const out = [];
-  if(!panels.length) return out;
-  const first = panels[0];
-  if(!['EWS','WS','MLS','AERIAL'].includes(first.shot_size))
-    out.push({ sev:'note', id:first.id, msg:'Scene opens tight — consider a wider establishing shot first.' });
-  for(let i=1;i<panels.length;i++){
-    const a = panels[i-1], b = panels[i];
-    if(a.shot_size === b.shot_size)
-      out.push({ sev:'warn', id:b.id, msg:`Repeated ${b.shot_size} after ${a.id} — vary the coverage.` });
-    const fa = (a.composition.subjects||[])[0], fb = (b.composition.subjects||[])[0];
-    if(fa && fb && (fa.facing==='left'&&fb.facing==='right' || fa.facing==='right'&&fb.facing==='left') && b.special!=='ots')
-      out.push({ sev:'warn', id:b.id, msg:`Subject facing flips ${fa.facing}→${fb.facing} — possible 180° line cross.` });
-    const sm = { tiny:0, small:1, medium:2, large:3 };
-    const fas = (fa&&sm[fa.scale]) ?? 2, fbs = (fb&&sm[fb.scale]) ?? 2;
-    if(Math.abs(fas - fbs) >= 3)
-      out.push({ sev:'note', id:b.id, msg:`Large size jump from ${a.id} — may feel like a cut on the same axis.` });
-    if(b.duration_seconds > 8)
-      out.push({ sev:'note', id:b.id, msg:`Long take (${b.duration_seconds}s) — confirm it earns the hold.` });
-  }
-  // angle monotony
-  for(let i=2;i<panels.length;i++){
-    if(panels[i].camera_angle===panels[i-1].camera_angle && panels[i-1].camera_angle===panels[i-2].camera_angle)
-      out.push({ sev:'note', id:panels[i].id, msg:`Three ${panels[i].camera_angle} angles in a row — break the rhythm.` });
-  }
-  return out;
-}
-
 /* ════════ (#5) REFERENCE IMAGE → PALETTE ════════ */
 function extractPaletteFromImage(file){
   const img = new Image();
