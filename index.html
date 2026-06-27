@@ -2891,7 +2891,9 @@ function exportContactSheet(){
     ctx.fillStyle='#999'; ctx.font='11px ui-monospace';
     ctx.fillText((p.action||'').slice(0,40), x, y+chh+36);
   });
-  cv.toBlob(b => { const u=URL.createObjectURL(b); const a=ce('a'); a.href=u; a.download=`contactsheet-${safeName(sb.title)}.png`; a.click(); setTimeout(()=>URL.revokeObjectURL(u),1000); });
+  try { cv.toBlob(b => { if(!b){ showError('Export blocked (AI image from URL taints the canvas). Use base64 image output.'); return; }
+    const u=URL.createObjectURL(b); const a=ce('a'); a.href=u; a.download=`contactsheet-${safeName(sb.title)}.png`; a.click(); setTimeout(()=>URL.revokeObjectURL(u),1000); }); }
+  catch(e){ showError('Export blocked by a cross-origin AI image. Use base64 (b64_json) output.'); }
   toast('Contact sheet PNG exported');
 }
 function exportCallSheet(){
