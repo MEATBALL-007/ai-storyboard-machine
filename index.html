@@ -2302,7 +2302,11 @@ function renderSceneBar(){
     if(e.target.dataset.del !== undefined){
       if(APP.readOnly) return toast('Read-only view', true);
       const di = +e.target.dataset.del;
-      mutate(p => { p.scenes.splice(di, 1); });
+      // delete-scene shifts APP.active's target, so DON'T use mutate() (its
+      // auto-save would write STATE.storyboard onto the wrong scene mid-shift).
+      // Snapshot for undo via applyMutation, then let activateScene save once
+      // APP.active and STATE.storyboard are corrected.
+      applyMutation(store, p => { p.scenes.splice(di, 1); });
       if(APP.active >= APP.scenes.length) APP.active = APP.scenes.length - 1;
       activateScene(APP.active);
       return;
