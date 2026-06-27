@@ -820,6 +820,24 @@ function analyzeContinuity(panels){
   }
   return out;
 }
+function splitScriptToSegments(text){
+  const slugRe = /^\s*(INT\.?|EXT\.?|INT\.?\/EXT\.?|I\/E)\b/i;
+  const lines = String(text).split(/\r?\n/);
+  const segs = []; let cur = null;
+  lines.forEach(ln => {
+    if(slugRe.test(ln)){ cur = { title: ln.trim(), body: [] }; segs.push(cur); }
+    else { if(!cur){ cur = { title: 'Scene 1', body: [] }; segs.push(cur); } cur.body.push(ln); }
+  });
+  if(segs.length < 2){
+    const paras = String(text).split(/\n\s*\n/).filter(p => p.trim());
+    if(paras.length > 1){
+      segs.length = 0;
+      paras.forEach((p,i) => segs.push({ title:'Scene '+(i+1), body:[p] }));
+    }
+  }
+  if(!segs.length) segs.push({ title:'Scene 1', body:[String(text)] });
+  return segs;
+}
 // ==PURE-LOGIC-END==
 
 // rough hand-drawn line helper
@@ -2262,6 +2280,12 @@ function __TESTS(assert, assertEq){
   ]);
   assert(line.some(w => w.id==='F02' && /180/.test(w.msg)), 'flags 180-line cross');
   assertEq(analyzeContinuity([]).length, 0, 'empty -> no warnings');
+  const s1 = splitScriptToSegments("INT. ROOM - DAY\nShe waits.\nEXT. STREET - NIGHT\nHe leaves.");
+  assertEq(s1.length, 2, 'two sluglines -> two scenes');
+  assert(/INT\. ROOM/.test(s1[0].title), 'first slug title');
+  const s2 = splitScriptToSegments("para one\n\npara two\n\npara three");
+  assertEq(s2.length, 3, 'no slugs -> split on blank lines');
+  assertEq(splitScriptToSegments("").length, 1, 'empty -> one scene');
 }
 // ==TESTS-END==
 
@@ -2600,23 +2624,7 @@ function parseScriptToScenes(){
   if(APP.readOnly) return toast('Read-only view', true);
   const text = $('#script').value.trim();
   if(!text) return showError('Paste a script first');
-  const lines = text.split(/\r?\n/);
-  const slugRe = /^\s*(INT\.?|EXT\.?|INT\.?\/EXT\.?|I\/E)\b/i;
-  const segs = []; let cur = null;
-  lines.forEach(ln => {
-    if(slugRe.test(ln)){ cur = { title: ln.trim().replace(/^\s*/,''), body:[] }; segs.push(cur); }
-    else if(cur){ cur.body.push(ln); }
-    else { if(!cur){ cur = { title:'Scene 1', body:[] }; segs.push(cur); } cur.body.push(ln); }
-  });
-  if(segs.length < 2){
-    // fallback: split on blank-line paragraph clusters into ~4 scenes
-    const paras = text.split(/\n\s*\n/).filter(p=>p.trim());
-    const per = Math.max(1, Math.ceil(paras.length / Math.min(4, Math.max(1,paras.length))));
-    segs.length = 0;
-    for(let i=0;i<paras.length;i+=per)
-      segs.push({ title:'Scene '+(segs.length+1), body: paras.slice(i,i+per) });
-    if(!segs.length) segs.push({ title:'Scene 1', body:[text] });
-  }
+  const segs = splitScriptToSegments(text);
   const base = readSettings();
   APP.scenes = segs.map((s,i) => {
     const wordCt = s.body.join(' ').split(/\s+/).filter(Boolean).length;
