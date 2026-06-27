@@ -772,6 +772,19 @@ const MOVEMENT_ARROWS = {
   'Crane Down':[[0.12,0.3],[0.12,0.72]],
 };
 
+// ==PURE-LOGIC-START==
+function aspectDims(ratio){
+  const map = { '16:9':[160,90], '2.39:1':[160,67], '4:3':[160,120], '1:1':[120,120] };
+  return map[ratio] || [160,100];
+}
+function hexToRgb(hex){
+  hex = (hex || '#000').replace('#','');
+  if(hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  const n = parseInt(hex, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+// ==PURE-LOGIC-END==
+
 // rough hand-drawn line helper
 function roughLine(ctx, x1, y1, x2, y2, jitter) {
   jitter = jitter || 0.6;
@@ -1495,11 +1508,6 @@ function buildSampleStoryboard() {
    RENDERING — Grid, panels, color bible, shot list
    ════════════════════════════════════════════════════════════════ */
 
-function aspectDims(ratio) {
-  const map = { '16:9':[160,90], '2.39:1':[160,67], '4:3':[160,120], '1:1':[120,120] };
-  return map[ratio] || [160,100];
-}
-
 function renderStoryboard(sb) {
   const grid = $('#grid');
   grid.innerHTML = '';
@@ -1890,13 +1898,6 @@ function renderExportCanvas(panel) {
   return cv;
 }
 
-function hexToRgb(hex) {
-  hex = (hex || '#000').replace('#', '');
-  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
-  const n = parseInt(hex, 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}
-
 /* ─── CSV export ─── */
 function exportCSV() {
   const sb = STATE.storyboard;
@@ -2162,6 +2163,26 @@ function boot() {
     applyStoryboard(sb);
   }
   renderProjectList();
+}
+
+// ==TESTS-START==
+function __TESTS(assert, assertEq){
+  assertEq(aspectDims('16:9'), [160,90], 'aspectDims 16:9');
+  assertEq(aspectDims('1:1'), [120,120], 'aspectDims 1:1');
+  assertEq(aspectDims('weird'), [160,100], 'aspectDims fallback');
+  assertEq(hexToRgb('#FFC72C'), [255,199,44], 'hexToRgb full');
+  assertEq(hexToRgb('#fff'), [255,255,255], 'hexToRgb short');
+}
+// ==TESTS-END==
+
+if (location.search.includes('test')) {
+  const out = []; let pass = 0, fail = 0;
+  const A = (c,m) => { if(c) pass++; else { fail++; out.push('✗ ' + (m||'')); } };
+  const AE = (a,b,m) => A(JSON.stringify(a)===JSON.stringify(b), `${m||''} expected ${JSON.stringify(b)} got ${JSON.stringify(a)}`);
+  __TESTS(A, AE);
+  document.body.innerHTML = `<pre style="font:14px ui-monospace;padding:24px;color:${fail?'#FA4616':'#7ac87a'}">`
+    + `${pass} passed, ${fail} failed\n\n${out.join('\n')}</pre>`;
+  throw 'tests-only';  // stop normal boot
 }
 
 document.addEventListener('DOMContentLoaded', boot);
