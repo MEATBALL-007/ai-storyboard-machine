@@ -704,6 +704,7 @@
    Single-file vanilla JS. Canvas drawing + PDF export are hero features.
    ════════════════════════════════════════════════════════════════ */
 
+/* ============ CONFIG ============ */
 const PROJECT = { director: 'MEATBALL-007' };
 const LS_KEY = 'phantom_storyboard_projects_v1';
 const LS_CUR = 'phantom_storyboard_current_v1';
@@ -736,6 +737,7 @@ function toast(msg, isErr) {
 }
 const showError = m => toast(m, true);
 
+/* ============ ENGINE ============ */
 /* ════════════════════════════════════════════════════════════════
    CANVAS DRAWING SYSTEM  (HERO FEATURE)
    Renders evocative, rough storyboard thumbnails.
@@ -772,6 +774,7 @@ const MOVEMENT_ARROWS = {
   'Crane Down':[[0.12,0.3],[0.12,0.72]],
 };
 
+/* ============ PURE-LOGIC (markered) ============ */
 // ==PURE-LOGIC-START==
 function aspectDims(ratio){
   const map = { '16:9':[160,90], '2.39:1':[160,67], '4:3':[160,120], '1:1':[120,120] };
@@ -845,6 +848,7 @@ function drawHuman(ctx, cx, by, fw, fh, color, facing, dutch) {
   ctx.restore();
 }
 
+/* ============ CANVAS ============ */
 function drawPanel(canvas, panel) {
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
@@ -1504,6 +1508,7 @@ function buildSampleStoryboard() {
   };
 }
 
+/* ============ RENDER ============ */
 /* ════════════════════════════════════════════════════════════════
    RENDERING — Grid, panels, color bible, shot list
    ════════════════════════════════════════════════════════════════ */
@@ -1956,6 +1961,7 @@ function setChip(group, val) {
   $$(group + ' .chip').forEach(c => c.classList.toggle('sel', c.dataset.v === String(val)));
 }
 
+/* ============ STORAGE ============ */
 /* localStorage: projects (up to 10) */
 function getProjects() {
   try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch { return []; }
@@ -2028,6 +2034,7 @@ function openRegen(id) {
 }
 function closeRegen() { $('#regenModal').classList.remove('on'); }
 
+/* ============ WIRING ============ */
 /* ════════════════════════════════════════════════════════════════
    EVENT WIRING
    ════════════════════════════════════════════════════════════════ */
@@ -2147,6 +2154,7 @@ function setCols(n) {
   $$('#colToggle button').forEach(b => b.classList.toggle('on', parseInt(b.dataset.c) === n));
 }
 
+/* ============ BOOT ============ */
 /* ════════════════════════════════════════════════════════════════
    BOOT
    ════════════════════════════════════════════════════════════════ */
@@ -2165,6 +2173,7 @@ function boot() {
   renderProjectList();
 }
 
+/* ============ TESTS (markered) ============ */
 // ==TESTS-START==
 function __TESTS(assert, assertEq){
   assertEq(aspectDims('16:9'), [160,90], 'aspectDims 16:9');
@@ -2186,14 +2195,8 @@ if (location.search.includes('test')) {
 }
 
 document.addEventListener('DOMContentLoaded', boot);
-</script>
 
-<!-- ════════════════════════════════════════════════════════════════
-     v2 FEATURE LAYER — 10 enhancements, additive over the core engine
-     ════════════════════════════════════════════════════════════════ -->
-<script>
-(function(){
-'use strict';
+/* ============ FEATURES ============ */
 
 /* ─── multi-scene container (#6) ─── */
 let APP = { name:'', director:'MEATBALL-007', scenes:[], active:0, readOnly:false };
@@ -3066,8 +3069,6 @@ function initV2(){
   };
 }
 document.addEventListener('DOMContentLoaded', initV2);
-
-})();
 </script>
 </body>
 </html>
