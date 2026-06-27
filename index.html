@@ -902,6 +902,13 @@ function shotFraming(size){
   };
   return M[size] || { zoom:1.2, subjectY:1.0, cropTop:0 };
 }
+function poseFromAction(action){
+  const a = String(action || '').toLowerCase();
+  if(/\b(sits|sitting|sat|seated|chair|edge of)\b/.test(a)) return 'sitting';
+  if(/\b(lies|lying|lay|bed|asleep|sleep|floor)\b/.test(a)) return 'lying';
+  if(/\b(reaches|reaching|reach|grabs|hand)\b/.test(a)) return 'reaching';
+  return 'standing';
+}
 // ==PURE-LOGIC-END==
 
 // rough hand-drawn line helper
@@ -924,43 +931,154 @@ function pseudoRand(seed) {
   return x - Math.floor(x);
 }
 
-function drawHuman(ctx, cx, by, fw, fh, color, facing, dutch) {
+function drawHuman(ctx, cx, by, fw, fh, color, facing, pose) {
+  pose = pose || 'standing';
   ctx.save();
   ctx.fillStyle = color;
   ctx.strokeStyle = color;
-  const headR = fw * 0.40;
-  const bodyTop = by - fh;
-  const shoulderY = bodyTop + headR * 1.7;
-
-  // head
-  ctx.beginPath();
-  ctx.arc(cx, bodyTop + headR, headR, 0, Math.PI * 2);
-  ctx.fill();
-
-  // torso (tapered) — rough trapezoid
+  const headR    = fw * 0.40;
   const shoulderW = fw * 0.92;
-  const hipW = fw * 0.62;
-  const hipY = by - fh * 0.40;
-  ctx.beginPath();
-  ctx.moveTo(cx - shoulderW/2, shoulderY);
-  ctx.lineTo(cx + shoulderW/2, shoulderY);
-  ctx.lineTo(cx + hipW/2, hipY);
-  ctx.lineTo(cx - hipW/2, hipY);
-  ctx.closePath();
-  ctx.fill();
+  const hipW     = fw * 0.62;
+  const legW     = hipW * 0.42;
 
-  // legs
-  const legW = hipW * 0.42;
-  ctx.fillRect(cx - hipW/2, hipY, legW, by - hipY);
-  ctx.fillRect(cx + hipW/2 - legW, hipY, legW, by - hipY);
+  if (pose === 'lying') {
+    // body rendered roughly horizontal near the ground line
+    const dir   = facing === 'left' ? -1 : 1;
+    const span  = fh * 0.60;        // total horizontal extent
+    const thick = fw * 0.48;        // body thickness (vertical)
+    const hR    = thick * 0.50;     // head radius
+    const yMid  = by - thick * 0.5; // vertical centre of body
+    const headX = cx + dir * span * 0.36;
+    const feetX = cx - dir * span * 0.36;
 
-  // facing nub (nose direction) — light marker
-  if (facing === 'left' || facing === 'right') {
-    const dir = facing === 'right' ? 1 : -1;
+    // body rectangle (shoulders-to-hips region)
+    const bx1 = Math.min(feetX, headX - dir * hR * 0.6);
+    const bx2 = Math.max(feetX, headX - dir * hR * 0.6);
+    ctx.fillRect(bx1, yMid - thick / 2, bx2 - bx1, thick);
+
+    // head
     ctx.beginPath();
-    ctx.arc(cx + dir * headR * 0.7, bodyTop + headR, headR * 0.22, 0, Math.PI * 2);
+    ctx.arc(headX, yMid, hR, 0, Math.PI * 2);
     ctx.fill();
+
+    // legs (two thin blocks at feet end)
+    const legThick = thick * 0.30;
+    const legLen   = span * 0.25;
+    const lx1 = Math.min(feetX, feetX - dir * legLen);
+    const lx2 = Math.max(feetX, feetX - dir * legLen);
+    ctx.fillRect(lx1, yMid - legThick - legThick * 0.3, lx2 - lx1, legThick);
+    ctx.fillRect(lx1, yMid + legThick * 0.3,            lx2 - lx1, legThick);
+
+  } else if (pose === 'sitting') {
+    // head + torso above seat; thighs horizontal, shins drop down
+    const seatY   = by - fh * 0.08;       // hip/seat level (slightly above ground)
+    const sitTop  = seatY - fh * 0.52;    // top of head
+    const sitShdY = sitTop + headR * 1.7; // shoulder level
+    const thighLen = fw * 0.55;
+    const shinH    = fh * 0.26;
+    const dir = facing === 'right' ? 1 : -1;
+
+    // head
+    ctx.beginPath();
+    ctx.arc(cx, sitTop + headR, headR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // torso
+    ctx.beginPath();
+    ctx.moveTo(cx - shoulderW / 2, sitShdY);
+    ctx.lineTo(cx + shoulderW / 2, sitShdY);
+    ctx.lineTo(cx + hipW / 2, seatY);
+    ctx.lineTo(cx - hipW / 2, seatY);
+    ctx.closePath();
+    ctx.fill();
+
+    // left thigh (horizontal left) + left shin (down)
+    ctx.fillRect(cx - hipW / 2 - thighLen, seatY, thighLen, legW);
+    ctx.fillRect(cx - hipW / 2 - thighLen, seatY, legW, shinH);
+
+    // right thigh (horizontal right) + right shin (down)
+    ctx.fillRect(cx + hipW / 2, seatY, thighLen, legW);
+    ctx.fillRect(cx + hipW / 2 + thighLen - legW, seatY, legW, shinH);
+
+    // facing nub
+    if (facing === 'left' || facing === 'right') {
+      ctx.beginPath();
+      ctx.arc(cx + dir * headR * 0.7, sitTop + headR, headR * 0.22, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+  } else if (pose === 'reaching') {
+    // standard standing figure + one arm extended horizontally toward facing
+    const bodyTop   = by - fh;
+    const shoulderY = bodyTop + headR * 1.7;
+    const hipY      = by - fh * 0.40;
+    const dir = facing === 'left' ? -1 : 1;
+    const armW   = fw * 0.22;
+    const armLen = fw * 0.72;
+
+    // head
+    ctx.beginPath();
+    ctx.arc(cx, bodyTop + headR, headR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // torso
+    ctx.beginPath();
+    ctx.moveTo(cx - shoulderW / 2, shoulderY);
+    ctx.lineTo(cx + shoulderW / 2, shoulderY);
+    ctx.lineTo(cx + hipW / 2, hipY);
+    ctx.lineTo(cx - hipW / 2, hipY);
+    ctx.closePath();
+    ctx.fill();
+
+    // legs
+    ctx.fillRect(cx - hipW / 2, hipY, legW, by - hipY);
+    ctx.fillRect(cx + hipW / 2 - legW, hipY, legW, by - hipY);
+
+    // extended arm toward facing direction
+    const armStartX = cx + dir * shoulderW / 2;
+    ctx.fillRect(Math.min(armStartX, armStartX + dir * armLen),
+                 shoulderY - armW / 2, armLen, armW);
+
+    // facing nub
+    if (facing === 'left' || facing === 'right') {
+      ctx.beginPath();
+      ctx.arc(cx + dir * headR * 0.7, bodyTop + headR, headR * 0.22, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+  } else {
+    // 'standing' — original geometry unchanged
+    const bodyTop   = by - fh;
+    const shoulderY = bodyTop + headR * 1.7;
+    const hipY      = by - fh * 0.40;
+
+    // head
+    ctx.beginPath();
+    ctx.arc(cx, bodyTop + headR, headR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // torso (tapered) — rough trapezoid
+    ctx.beginPath();
+    ctx.moveTo(cx - shoulderW / 2, shoulderY);
+    ctx.lineTo(cx + shoulderW / 2, shoulderY);
+    ctx.lineTo(cx + hipW / 2, hipY);
+    ctx.lineTo(cx - hipW / 2, hipY);
+    ctx.closePath();
+    ctx.fill();
+
+    // legs
+    ctx.fillRect(cx - hipW / 2, hipY, legW, by - hipY);
+    ctx.fillRect(cx + hipW / 2 - legW, hipY, legW, by - hipY);
+
+    // facing nub (nose direction) — light marker
+    if (facing === 'left' || facing === 'right') {
+      const dir = facing === 'right' ? 1 : -1;
+      ctx.beginPath();
+      ctx.arc(cx + dir * headR * 0.7, bodyTop + headR, headR * 0.22, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
+
   ctx.restore();
 }
 
@@ -1115,7 +1233,7 @@ function drawPanel(canvas, panel) {
     ctx.beginPath();
     ctx.ellipse(cx, by, fw*0.7, fh*0.04, 0, 0, Math.PI*2);
     ctx.fill();
-    drawHuman(ctx, cx, by, fw, fh, `rgba(${d},${d},${d},0.9)`, subj.facing, false);
+    drawHuman(ctx, cx, by, fw, fh, `rgba(${d},${d},${d},0.9)`, subj.facing, subj.pose || poseFromAction(panel.action));
     // subject id label
     if (subj.id && (subj.scale === 'large' || subj.scale === 'medium')) {
       ctx.fillStyle = 'rgba(255,255,255,0.55)';
@@ -2406,6 +2524,9 @@ function __TESTS(assert, assertEq){
   assert(shotFraming('ECU').zoom > shotFraming('WS').zoom, 'ECU zooms more than WS');
   assertEq(shotFraming('WS').cropTop, 0, 'WS no crop');
   assert(shotFraming('unknown').zoom > 0, 'unknown -> safe default');
+  assertEq(poseFromAction('She sits on the edge of the bed'), 'sitting', 'sitting from action');
+  assertEq(poseFromAction('He lies on the floor'), 'lying', 'lying from action');
+  assertEq(poseFromAction('A figure walks in'), 'standing', 'default standing');
 }
 // ==TESTS-END==
 
