@@ -13,7 +13,7 @@
     --bg:#0D0D0D; --surface:#111111; --surface2:#141414;
     --panel:#0C0C0C; --card:#111111;
     --accent:#FFC72C; --secondary:#FA4616;
-    --text:#E0E0E0; --muted:#555555; --dim:#2E2E2E;
+    --text:#E0E0E0; --muted:#9a9a9a; --dim:#2E2E2E;
     --line:#1c1c1c;
     --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   }
@@ -445,6 +445,9 @@
   .toggle-row input{accent-color:var(--accent)}
   .panel-card .pc-imgbadge{position:absolute; bottom:5px; left:5px; background:rgba(80,180,90,.85); color:#000; font-size:7px; font-weight:700; padding:1px 5px; border-radius:2px; letter-spacing:.3px}
 
+  :focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  @media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition:none!important}}
+
   /* ───── RESPONSIVE ───── */
   #sidebarToggle{display:none}
   @media(max-width:1100px){
@@ -464,7 +467,7 @@
 <body>
 
 <!-- ════ TOP BAR ════ -->
-<div id="topbar">
+<div id="topbar" role="banner">
   <button id="sidebarToggle" aria-label="Toggle script &amp; settings panel">☰</button>
   <div id="logo">
     <span class="mark">✦</span>
@@ -478,7 +481,7 @@
   <button class="icon-btn" id="continuityBtn" title="Continuity check">✓ CHECK</button>
   <button class="icon-btn" id="shareBtn" title="Copy share link">↗ SHARE</button>
   <div class="menu-wrap">
-    <button id="exportMenuBtn" style="padding:5px 12px; font-size:10.5px; font-weight:700; border-radius:3px; background:var(--accent); color:#000; letter-spacing:.4px">⤓ EXPORT ▾</button>
+    <button id="exportMenuBtn" aria-label="Open export menu" aria-haspopup="true" style="padding:5px 12px; font-size:10.5px; font-weight:700; border-radius:3px; background:var(--accent); color:#000; letter-spacing:.4px">⤓ EXPORT ▾</button>
     <div class="menu-pop" id="exportMenu">
       <div class="mh">STORYBOARD</div>
       <button data-exp="pdf">Storyboard PDF (all scenes)</button>
@@ -495,7 +498,7 @@
   </div>
 </div>
 <div class="ro-banner" id="roBanner">◉ SHARED READ-ONLY VIEW — changes won't be saved. Use “+ New” to fork your own copy.</div>
-<div id="sceneBar">
+<div id="sceneBar" role="navigation" aria-label="Scene navigation">
   <span class="lbl">SCENES</span>
   <div id="sceneChips" style="display:flex; gap:6px"></div>
   <button id="addSceneBtn" title="Add scene">+ Scene</button>
@@ -505,7 +508,7 @@
 <div id="main">
 
   <!-- ════ LEFT SIDEBAR ════ -->
-  <aside id="left">
+  <aside id="left" role="complementary" aria-label="Script and settings">
 
     <div class="section">
       <h3>Script Input</h3>
@@ -615,7 +618,7 @@
   </aside>
 
   <!-- ════ CENTER ════ -->
-  <section id="center">
+  <section id="center" role="main">
 
     <!-- GRID VIEW -->
     <div class="view on" id="gridView">
@@ -633,10 +636,10 @@
           <button data-dn="night">☾ NIGHT</button>
         </div>
         <div class="ovl-toggle" id="ovlToggle" title="Framing guides">
-          <button data-ovl="thirds">⊞ 3RDS</button>
-          <button data-ovl="center">✛ CTR</button>
-          <button data-ovl="safe">▭ SAFE</button>
-          <button data-ovl="fov">◎ FOV</button>
+          <button data-ovl="thirds" aria-label="Toggle rule of thirds overlay">⊞ 3RDS</button>
+          <button data-ovl="center" aria-label="Toggle center crosshair overlay">✛ CTR</button>
+          <button data-ovl="safe" aria-label="Toggle safe-area overlay">▭ SAFE</button>
+          <button data-ovl="fov" aria-label="Toggle field-of-view overlay">◎ FOV</button>
         </div>
       </div>
       <div id="grid"></div>
@@ -671,7 +674,7 @@
   </section>
 
   <!-- ════ RIGHT SIDEBAR ════ -->
-  <aside id="right">
+  <aside id="right" role="complementary" aria-label="Shot list and panel details">
     <button id="collapseRight" class="tab-btn" style="display:none"></button>
     <div class="right-head">
       <h3 id="rightTitle">Shot List</h3>
@@ -690,12 +693,12 @@
   </div>
   <div id="animaticTrack"></div>
   <div id="animaticBar">
-    <button id="aPrev" title="Previous">⏮</button>
-    <button id="aPlay" class="pp" title="Play/Pause">▶</button>
-    <button id="aNext" title="Next">⏭</button>
-    <input type="range" id="scrub" min="0" max="1000" value="0">
+    <button id="aPrev" aria-label="Previous panel" title="Previous">⏮</button>
+    <button id="aPlay" class="pp" aria-label="Play animatic" title="Play/Pause">▶</button>
+    <button id="aNext" aria-label="Next panel" title="Next">⏭</button>
+    <input type="range" id="scrub" aria-label="Scrub timeline" min="0" max="1000" value="0">
     <span id="animaticTime">00 / 00</span>
-    <button id="animaticClose" title="Close (Esc)">✕ Close</button>
+    <button id="animaticClose" aria-label="Close animatic player" title="Close (Esc)">✕ Close</button>
   </div>
 </div>
 
@@ -1958,9 +1961,9 @@ function buildPanelCard(panel, idx, aw, ah) {
     <div class="pc-angle">${panel.camera_angle} · ${panel.camera_movement}</div>
   `;
   const tools = ce('div', 'pc-tools');
-  const bR = ce('button'); bR.innerHTML = '↻'; bR.title = 'Regenerate';
-  const bE = ce('button'); bE.innerHTML = '✎'; bE.title = 'Edit / details';
-  const bX = ce('button', 'del'); bX.innerHTML = '✕'; bX.title = 'Delete';
+  const bR = ce('button'); bR.innerHTML = '↻'; bR.title = 'Regenerate'; bR.setAttribute('aria-label', 'Regenerate panel');
+  const bE = ce('button'); bE.innerHTML = '✎'; bE.title = 'Edit / details'; bE.setAttribute('aria-label', 'Edit panel details');
+  const bX = ce('button', 'del'); bX.innerHTML = '✕'; bX.title = 'Delete'; bX.setAttribute('aria-label', 'Delete panel');
   bR.onclick = e => { e.stopPropagation(); openRegen(panel.id); };
   bE.onclick = e => { e.stopPropagation(); selectPanel(panel.id); };
   bX.onclick = e => { e.stopPropagation(); deletePanel(panel.id); };
@@ -1984,7 +1987,7 @@ function buildPanelCard(panel, idx, aw, ah) {
   const _tools = card.querySelector('.pc-tools');
   if(_tools){
     const ab = document.createElement('button');
-    ab.innerHTML = '✦'; ab.title = 'Generate AI frame art';
+    ab.innerHTML = '✦'; ab.title = 'Generate AI frame art'; ab.setAttribute('aria-label', 'Generate AI frame art');
     ab.onclick = e => { e.stopPropagation(); genPanelImage(panel.id); };
     _tools.insertBefore(ab, _tools.firstChild);
   }
@@ -2603,6 +2606,18 @@ function wire() {
     else if (k === 'delete' && STATE.selectedPanelId) deletePanel(STATE.selectedPanelId);
     else if((e.metaKey||e.ctrlKey) && k==='z' && !e.shiftKey){ e.preventDefault(); doUndo(); }
     else if((e.metaKey||e.ctrlKey) && (k==='y' || (k==='z' && e.shiftKey))){ e.preventDefault(); doRedo(); }
+    else if (e.key === 'ArrowRight' && STATE.selectedPanelId && STATE.storyboard && !$('#animatic').classList.contains('on')) {
+      e.preventDefault();
+      const panels = STATE.storyboard.panels;
+      const idx = panels.findIndex(p => p.id === STATE.selectedPanelId);
+      if (idx >= 0 && idx < panels.length - 1) reorderPanels(STATE.selectedPanelId, panels[idx + 1].id);
+    }
+    else if (e.key === 'ArrowLeft' && STATE.selectedPanelId && STATE.storyboard && !$('#animatic').classList.contains('on')) {
+      e.preventDefault();
+      const panels = STATE.storyboard.panels;
+      const idx = panels.findIndex(p => p.id === STATE.selectedPanelId);
+      if (idx > 0) reorderPanels(STATE.selectedPanelId, panels[idx - 1].id);
+    }
   });
 }
 
