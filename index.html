@@ -2095,7 +2095,7 @@ function applyStoreToUI(){
   if(sc){ STATE.storyboard = sc.storyboard; STATE.settings = sc.settings; }
   renderStoryboard(STATE.storyboard); renderColorBible(STATE.storyboard.color_bible);
   renderShotList(); renderSceneBar(); updateSeqRuntime();
-  try { localStorage.setItem(LS_KEY, JSON.stringify(getProjects())); } catch(e){}
+  saveToLocalStorage(STATE.storyboard);
 }
 function doUndo(){ if(undo(store)){ applyStoreToUI(); toast('Undid last change'); } else toast('Nothing to undo'); }
 function doRedo(){ if(redo(store)){ applyStoreToUI(); toast('Redid change'); } else toast('Nothing to redo'); }
