@@ -10,3 +10,4 @@ export * from './components/Toast';
 export * from './components/Menu';
 export * from './components/SegmentedToggle';
 export * from './components/Swatch';
+export * from './components/Badge';
