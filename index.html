@@ -1101,6 +1101,34 @@ function nextPanelId(panels){
   do { id = 'F' + String(n).padStart(2, '0'); n++; } while(has(id));
   return id;
 }
+// Merge locked panels from an existing board into a freshly generated one:
+// locked panels keep their position; the rest of the slots are filled by the
+// new panels in order (target length = the new board, so total stays stable).
+function mergeLockedPanels(oldPanels, newPanels){
+  const locked = (oldPanels || []).map((p, i) => ({ p, i })).filter(e => e.p && e.p.locked);
+  if(!locked.length) return newPanels.slice();
+  const fresh = newPanels.slice();
+  let len = newPanels.length;
+  locked.forEach(e => { len = Math.max(len, e.i + 1); });
+  const result = new Array(len).fill(null);
+  locked.forEach(e => {
+    let idx = Math.min(e.i, result.length - 1);
+    while(idx < result.length && result[idx]) idx++;
+    if(idx >= result.length) result.push(e.p); else result[idx] = e.p;
+  });
+  for(let i = 0; i < result.length; i++) if(!result[i]) result[i] = fresh.shift() || null;
+  const merged = result.filter(Boolean);
+  // keep ids unique: locked keep theirs, colliding fresh panels get renamed
+  const lockedSet = new Set(locked.map(e => e.p));
+  const seen = new Set();
+  merged.forEach(p => { if(lockedSet.has(p)) seen.add(p.id); });
+  merged.forEach(p => {
+    if(lockedSet.has(p)) return;
+    if(seen.has(p.id)) p.id = nextPanelId(merged);
+    seen.add(p.id);
+  });
+  return merged;
+}
 // ==PURE-LOGIC-END==
 
 // rough hand-drawn line helper
@@ -1811,8 +1839,8 @@ async function generateStoryboard() {
   if (!script && !apiKey) {
     // no script + no key → just (re)load demo with current settings
     const demo = buildDemoStoryboard(settings);
-    applyStoryboard(demo);
-    toast('Loaded procedural demo storyboard');
+    const kept = applyGenerated(demo);
+    toast('Loaded procedural demo storyboard' + (kept ? ' · kept ' + kept + ' locked' : ''));
     return;
   }
 
@@ -1824,9 +1852,9 @@ async function generateStoryboard() {
     await fakeDelay(700);
     if (STATE.abort) { hideLoading(); if (STATE.storyboard) renderStoryboard(STATE.storyboard); toast('Cancelled'); return; }
     const demo = buildDemoStoryboard(settings, script);
-    applyStoryboard(demo);
+    const kept = applyGenerated(demo);
     hideLoading();
-    toast('Generated ' + demo.panels.length + ' panels (demo mode — add API key for AI)');
+    toast('Generated ' + demo.panels.length + ' panels (demo mode)' + (kept ? ' · kept ' + kept + ' locked' : ''));
     return;
   }
 
@@ -1837,8 +1865,9 @@ async function generateStoryboard() {
     const storyboard = await callClaude(STORYBOARD_PROMPT(script, settings), { maxTokens: 4000 });
     if (STATE.abort) { hideLoading(); if (STATE.storyboard) renderStoryboard(STATE.storyboard); return; }
     storyboard.panels.forEach(normalizePanel);
-    applyStoryboard(storyboard);
-    toast('AI generated ' + storyboard.panels.length + ' panels');
+    const genCount = storyboard.panels.length;
+    const kept = applyGenerated(storyboard);
+    toast('AI generated ' + genCount + ' panels' + (kept ? ' · kept ' + kept + ' locked' : ''));
   } catch (err) {
     renderErrorCard(err.message, generateStoryboard);
     console.error(err);
@@ -2568,6 +2597,17 @@ function applyStoryboard(sb, keepSelection){
   updateSeqRuntime();
 }
 
+// Apply a freshly generated board but keep any locked panels in place.
+// Returns the number of locked panels that were preserved.
+function applyGenerated(sb){
+  const merged = mergeLockedPanels(STATE.storyboard && STATE.storyboard.panels, sb.panels);
+  const kept = merged.filter(p => p.locked).length;
+  sb.panels = merged;
+  sb.total_duration_seconds = merged.reduce((a, p) => a + (p.duration_seconds || 0), 0);
+  applyStoryboard(sb);
+  return kept;
+}
+
 function readSettings() {
   return {
     title: $('#sceneTitle').value,
@@ -2920,6 +2960,20 @@ function __TESTS(assert, assertEq){
   assertEq(nextPanelId([{id:'F02'},{id:'F04'}]), 'F05', 'nextPanelId uses max, not count');
   assertEq(nextPanelId([{id:'A'},{id:'B'}]), 'F01', 'nextPanelId ignores non-F ids');
   assert(nextPanelId([{id:'F09'}]) === 'F10', 'nextPanelId pads beyond 9');
+  // mergeLockedPanels
+  const oldA = [{id:'F01'},{id:'F02',locked:true},{id:'F03'}];
+  const newA = [{id:'F01'},{id:'F02'},{id:'F03'}];
+  const mA = mergeLockedPanels(oldA, newA);
+  assertEq(mA.length, 3, 'merge keeps board length');
+  assertEq(mA[1].id, 'F02', 'locked panel stays at its index');
+  assert(mA[1] === oldA[1], 'locked panel object is preserved');
+  assert(mA[0] === newA[0], 'unlocked slots filled by fresh panels');
+  assertEq(new Set(mA.map(p => p.id)).size, 3, 'ids stay unique after merge');
+  const mNone = mergeLockedPanels([{id:'F01'},{id:'F02'}], newA);
+  assert(mNone !== newA && mNone.length === 3, 'no locks -> copy of new board');
+  const oldAll = [{id:'F01',locked:true},{id:'F02',locked:true}];
+  const mAll = mergeLockedPanels(oldAll, [{id:'F01'},{id:'F02'}]);
+  assert(mAll.length === 2 && mAll[0] === oldAll[0] && mAll[1] === oldAll[1], 'all-locked board fully preserved');
 }
 // ==TESTS-END==
 
