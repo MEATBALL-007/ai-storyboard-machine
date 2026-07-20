@@ -1,0 +1,7 @@
+.pui-chip{
+  background:var(--surface); border:1px solid var(--line); border-radius:3px;
+  padding:6px 10px; text-align:center; font-size:10px; color:var(--muted);
+  transition:.1s; user-select:none; cursor:pointer; font-family:var(--mono);
+}
+.pui-chip:hover{border-color:var(--dim); color:var(--text)}
+.pui-chip.is-selected{background:var(--accent); color:#000; border-color:var(--accent); font-weight:700}
