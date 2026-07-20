@@ -14,7 +14,6 @@ export default defineConfig({
       name: 'PhantomUI',
       fileName: 'phantom-ui',
       formats: ['es', 'umd'],
-      cssFileName: 'phantom-ui',
     },
     rollupOptions: {
       external: ['react', 'react-dom', 'react/jsx-runtime'],
@@ -24,6 +23,10 @@ export default defineConfig({
           'react-dom': 'ReactDOM',
           'react/jsx-runtime': 'jsxRuntime',
         },
+        assetFileNames: (assetInfo) =>
+          assetInfo.name && assetInfo.name.endsWith('.css')
+            ? 'phantom-ui.css'
+            : '[name]-[hash][extname]',
       },
     },
   },
