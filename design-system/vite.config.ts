@@ -9,7 +9,6 @@ const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 export default defineConfig({
   plugins: [react(), dts({ include: ['src'], rollupTypes: true })],
   build: {
-    cssMinify: false,
     lib: {
       entry: r('./src/index.ts'),
       name: 'PhantomUI',
