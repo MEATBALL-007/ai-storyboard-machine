@@ -1,3 +1,4 @@
+import type { HTMLAttributes } from 'react';
 import { cn } from '../../lib/cn';
 
 export interface ToastAction {
@@ -5,19 +6,19 @@ export interface ToastAction {
   onClick: () => void;
 }
 
-export interface ToastProps {
+export interface ToastProps extends HTMLAttributes<HTMLDivElement> {
   open: boolean;
   message: string;
   variant?: 'default' | 'error';
   action?: ToastAction;
-  className?: string;
 }
 
-export function Toast({ open, message, variant = 'default', action, className }: ToastProps) {
+export function Toast({ open, message, variant = 'default', action, className, ...rest }: ToastProps) {
   return (
     <div
       className={cn('pui-toast', variant === 'error' && 'pui-toast--error', open && 'is-open', className)}
       role="status"
+      {...rest}
     >
       {message}
       {action && (

@@ -25,3 +25,10 @@ test('item click fires handler', () => {
   fireEvent.click(getByText('Edit'));
   expect(calls).toEqual(['edit']);
 });
+
+test('forwards native props to the root', () => {
+  const { getByTestId } = render(
+    <Menu items={[{ label: 'Edit', onClick: () => {} }]} data-testid="x" />,
+  );
+  expect(getByTestId('x')).toHaveClass('pui-menu');
+});

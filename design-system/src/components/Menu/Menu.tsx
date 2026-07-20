@@ -1,3 +1,4 @@
+import type { HTMLAttributes } from 'react';
 import { cn } from '../../lib/cn';
 
 export interface MenuItem {
@@ -7,15 +8,14 @@ export interface MenuItem {
   danger?: boolean;
 }
 
-export interface MenuProps {
+export interface MenuProps extends HTMLAttributes<HTMLDivElement> {
   items: MenuItem[];
   header?: string;
-  className?: string;
 }
 
-export function Menu({ items, header, className }: MenuProps) {
+export function Menu({ items, header, className, ...rest }: MenuProps) {
   return (
-    <div className={cn('pui-menu', className)} role="menu">
+    <div className={cn('pui-menu', className)} role="menu" {...rest}>
       {header && <div className="pui-menu__header">{header}</div>}
       {items.map((it, i) => (
         <button

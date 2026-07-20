@@ -10,3 +10,8 @@ test('renders title, optional icon and description', () => {
   expect(getByText('✦')).toHaveClass('pui-empty__icon');
   expect(getByText('Press Generate.')).toHaveClass('pui-empty__desc');
 });
+
+test('forwards native props to the root', () => {
+  const { getByTestId } = render(<EmptyState title="No storyboard yet" data-testid="x" />);
+  expect(getByTestId('x')).toHaveClass('pui-empty');
+});

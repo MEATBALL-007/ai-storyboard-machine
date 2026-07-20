@@ -1,16 +1,15 @@
-import type { ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 import { cn } from '../../lib/cn';
 
-export interface EmptyStateProps {
+export interface EmptyStateProps extends HTMLAttributes<HTMLDivElement> {
   icon?: ReactNode;
   title: string;
   description?: string;
-  className?: string;
 }
 
-export function EmptyState({ icon, title, description, className }: EmptyStateProps) {
+export function EmptyState({ icon, title, description, className, ...rest }: EmptyStateProps) {
   return (
-    <div className={cn('pui-empty', className)}>
+    <div className={cn('pui-empty', className)} {...rest}>
       {icon && <div className="pui-empty__icon">{icon}</div>}
       <h2 className="pui-empty__title">{title}</h2>
       {description && <p className="pui-empty__desc">{description}</p>}

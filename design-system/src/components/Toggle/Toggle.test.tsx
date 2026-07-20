@@ -17,3 +17,10 @@ test('calls onChange with next value', () => {
   fireEvent.click(getByRole('checkbox'));
   expect(calls).toEqual([true]);
 });
+
+test('forwards native props to the label root', () => {
+  const { getByTestId } = render(
+    <Toggle checked label="AI art" onChange={() => {}} data-testid="x" />,
+  );
+  expect(getByTestId('x')).toHaveClass('pui-toggle');
+});

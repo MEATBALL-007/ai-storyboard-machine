@@ -1,3 +1,4 @@
+import type { HTMLAttributes } from 'react';
 import { cn } from '../../lib/cn';
 
 export interface SegmentedOption {
@@ -5,16 +6,15 @@ export interface SegmentedOption {
   label: string;
 }
 
-export interface SegmentedToggleProps {
+export interface SegmentedToggleProps extends Omit<HTMLAttributes<HTMLDivElement>, 'onChange'> {
   options: SegmentedOption[];
   value: string;
   onChange: (value: string) => void;
-  className?: string;
 }
 
-export function SegmentedToggle({ options, value, onChange, className }: SegmentedToggleProps) {
+export function SegmentedToggle({ options, value, onChange, className, ...rest }: SegmentedToggleProps) {
   return (
-    <div className={cn('pui-segmented', className)} role="group">
+    <div className={cn('pui-segmented', className)} role="group" {...rest}>
       {options.map((o) => (
         <button
           key={o.value}

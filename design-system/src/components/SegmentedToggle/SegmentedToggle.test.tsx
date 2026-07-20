@@ -20,3 +20,10 @@ test('clicking an option calls onChange with its value', () => {
   fireEvent.click(getByText('2'));
   expect(calls).toEqual(['2']);
 });
+
+test('forwards native props to the root', () => {
+  const { getByTestId } = render(
+    <SegmentedToggle options={opts} value="3" onChange={() => {}} data-testid="x" />,
+  );
+  expect(getByTestId('x')).toHaveClass('pui-segmented');
+});

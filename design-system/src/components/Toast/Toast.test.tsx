@@ -15,3 +15,8 @@ test('action click fires handler', () => {
   fireEvent.click(getByText('Undo'));
   expect(calls).toEqual([1]);
 });
+
+test('forwards native props to the root', () => {
+  const { getByTestId } = render(<Toast open message="Deleted" data-testid="x" />);
+  expect(getByTestId('x')).toHaveClass('pui-toast');
+});
