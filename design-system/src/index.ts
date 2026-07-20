@@ -8,3 +8,4 @@ export * from './components/Toggle';
 export * from './components/Modal';
 export * from './components/Toast';
 export * from './components/Menu';
+export * from './components/SegmentedToggle';
