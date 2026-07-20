@@ -98,6 +98,7 @@ design-system/
     "@fontsource/jetbrains-mono": "^5.0.0",
     "@testing-library/jest-dom": "^6.4.0",
     "@testing-library/react": "^16.0.0",
+    "@types/node": "^20.0.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.0",
@@ -130,7 +131,7 @@ design-system/
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "types": ["vitest/globals", "@testing-library/jest-dom"]
+    "types": ["vitest/globals", "@testing-library/jest-dom", "node"]
   },
   "include": ["src", "demo", "vite.config.ts", "vitest.setup.ts"]
 }
@@ -155,16 +156,21 @@ export default defineConfig({
       name: 'PhantomUI',
       fileName: 'phantom-ui',
       formats: ['es', 'umd'],
-      cssFileName: 'phantom-ui',
     },
     rollupOptions: {
-      external: ['react', 'react-dom', 'react/jsx-runtime'],
+      // react/jsx-runtime is intentionally NOT external: bundling the thin
+      // automatic-runtime wrapper (it defers to the external `react` global)
+      // keeps the UMD build self-contained for JSX under a plain <script>.
+      external: ['react', 'react-dom'],
       output: {
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM',
-          'react/jsx-runtime': 'jsxRuntime',
         },
+        assetFileNames: (assetInfo) =>
+          assetInfo.name && assetInfo.name.endsWith('.css')
+            ? 'phantom-ui.css'
+            : '[name]-[hash][extname]',
       },
     },
   },
@@ -317,11 +323,13 @@ export { cn } from './lib/cn';
 
 - [ ] **Step 6: Build and verify the CSS closure is bundled**
 
-Run:
+Run (counts are match-counts via `grep -o`, so they are robust to CSS minification collapsing rules onto one line):
 ```bash
-cd design-system && npm run build && grep -c "FFC72C" dist/phantom-ui.css && grep -c "@font-face" dist/phantom-ui.css
+cd design-system && npm run build
+grep -o "FFC72C" dist/phantom-ui.css | wc -l      # -> 1  (accent token present)
+grep -o "@font-face" dist/phantom-ui.css | wc -l  # -> 4  (four @font-face rules)
 ```
-Expected: build succeeds; first grep prints `1` (the `--accent` token is present), second prints `4` (four `@font-face` rules).
+Expected: build succeeds; the counts print `1` and `4`.
 
 - [ ] **Step 7: Commit**
 
