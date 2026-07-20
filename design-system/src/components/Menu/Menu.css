@@ -1,0 +1,14 @@
+.pui-menu{
+  background:var(--surface); border:1px solid var(--dim); border-radius:5px; min-width:200px;
+  box-shadow:0 10px 30px rgba(0,0,0,.6); overflow:hidden; font-family:var(--mono);
+}
+.pui-menu__header{padding:6px 12px; font-size:8.5px; color:var(--muted); letter-spacing:1px; background:#0a0a0a}
+.pui-menu__item{
+  display:block; width:100%; text-align:left; padding:8px 12px; font-size:10.5px;
+  color:var(--text); background:none; border:none; border-bottom:1px solid var(--line);
+  cursor:pointer; font-family:var(--mono);
+}
+.pui-menu__item:last-child{border-bottom:none}
+.pui-menu__item:hover{background:var(--surface2); color:var(--accent)}
+.pui-menu__item:disabled{opacity:.35; cursor:not-allowed}
+.pui-menu__item--danger{color:var(--secondary)}
