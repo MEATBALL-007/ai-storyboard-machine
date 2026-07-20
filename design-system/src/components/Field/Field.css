@@ -1,0 +1,10 @@
+.pui-field{display:block; margin-bottom:10px; font-family:var(--mono)}
+.pui-field__label{display:block; font-size:9.5px; color:var(--muted); margin-bottom:4px; letter-spacing:.5px}
+.pui-field__hint{display:block; font-size:9px; color:var(--muted); line-height:1.5; margin-top:6px}
+
+.pui-input,.pui-textarea,.pui-select{
+  width:100%; background:var(--surface); border:1px solid var(--line);
+  border-radius:3px; padding:6px 8px; font-size:11px; color:var(--text); font-family:var(--mono);
+}
+.pui-textarea{resize:vertical; min-height:60px; line-height:1.5}
+.pui-input:focus,.pui-textarea:focus,.pui-select:focus{outline:1px solid var(--accent); outline-offset:-1px}
