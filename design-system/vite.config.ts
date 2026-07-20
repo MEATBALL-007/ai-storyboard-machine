@@ -16,12 +16,14 @@ export default defineConfig({
       formats: ['es', 'umd'],
     },
     rollupOptions: {
-      external: ['react', 'react-dom', 'react/jsx-runtime'],
+      // react/jsx-runtime is intentionally NOT external: bundling the thin
+      // automatic-runtime wrapper (it defers to the external `react` global)
+      // keeps the UMD build self-contained for JSX under a plain <script>.
+      external: ['react', 'react-dom'],
       output: {
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM',
-          'react/jsx-runtime': 'jsxRuntime',
         },
         assetFileNames: (assetInfo) =>
           assetInfo.name && assetInfo.name.endsWith('.css')
