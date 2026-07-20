@@ -2,3 +2,4 @@
 @import './fonts.css';
 
 /* component styles (appended per component task) */
+@import './components/Button/Button.css';
