@@ -1,0 +1,4 @@
+.pui-empty{text-align:center; padding:80px 20px; color:var(--dim); font-family:var(--mono)}
+.pui-empty__icon{font-size:40px; margin-bottom:14px; opacity:.5}
+.pui-empty__title{font-size:15px; color:var(--muted); margin-bottom:8px; font-weight:500}
+.pui-empty__desc{font-size:11px; color:var(--dim); line-height:1.6; max-width:340px; margin:0 auto}

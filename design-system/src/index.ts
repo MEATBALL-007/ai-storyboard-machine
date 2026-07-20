@@ -11,3 +11,4 @@ export * from './components/Menu';
 export * from './components/SegmentedToggle';
 export * from './components/Swatch';
 export * from './components/Badge';
+export * from './components/EmptyState';
