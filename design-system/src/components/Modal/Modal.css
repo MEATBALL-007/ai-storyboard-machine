@@ -1,0 +1,13 @@
+.pui-modal-bg{
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:100;
+  align-items:center; justify-content:center; backdrop-filter:blur(3px);
+}
+.pui-modal-bg.is-open{display:flex}
+.pui-modal{
+  background:var(--surface); border:1px solid var(--dim); border-radius:6px;
+  width:420px; max-width:90vw; padding:20px; box-shadow:0 20px 60px rgba(0,0,0,.6);
+  font-family:var(--mono); color:var(--text);
+}
+.pui-modal__title{font-size:13px; color:var(--accent); margin-bottom:6px; letter-spacing:.5px}
+.pui-modal__sub{font-size:10px; color:var(--muted); margin-bottom:14px; line-height:1.5}
+.pui-modal__actions{display:flex; gap:8px; margin-top:14px; justify-content:flex-end}

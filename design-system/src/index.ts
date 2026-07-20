@@ -5,3 +5,4 @@ export * from './components/Button';
 export * from './components/Chip';
 export * from './components/Field';
 export * from './components/Toggle';
+export * from './components/Modal';
