@@ -104,6 +104,35 @@ Enable **"Render AI frame art"**, then set an image endpoint, model, and key. Ex
 
 ---
 
+## Design tokens
+
+The app and the Phantom UI component library share one design language. Its single source of
+truth is **[`design-system/src/tokens.css`](design-system/src/tokens.css)** — every colour and
+the mono type stack live there and nowhere else.
+
+`index.html` carries a **verbatim copy** of that `:root{…}` block inside its `<style>` tag
+(indented one level deeper, since it sits inside the stylesheet). It is a copy rather than an
+`@import` on purpose: the app's whole premise is that you can double-click `index.html` and have
+it work, and a browser opening a page over `file://` will not fetch a cross-file `@import` in
+every configuration — nor should the app need a build step or a local server to render its own
+colours.
+
+A copy that nothing checks is a copy that drifts, so `tools/test.mjs` asserts the two blocks are
+identical (line by line, ignoring that one extra indent level and the line-ending style). If they
+diverge, the suite fails and names the offending line.
+
+**To change a token value:**
+
+1. Edit `design-system/src/tokens.css`.
+2. Copy the whole `:root{…}` block over the matching block in `index.html` (`<style>`, near the
+   top of the file), keeping the existing two-space indent.
+3. Run `node tools/test.mjs` — it must report `0 failed`.
+
+Never edit the block in `index.html` first: the test only tells you the two disagree, not which
+one is right, and `tokens.css` is by definition the one that is.
+
+---
+
 ## Recent updates (hardening pass)
 
 ### Undo / Redo
@@ -146,7 +175,7 @@ Enable **"Render AI frame art"**, then set an image endpoint, model, and key. Ex
 The app is a single `index.html` with no build tools — it runs instantly in any browser. For development and testing:
 
 ```bash
-node tools/test.mjs      # headless logic tests (42 assertions)
+node tools/test.mjs      # headless logic tests (55 assertions)
 open "index.html?test"   # in-browser test panel (dev-only)
 ```
 
