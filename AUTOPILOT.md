@@ -22,9 +22,10 @@
 - [ ] element พื้นฐานในแอป (ปุ่ม, chip, badge, modal, empty state) หน้าตาตรงกับ component ที่มีชื่อเดียวกันใน design system
 - [ ] เปิด `index.html` ด้วย `file://` (ดับเบิลคลิก) แล้วยังใช้งานได้ครบ — ไม่ต้อง build ไม่ต้อง serve
 - [ ] ไม่มี external reference เพิ่ม: ไม่มี CDN, ไม่มี `<script src="http...">`, ไม่มี `@import` ออกนอกไฟล์
-- [ ] `node tools/test.mjs` เขียว 54/54
-- [ ] `npm --prefix design-system test` เขียว 31/31
-- [ ] token มีแหล่งเดียว — ถ้าแก้ค่าใน design system แล้วต้องมีขั้นตอนชัดเจนที่ทำให้แอปตามทัน (เขียนไว้ใน README)
+- [x] `node tools/test.mjs` เขียว 55/55 *(verified 2026-08-14; เกณฑ์คือ 0 failed — ตัวเลขขยับขึ้นได้เมื่อเพิ่มเทสต์)*
+- [x] `npm --prefix design-system test` เขียว 31/31 *(verified 2026-08-14)*
+- [x] token มีแหล่งเดียว — `design-system/src/tokens.css` เป็นแหล่งเดียว, `tools/test.mjs` บังคับให้
+      บล็อกใน `index.html` เหมือนกันทุกบรรทัด, ขั้นตอนการแก้ค่าเขียนไว้ใน README หัวข้อ "Design tokens"
 
 ## Verify
 
@@ -43,14 +44,26 @@ node tools/test.mjs && npm --prefix design-system test
 
 ## Next task
 
-ขั้นแรกเป็นขั้น**ที่ไม่เปลี่ยนหน้าตาเลย**: อ่าน `design-system/src/tokens.css` แล้วเพิ่ม token
-ชุดนั้นเข้าไปใน `<style>` ของ `index.html` พร้อม map ค่าสี/ระยะที่ hard-code อยู่เดิมให้ชี้มาที่ token
-ที่มีค่าเท่ากันเป๊ะ — ผลลัพธ์ที่ต้องการคือ **หน้าตาเหมือนเดิมทุกพิกเซล แต่ค่าทั้งหมดมาจาก token แล้ว**
+> **สถานะ (2026-08-14):** criterion 1, 5, 6, 7 เสร็จแล้ว — `:root` ใน `index.html` เหมือน
+> `tokens.css` ทุกบรรทัด และตอนนี้ `tools/test.mjs` **บังคับ** ให้เหมือน (assertion ที่ 55)
+> พร้อมขั้นตอนแก้ค่าใน README หัวข้อ "Design tokens"
+> **หมายเหตุ:** `SUMMARY.md` ของรอบ 2026-08-13 ไม่ได้ถูก commit ลง repo — ลิสต์ค่าที่ไม่ match
+> ที่รอบนั้นทำไว้จึงหายไป ต้องทำใหม่
 
-ถ้าเจอค่าที่ไม่มี token ตรงกัน อย่าเพิ่งเปลี่ยนค่า ให้ลิสต์ไว้ใน SUMMARY.md ว่าค่าไหนไม่ match
-เพราะการเลือกว่าจะขยับสีของแอปหรือขยับ token เป็นการตัดสินใจด้านดีไซน์ที่เจ้าของต้องเป็นคนเลือก
+ทำ **รายงานเทียบหน้าตา (ไม่เปลี่ยนหน้าตาอะไรเลยในรอบนี้)** แล้ว commit ไว้เป็น
+`docs/design-parity.md` — นี่คืออินพุตที่เจ้าของต้องใช้ตัดสินใจก่อนจะทำ criterion 2 ได้:
 
-รอบถัดไปค่อยเปลี่ยนหน้าตาทีละ element
+1. สำหรับ **5 element** (ปุ่ม, chip, badge, modal, empty state) เทียบ CSS ใน `index.html` กับ
+   `design-system/src/components/*/…css` ทีละ property — ตารางละ element: property / ค่าในแอป /
+   ค่าใน design system / ต่างหรือไม่
+2. ลิสต์ค่าที่**ยังไม่มี token** พร้อมจำนวนจุดที่ใช้: `rgba(255,199,44,α)` (~29 จุด),
+   spacing / radius / font-size scale, และสีเขียว `#7ac87a` — เสนอทางเลือกไว้ข้อละ 2 ทาง
+   (เพิ่ม token ใหม่ใน `tokens.css` vs. ปล่อย hard-code) พร้อมข้อดีข้อเสียสั้นๆ
+3. **ห้ามแก้ `index.html` หรือ `tokens.css` ในรอบนี้** — ผลลัพธ์คือไฟล์ markdown ไฟล์เดียว
+   การเลือกว่าจะขยับสีของแอปหรือขยับ token เป็นการตัดสินใจด้านดีไซน์ที่เจ้าของต้องเป็นคนเลือก
+
+**รอบถัดๆ ไป:** เมื่อเจ้าของตัดสินใจแล้ว ค่อยทำ criterion 2 ทีละ element (ปุ่มก่อน) โดยแต่ละรอบ
+เปลี่ยน element เดียว
 
 ---
 
