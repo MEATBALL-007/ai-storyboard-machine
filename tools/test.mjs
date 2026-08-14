@@ -43,6 +43,17 @@ function diffTokens(){
   return problems;
 }
 
+// Same idea one level down, for component CSS: .chip in index.html must not drift
+// from .pui-chip on the properties the two are meant to agree on. Only `cursor` is
+// enforced — the rest still differs deliberately (docs/design-parity.md §2).
+const chipCss = fs.readFileSync(new URL('../design-system/src/components/Chip/Chip.css', import.meta.url), 'utf8');
+function ruleProp(css, selector, prop, source){
+  const m = css.match(new RegExp('(?<![\\w-])' + selector.replace('.', '\\.') + '\\s*\\{([^}]*)\\}'));
+  if(!m) throw new Error('No ' + selector + ' rule found in ' + source);
+  const d = m[1].match(new RegExp('(?:^|;)\\s*' + prop + '\\s*:\\s*([^;]+)'));
+  return d ? d[1].trim() : null;
+}
+
 const ctx = { console, Math, JSON, Array, Object, String, Number, structuredClone };
 ctx.btoa = s => Buffer.from(s, 'binary').toString('base64');
 ctx.atob = s => Buffer.from(s, 'base64').toString('binary');
@@ -54,6 +65,11 @@ const tokenProblems = diffTokens();
 assert(tokenProblems.length === 0,
   'index.html :root is out of sync with design-system/src/tokens.css — ' +
   'copy the tokens.css :root block over it. ' + tokenProblems.join('; '));
+
+const appChipCursor = ruleProp(html, '.chip', 'cursor', 'index.html');
+const dsChipCursor = ruleProp(chipCss, '.pui-chip', 'cursor', 'design-system Chip.css');
+assertEq(appChipCursor, dsChipCursor,
+  '.chip cursor in index.html vs .pui-chip in design-system/src/components/Chip/Chip.css —');
 
 console.log(`\n${results.pass} passed, ${results.fail} failed`);
 results.failures.forEach(f => console.log('  ✗ ' + f));
