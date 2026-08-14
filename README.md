@@ -118,7 +118,7 @@ Two copies of anything drift. To stop that, they are checked against each other:
 
 That last assertion is what makes this a rule instead of a convention. It lives in `tools/test.mjs` rather than in the in-page test section because the in-page tests run in a sandbox with no filesystem access.
 
-Anything *not* in `tokens.css` (spacing, font sizes, alpha variants of the accent) is still hard-coded in `index.html` and is not yet covered by this guard — see [`docs/design-parity.md`](docs/design-parity.md).
+Anything *not* in `tokens.css` (spacing, font sizes, alpha variants of the accent) is still hard-coded in `index.html` and is **not** covered by this guard.
 
 ---
 
