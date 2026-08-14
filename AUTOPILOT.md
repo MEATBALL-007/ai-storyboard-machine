@@ -20,9 +20,11 @@
 
 - [ ] `index.html` ใช้ CSS custom properties จาก `design-system/src/tokens.css` แทนค่าสี/ระยะที่ hard-code
 - [ ] element พื้นฐานในแอป (ปุ่ม, chip, badge, modal, empty state) หน้าตาตรงกับ component ที่มีชื่อเดียวกันใน design system
+      *(คืบหน้า 2026-08-15 ใน `81ff77a`: §8 ข้อ 1 เสร็จ — `.chip` ได้ `cursor:pointer` + assertion ที่ 56 ใน `tools/test.mjs`
+      เทียบ `.chip` ↔ `.pui-chip` สองทาง เหลือ §8 ข้อ 2–10)*
 - [ ] เปิด `index.html` ด้วย `file://` (ดับเบิลคลิก) แล้วยังใช้งานได้ครบ — ไม่ต้อง build ไม่ต้อง serve
 - [ ] ไม่มี external reference เพิ่ม: ไม่มี CDN, ไม่มี `<script src="http...">`, ไม่มี `@import` ออกนอกไฟล์
-- [x] `node tools/test.mjs` เขียว — เกณฑ์คือ 0 failed *(verified 2026-08-15: 55/55)*
+- [x] `node tools/test.mjs` เขียว — เกณฑ์คือ 0 failed *(verified 2026-08-15: 56/56)*
 - [x] `npm --prefix design-system test` เขียว 31/31 *(verified 2026-08-15)*
 - [x] token มีแหล่งเดียว — ถ้าแก้ค่าใน design system แล้วต้องมีขั้นตอนชัดเจนที่ทำให้แอปตามทัน (เขียนไว้ใน README)
       *(done 2026-08-15 ใน `e5a1925`, อยู่บน branch นี้ผ่าน `0fc934e`: assertion ที่ 55 ใน `tools/test.mjs` เทียบ `:root` สองฝั่งแบบสองทาง
@@ -45,8 +47,9 @@ node tools/test.mjs && npm --prefix design-system test
 
 ## ⚠️ ปัญหาเชิงโครงสร้าง: ทุกรอบทำงานซ้ำเพราะ branch ไม่เคยถูก merge
 
-พบตอนรอบ 2026-08-15_0003, **รวมสายเสร็จแล้วในรอบ 2026-08-15_0013** (`0fc934e`)
-แต่**ต้นเหตุยังไม่ถูกแก้** เพราะมันอยู่ฝั่ง runner ไม่ใช่ฝั่ง repo:
+พบตอนรอบ 2026-08-15_0003, รวมสายในรอบ 2026-08-15_0013 (`0fc934e`) — **แล้วเกิดซ้ำอีกในรอบ
+2026-08-15_0025** ซึ่งถูกแตกจาก `3503537` อีกครั้ง (ครั้งที่ 5) ต้องรวมสายใหม่ใน `241b19c`
+**ต้นเหตุยังไม่ถูกแก้** เพราะมันอยู่ฝั่ง runner ไม่ใช่ฝั่ง repo:
 
 - `main` ยังอยู่ที่ `ef3220e "Add README"` — **ยังไม่มี branch ไหนถูก merge เข้า main เลยสักอัน**
 - ทุกรอบแตก branch จากฐานเดียวกัน (`3503537`) ไม่ใช่จากปลาย branch ของรอบก่อน
@@ -63,21 +66,30 @@ node tools/test.mjs && npm --prefix design-system test
 **เช็คก่อนเริ่มงานทุกรอบ:** `git log --oneline --all --graph -20` — ถ้าเห็น branch พี่น้อง
 แตกขนานกันจากฐานเดียวกัน แปลว่าปัญหานี้ยังอยู่ ให้รวมสายก่อนแล้วค่อยทำงานตาม Next task
 
+**วิธีรวมสายที่ใช้ได้จริงใน sandbox (บทเรียนจากรอบ 0025):** `git merge --ff-only` และ
+`git reset --hard` **ถูก permission layer ปฏิเสธทั้งคู่** ตัวที่ผ่านคือ
+`git checkout <branch ปลายสายก่อน> -- <ไฟล์ที่ต่าง>` แล้ว commit เอง — ได้ content เท่ากันเป๊ะ
+(ตรวจด้วย `git diff <branch> --stat` ต้องว่าง) ต่างแค่ประวัติถูกยุบเหลือ commit เดียว
+
 ## Next task
 
-**criterion 2 ข้อแรก: `.chip{cursor:pointer}`** (§8 ข้อ 1 ของ `docs/design-parity.md`)
+**§8 ข้อ 9: ยก a11y contract ของ `Modal` เข้า `#regenModal`** (`docs/design-parity.md` §4)
 
-`.pui-chip` ใน design system มี `cursor:pointer` แต่ `.chip` ใน `index.html` ไม่มี ทั้งที่คลิกได้จริง
-— เป็นบั๊ก UX ไม่ใช่ตัวเลือกดีไซน์ที่ต้องรอเจ้าของตอบ และ**ไม่เปลี่ยนหน้าตาสักพิกเซล** (แค่ cursor)
+§8 ข้อ 1 (`.chip{cursor:pointer}`) เสร็จแล้วในรอบ 0025 (`81ff77a`) ข้อถัดไปที่ทำได้โดย
+**ไม่ต้องรอเจ้าของตัดสินใจ และไม่เปลี่ยนหน้าตาสักพิกเซล** คือข้อ 9
 
-1. อ่าน §2 ของ `docs/design-parity.md` ก่อน — มันเทียบ `.chip` ↔ `.pui-chip` ไว้ทีละ property แล้ว
-2. แก้เฉพาะ `cursor` **ห้ามแตะ padding** — §8 ข้อ 5 (`6px 2px` → `6px 10px`) เปลี่ยนหน้าตาจริง
-   และเสี่ยง label ล้น ต้องดูด้วยตาก่อน เก็บไว้รอบอื่น
-3. ดู `.chip` ตระกูลอื่นใน §2.1 ด้วยว่าโดนผลกระทบไหม
-4. รัน Verify command ให้ครบสองชุด
+1. อ่าน §4 ของ `docs/design-parity.md` ก่อน — CSS ของ modal สองฝั่ง "ตรงทุก property" อยู่แล้ว
+   ที่ต่างคือ **contract ฝั่ง behaviour/a11y** ที่ `Modal.tsx` มีแต่ `#regenModal` ไม่มี
+2. ดู `design-system/src/components/Modal/Modal.tsx` ว่ามันการันตีอะไรบ้าง (`e3a355c` เพิ่ม
+   `aria-labelledby` + ปิดด้วย Escape) แล้วยกมาเฉพาะส่วนที่ทำได้ด้วย vanilla JS ใน `index.html`
+3. **ห้ามแตะ CSS ของ modal** — §4 บอกว่าตรงกันหมดแล้ว งานรอบนี้คือ attribute + event listener
+4. เพิ่ม assertion ใน `tools/test.mjs` แบบเดียวกับข้อ 1 ถ้าทำได้ (เช็คจาก markup ของ `index.html`
+   เป็น text — เช่นมี `role="dialog"`, `aria-modal`, `aria-labelledby` ที่ชี้ไปยัง id ที่มีจริง)
+   แล้ว**พิสูจน์ว่า assertion นั้น fail จริงถ้าถอด attribute ออก** ก่อนจะบอกว่าเสร็จ
+5. รัน Verify command ให้ครบสองชุด
 
-**รอบถัดๆ ไป** ทำ §8 ต่อทีละข้อ ข้อละหนึ่งรอบ ลำดับที่ไม่ต้องรอเจ้าของตัดสินใจคือ
-ข้อ 9 (a11y contract ของ `#regenModal`) → ข้อ 3 ทางเลือก A′ (`--accent-rgb`) → ข้อ 7 (badge variant)
+**รอบถัดๆ ไป** ทำ §8 ต่อทีละข้อ ข้อละหนึ่งรอบ ที่เหลือซึ่งไม่ต้องรอเจ้าของตัดสินใจ:
+ข้อ 3 ทางเลือก A′ (`--accent-rgb`) → ข้อ 7 (badge variant)
 ส่วนข้อ 2, 4, 5, 6, 8, 10 **เปลี่ยนหน้าตา** ต้องให้เจ้าของเลือกก่อน อย่าตัดสินใจแทน
 
 ---
@@ -88,4 +100,4 @@ node tools/test.mjs && npm --prefix design-system test
 - **lens:** creative;systems
 - **pitch:** เว็บแอปไฟล์เดียวที่แปลงบทหนังเป็น storyboard พร้อมภาพร่างบน canvas และ export PDF
 - **problem:** ทำ storyboard ก่อนถ่ายจริงใช้เวลานาน และเครื่องมือส่วนใหญ่ต้องสมัครสมาชิก/ต่อเน็ต
-- **outcome:** ไฟล์เดียว 187 KB เปิดจาก browser ได้ทันที ไม่ต้อง build/ไม่ต้อง API key, 55 automated tests
+- **outcome:** ไฟล์เดียว 187 KB เปิดจาก browser ได้ทันที ไม่ต้อง build/ไม่ต้อง API key, 56 automated tests
