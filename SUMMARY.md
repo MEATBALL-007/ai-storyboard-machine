@@ -1,92 +1,88 @@
-# Round 2026-08-15_0025 — `.chip{cursor:pointer}` (§8 ข้อ 1)
+# SUMMARY — รอบ 2026-08-15_0036
+
+Task: **§8 ข้อ 9 — ยก a11y contract ของ `Modal` เข้า `#regenModal`**
 
 ## What I did
 
-- **รวมสายใหม่อีกครั้ง** (`241b19c`) — branch รอบนี้ถูกแตกจาก `3503537` อีก คือย้อนหลังไป 5 รอบ
-  ไฟล์ที่ Next task สั่งให้อ่าน (`docs/design-parity.md`) **ไม่มีอยู่บน branch นี้ตอนเริ่ม**
-  กู้ content ของ `3af2190` (ปลาย `…08-15_0013`) กลับมา 6 ไฟล์ แล้ว commit
-- **แก้ `.chip` ให้มี `cursor:pointer`** (`81ff77a`, `index.html:102-107`) — แก้ `cursor` อย่างเดียว
-  ตามที่สั่ง ไม่แตะ `padding:6px 2px`
-- **เพิ่ม assertion ที่ 56 ใน `tools/test.mjs`** เทียบ `cursor` ของ `.chip` (index.html) กับ
-  `.pui-chip` (`design-system/src/components/Chip/Chip.css`) แบบสองทาง — สไตล์เดียวกับ
-  token parity assertion ที่มีอยู่ ถ้าฝั่งไหนขยับแล้วอีกฝั่งไม่ตาม เทสต์แดง
-- อัปเดต `AUTOPILOT.md`: ติ๊กความคืบหน้าใต้ criterion 2, แก้จำนวนเทสต์ 55 → 56,
-  บันทึกว่าปัญหา branch เกิดซ้ำเป็นครั้งที่ 5 + วิธีรวมสายที่ sandbox ยอมให้ทำ,
-  และตั้ง `## Next task` ใหม่เป็น §8 ข้อ 9 (a11y contract ของ `#regenModal`)
+- **รวมสายก่อน (ครั้งที่ 6)** — runner แตก branch นี้จาก `3503537` อีกครั้ง ทำให้งานรอบ
+  0003 / 0013 / 0025 (design-parity report, token assertion, chip cursor fix) หายไปจาก HEAD
+  กู้คืนด้วย `git checkout 255afd5 -- <6 ไฟล์>` แล้ว commit เป็น `e39d13c`
+  (`git diff 255afd5 --stat` ว่าง = content ตรงเป๊ะ)
+- **`6668329` — เพิ่ม a11y contract ให้ `#regenModal`** ใส่ `role="dialog"`
+  `aria-modal="true"` `aria-labelledby="regenTitle"` บน `<div class="modal">` ตัวใน
+  (index.html:822) **ไม่แตะ CSS แม้แต่บรรทัดเดียว ไม่เปลี่ยนหน้าตาสักพิกเซล**
+- **เพิ่ม assertion 5 ตัวใน `tools/test.mjs`** (57–61) ล็อกทั้งสองทาง: fail ถ้าแอปถอด
+  attribute ออก **และ** fail ถ้า `Modal.tsx` ถอด contract ออก — 56 → 61 passed
+- **อัปเดตเอกสาร** `docs/design-parity.md` §4 + §8 (ติ๊กข้อ 1 กับ 9) และ `AUTOPILOT.md`
+  (criterion 2 progress, จำนวนเทสต์, บันทึกปัญหา branch ครั้งที่ 6, Next task ใหม่)
 
 ## Why
 
-**ทำไมต้องรวมสายก่อนถึงจะทำงานที่สั่งได้** — Next task อ้าง `docs/design-parity.md` §2 และ §8,
-อ้าง commit `e5a1925`/`0fc934e` และเขียนว่า criterion 5/6/7 verified แล้ว แต่บน `3503537`
-ไม่มีอะไรในนั้นเลย: `docs/` มีแต่ `superpowers/`, `tools/test.mjs` ให้ 54 passed ไม่ใช่ 55
-ถ้าไม่รวมสายก่อน งานรอบนี้จะกลายเป็น PR ที่ลบงาน 5 รอบก่อนหน้าทิ้ง
-
-**ทำไมใช้ `git checkout <ref> -- <paths>` แทนการ merge** — `git merge --ff-only` และ
-`git reset --hard` ถูก permission layer ปฏิเสธทั้งคู่ (ทั้งสองตัว*ขยับ branch pointer*)
-ตัวที่ผ่านคือ `git checkout` ซึ่ง*เขียนไฟล์*อย่างเดียว ยืนยันว่าได้ content เท่ากันเป๊ะด้วย
-`git diff auto/…/2026-08-15_0013 --stat` → ว่างเปล่า ต่างแค่ประวัติถูกยุบเหลือ commit เดียว
-
-**ทำไม `.chip` เป็นบั๊กจริง ไม่ใช่ convention ของแอป** — §2 บอกว่า `.chip` เป็น `<div>`
-เลยไม่ได้ `cursor` จากกฎ `button{}` ผมเช็ค chip อีกสองตระกูลตามที่สั่ง (ข้อ 3 ของ Next task):
-
-| | element | มี `cursor:pointer` ก่อนรอบนี้? |
-|---|---|---|
-| `.chip` (markup `index.html:648-660`) | `<div>` + `onclick` (`:2759`) | **ไม่มี** ← แก้รอบนี้ |
-| `.scene-chip` (markup `:3052`) | `<div>` + `onclick` (`:3056`) | มี — ประกาศตรงๆ ที่ `:360` |
-| `.ai-chip` (markup `:591`) | `<button>` ของจริง | มี — ได้จากกฎ `button{}` |
-
-`.chip` จึงเป็นตัวเดียวที่หลุด ไม่ใช่ว่าแอปตั้งใจไม่ใส่ทั้งชุด
-และ **ไม่มีตระกูลไหนโดนผลกระทบ** จากการแก้ครั้งนี้ — markup ใช้ `class="scene-chip …"` /
-`class="ai-chip demo"` ไม่มีที่ไหนใช้ class `chip` ร่วม selector `.chip` จึงเอื้อมไม่ถึง
-
-**ทำไมเพิ่มเทสต์ทั้งที่เป็น CSS หนึ่งบรรทัด** — repo ตั้งบรรทัดฐานไว้แล้วใน `e5a1925` ว่า
-"parity ที่ไม่มีเทสต์คุมคือ parity ที่จะ drift" การแก้ `cursor` โดยไม่มี assertion แปลว่า
-รอบหน้าใครแก้ `.pui-chip` ก็ไม่มีอะไรเตือน
+- **ทำไมใส่ attribute บน `.modal` ตัวใน ไม่ใช่บน `.modal-bg`** — `Modal.tsx` ใส่ไว้บน
+  `.pui-modal` (ตัวใน) ไม่ใช่ `.pui-modal-bg` และนั่นถูกตามหลัก ARIA เพราะ backdrop เป็นแค่
+  chrome ไม่ใช่ dialog **ตารางใน §4 ไม่ได้ระบุตำแหน่งไว้** — `#shortcutsModal` ที่มีอยู่เดิม
+  ของแอปใส่ไว้บน backdrop ซึ่งเป็นคนละแบบ ผมเลือกตาม design system เพราะงานรอบนี้คือ
+  "ยก contract ของ design system มา" และบันทึกความไม่ตรงกันนี้ไว้ใน §4 แล้ว
+- **ทำไมไม่แตะ Escape / backdrop-click** — §4 บอกว่าต้องผูกเองใน JS แต่ตรวจแล้ว
+  **ผูกไว้อยู่แล้ว** (Escape ที่ index.html:2845 · backdrop ที่ 2802) จึงไม่ต้องเขียนโค้ดใหม่
+  แค่เพิ่ม assertion กันถอดออกภายหลัง และแก้ตาราง §4 ที่บรรยายผิดให้ตรงความจริง
+- **ทำไม assertion เทียบสองทาง** — ตามแบบเดียวกับ assertion 55 (token) และ 56 (chip)
+  ถ้าเช็คแค่ฝั่งแอป การลบ contract ออกจาก `Modal.tsx` จะทำให้ "parity" กลายเป็นคำโกหกเงียบๆ
+- **ทำไมไม่แก้ `#shortcutsModal` ด้วย** — task บอกให้ทำข้อเดียว และ §8 ข้อ 9 ระบุ `#regenModal`
+  เท่านั้น จดไว้เป็นงานค้างใน §4 แทน
 
 ## Verification
 
+Verify command รันครบสองชุด **หลัง** แก้เสร็จ:
+
 ```
 $ node tools/test.mjs
-56 passed, 0 failed
+61 passed, 0 failed
 
 $ npm --prefix design-system test
 Test Files  12 passed (12)
      Tests  31 passed (31)
 ```
 
-**พิสูจน์ว่า assertion ใหม่ fail จริง** — ถอด `cursor:pointer` ออกจาก `.chip` ชั่วคราวแล้วรัน:
+**พิสูจน์ว่า assertion ใหม่ fail จริง** — mutation test 4 แบบ (แต่ละครั้ง revert ด้วย
+`git checkout --` แล้ว `git status --short` ว่าง):
 
-```
-55 passed, 1 failed
-  ✗ .chip cursor in index.html vs .pui-chip in design-system/src/components/Chip/Chip.css —
-    expected "pointer" got null
-```
+| mutation | ผล |
+|---|---|
+| ถอด `role`/`aria-modal`/`aria-labelledby` ออกทั้งสามตัว | **58 passed, 3 failed** — ทั้งสาม assertion ร้อง |
+| ชี้ `aria-labelledby="nopeNotAnId"` (id ไม่มีจริง) | **60 passed, 1 failed** |
+| ถอด `closeRegen();` ออกจาก Escape handler | **60 passed, 1 failed** |
+| ถอด `aria-modal="true"` ออกจาก `Modal.tsx` | **60 passed, 1 failed** |
 
-ค่าที่ได้คือ `null` **ไม่ใช่ `"pointer"`** ซึ่งยืนยันอีกอย่างหนึ่งด้วย: regex ที่ดึงกฎ `.chip`
-ไม่หลุดไปจับ `.scene-chip` (ซึ่งมี `cursor:pointer` อยู่) — ถ้าหลุด เทสต์จะเขียวทั้งที่บั๊กยังอยู่
-จากนั้นใส่บรรทัดกลับแล้วรันซ้ำได้ 56 passed
+หมายเหตุ: mutation ตัวที่ 4 ครั้งแรก **ไม่ได้ apply** (ไฟล์เป็น CRLF, `replace` ด้วย `\n` ไม่ match)
+ทำให้เทสต์ยังเขียว — ครั้งที่สองใส่ guard `if(n===o) throw` แล้วรันซ้ำจึงเห็นว่า fail จริง
+
+baseline ก่อนแก้คือ 56 passed, 0 failed → +5 assertion = 61
 
 ## What I did NOT do
 
-- **ไม่แตะ `padding:6px 2px`** (§8 ข้อ 5) — เปลี่ยนหน้าตาจริงและเสี่ยง label อย่าง `2.39` ล้น
-  ใน `.radio-grid` ต้องดูด้วยตาก่อน ตามที่ Next task สั่งไว้
-- **ไม่แตะ §8 ข้อ 2, 4, 6, 8, 10** — ทุกข้อเปลี่ยนหน้าตา ต้องให้เจ้าของเลือก
-- **ไม่ได้เปิดดูด้วยตาจริง** — server headless ไม่มี browser ยืนยันได้แค่ว่า CSS ถูกต้อง
-  แต่ `cursor` ไม่กระทบ layout เลยจึงไม่มีทางเปลี่ยนหน้าตา
-- **ไม่ได้ติ๊ก criterion 2** — เพิ่งเสร็จ §8 ข้อ 1 จาก 10 ข้อ ยังไม่ครบ
-- **ไม่ได้แก้ต้นเหตุปัญหา branch** — มันอยู่ฝั่ง runner (ต้อง merge PR เข้า `main`
-  หรือแตก branch จากปลายสายรอบก่อน) repo แก้เองไม่ได้
+- **ไม่แตะ CSS ของ modal เลย** — §4 ยืนยันว่าตรงกัน 100% อยู่แล้ว
+- **ไม่แก้ `#shortcutsModal`** ซึ่งยังใส่ `role`/`aria-modal`/`aria-label` ไว้บน **backdrop**
+  ไม่ใช่บน `.modal` และยังใช้ `aria-label` แทน `aria-labelledby` → จดไว้ใน §4 เป็นงานรอบหลัง
+- **ไม่เพิ่ม focus trap / focus restore / `inert`** — `Modal.tsx` ก็ไม่มี ถ้าใส่จะเป็นการเพิ่ม
+  contract ที่ design system ไม่มี = สวนทางกับเป้าหมาย "แหล่งเดียว"
+- **ไม่เพิ่ม `--wide` size variant** ให้ design system (ข้อเสนอเดิมใน §4) — เป็นงานฝั่ง DS คนละข้อ
+- **ไม่แตะ marker, ไม่ลบเทสต์, ไม่แก้ Verify command, ไม่เพิ่ม external reference**
 
 ## Risk
 
-- **สายประวัติถูกยุบ** — `241b19c` มี content ของ 6 commit (`2474f07`, `75c38ae`, `e5a1925`,
-  `a1c6348`, `972502b`, `50c86a7`, `0fc934e`, `3af2190`) รวมเป็น commit เดียว เพราะ merge
-  ถูกปฏิเสธ ถ้า reviewer อยากได้ประวัติแยก ให้ merge `auto/…/2026-08-15_0013` เข้า `main` ก่อน
-  แล้วค่อยเอา `81ff77a` มาต่อ — content เท่ากันเป๊ะ (`git diff` กับ `3af2190` ว่างเปล่า)
-- **ปัญหา branch เกิดซ้ำครั้งที่ 5** ถ้ารอบหน้ายังแตกจาก `3503537` อีก งานรอบนี้จะหายจากสายตา
-  อีกเช่นเคย นี่คือความเสี่ยงที่ใหญ่กว่าโค้ดทุกบรรทัดในรอบนี้รวมกัน
-- **regex ใน `ruleProp()` ไม่ใช่ CSS parser** — มันใช้ `[^}]*` จับ body ของกฎ ถ้ามีใครใส่
-  คอมเมนต์ที่มี `}` ไว้*ข้างใน* block `.chip` ค่าที่ parse ได้จะเพี้ยน (ผมเจอเคสนี้ตอนเขียน
-  คอมเมนต์ครั้งแรกจึงย้ายคอมเมนต์ออกไปไว้เหนือกฎแทน) ใช้กับ 2 กฎนี้เท่านั้น อย่าขยายไปใช้ทั่ว
-- **assertion นี้คุมแค่ `cursor`** ไม่ใช่ทั้ง `.chip` ↔ `.pui-chip` — property อื่นยังต่างกัน
-  โดยตั้งใจ (§2) ใครอ่านผ่านๆ อาจเข้าใจว่า chip สองฝั่ง parity แล้ว ซึ่งยังไม่ใช่
+- **สายงานยังไม่เคย merge เข้า `main`** (`main` ยังอยู่ที่ `ef3220e "Add README"`) นี่คือครั้งที่ **6**
+  ที่ต้องรวมสายเอง ถ้ารอบหน้ายังแตกจาก `3503537` อีก งานรอบนี้จะหายอีก **ต้องแก้ที่ฝั่ง runner**
+- **การรวมสายเป็น squash ไม่ใช่ merge** — `git merge --ff-only`, `git reset --hard`,
+  `git cherry-pick` ถูก permission layer ปฏิเสธหมด ที่ผ่านคือ `git checkout <ref> -- <paths>`
+  ผลคือ content ตรงเป๊ะแต่ **ประวัติ 3 commit ของรอบ 0025 ถูกยุบเหลือ `e39d13c` commit เดียว**
+  reviewer ที่อยากเห็นประวัติจริงต้องดู branch `…_0025` โดยตรง
+- **assertion ใหม่เป็นการ match text ไม่ใช่ DOM** — `dialogAttrs()` หา `<div class="modal…">`
+  ตัวแรกหลัง `id="regenModal"` และตัดขอบเขตที่ HTML comment ตัวถัดไป ถ้ามีคนจัดรูปแบบ markup
+  ของ modal ใหม่ (เช่นสลับลำดับ attribute จน `class` ไม่ใช่ตัวแรก หรือลบ comment คั่นส่วน)
+  helper จะ **throw** ไม่ใช่ fail เงียบ — ดังนั้นมันจะดังพอ แต่ error message จะชี้ไปผิดที่
+- **ยังไม่ได้เปิดด้วยเบราว์เซอร์จริง** — ตรวจจาก source อย่างเดียว (headless server ไม่มี GUI)
+  การเปลี่ยนแปลงเป็น attribute ล้วน ความเสี่ยงต่อ layout เป็นศูนย์เชิงทฤษฎี แต่ criterion
+  "เปิดด้วย `file://` แล้วใช้งานได้ครบ" **ยังไม่มีใครยืนยันด้วยตาในรอบไหนเลย**
+- `screen reader` จริงยังไม่ได้ทดสอบ — assertion พิสูจน์แค่ว่า attribute มีอยู่และ id ชี้ถูก
+  ไม่ได้พิสูจน์ว่าประกาศออกมาถูกต้อง

@@ -21,10 +21,13 @@
 - [ ] `index.html` ใช้ CSS custom properties จาก `design-system/src/tokens.css` แทนค่าสี/ระยะที่ hard-code
 - [ ] element พื้นฐานในแอป (ปุ่ม, chip, badge, modal, empty state) หน้าตาตรงกับ component ที่มีชื่อเดียวกันใน design system
       *(คืบหน้า 2026-08-15 ใน `81ff77a`: §8 ข้อ 1 เสร็จ — `.chip` ได้ `cursor:pointer` + assertion ที่ 56 ใน `tools/test.mjs`
-      เทียบ `.chip` ↔ `.pui-chip` สองทาง เหลือ §8 ข้อ 2–10)*
+      เทียบ `.chip` ↔ `.pui-chip` สองทาง)*
+      *(คืบหน้า 2026-08-15 ใน `6668329`: §8 ข้อ 9 เสร็จ — `#regenModal` ได้ `role="dialog"` /
+      `aria-modal="true"` / `aria-labelledby="regenTitle"` บน `.modal` (ตำแหน่งเดียวกับ `Modal.tsx`)
+      + assertion ที่ 57–61 สองทาง ไม่แตะ CSS ไม่เปลี่ยนหน้าตา — เหลือ §8 ข้อ 2–8, 10)*
 - [ ] เปิด `index.html` ด้วย `file://` (ดับเบิลคลิก) แล้วยังใช้งานได้ครบ — ไม่ต้อง build ไม่ต้อง serve
 - [ ] ไม่มี external reference เพิ่ม: ไม่มี CDN, ไม่มี `<script src="http...">`, ไม่มี `@import` ออกนอกไฟล์
-- [x] `node tools/test.mjs` เขียว — เกณฑ์คือ 0 failed *(verified 2026-08-15: 56/56)*
+- [x] `node tools/test.mjs` เขียว — เกณฑ์คือ 0 failed *(verified 2026-08-15: 61/61)*
 - [x] `npm --prefix design-system test` เขียว 31/31 *(verified 2026-08-15)*
 - [x] token มีแหล่งเดียว — ถ้าแก้ค่าใน design system แล้วต้องมีขั้นตอนชัดเจนที่ทำให้แอปตามทัน (เขียนไว้ใน README)
       *(done 2026-08-15 ใน `e5a1925`, อยู่บน branch นี้ผ่าน `0fc934e`: assertion ที่ 55 ใน `tools/test.mjs` เทียบ `:root` สองฝั่งแบบสองทาง
@@ -49,6 +52,7 @@ node tools/test.mjs && npm --prefix design-system test
 
 พบตอนรอบ 2026-08-15_0003, รวมสายในรอบ 2026-08-15_0013 (`0fc934e`) — **แล้วเกิดซ้ำอีกในรอบ
 2026-08-15_0025** ซึ่งถูกแตกจาก `3503537` อีกครั้ง (ครั้งที่ 5) ต้องรวมสายใหม่ใน `241b19c`
+— **แล้วเกิดซ้ำเป็นครั้งที่ 6 ในรอบ 2026-08-15_0036** ต้องรวมสายใหม่อีกใน `e39d13c`
 **ต้นเหตุยังไม่ถูกแก้** เพราะมันอยู่ฝั่ง runner ไม่ใช่ฝั่ง repo:
 
 - `main` ยังอยู่ที่ `ef3220e "Add README"` — **ยังไม่มี branch ไหนถูก merge เข้า main เลยสักอัน**
@@ -73,23 +77,29 @@ node tools/test.mjs && npm --prefix design-system test
 
 ## Next task
 
-**§8 ข้อ 9: ยก a11y contract ของ `Modal` เข้า `#regenModal`** (`docs/design-parity.md` §4)
+**§8 ข้อ 3 ทางเลือก A′: เพิ่ม token `--accent-rgb` แล้วแปลง `rgba(255,199,44,α)` ฝั่ง CSS
+ทั้ง 15 จุด ให้เป็น `rgba(var(--accent-rgb),α)`** (`docs/design-parity.md` §7.1)
 
-§8 ข้อ 1 (`.chip{cursor:pointer}`) เสร็จแล้วในรอบ 0025 (`81ff77a`) ข้อถัดไปที่ทำได้โดย
-**ไม่ต้องรอเจ้าของตัดสินใจ และไม่เปลี่ยนหน้าตาสักพิกเซล** คือข้อ 9
+§8 ข้อ 1 เสร็จในรอบ 0025 (`81ff77a`) · ข้อ 9 เสร็จในรอบ 0036 (`6668329`)
+ข้อถัดไปที่ทำได้โดย **ไม่ต้องรอเจ้าของตัดสินใจ และไม่เปลี่ยนหน้าตาสักพิกเซล** คือข้อ 3 แบบ A′
 
-1. อ่าน §4 ของ `docs/design-parity.md` ก่อน — CSS ของ modal สองฝั่ง "ตรงทุก property" อยู่แล้ว
-   ที่ต่างคือ **contract ฝั่ง behaviour/a11y** ที่ `Modal.tsx` มีแต่ `#regenModal` ไม่มี
-2. ดู `design-system/src/components/Modal/Modal.tsx` ว่ามันการันตีอะไรบ้าง (`e3a355c` เพิ่ม
-   `aria-labelledby` + ปิดด้วย Escape) แล้วยกมาเฉพาะส่วนที่ทำได้ด้วย vanilla JS ใน `index.html`
-3. **ห้ามแตะ CSS ของ modal** — §4 บอกว่าตรงกันหมดแล้ว งานรอบนี้คือ attribute + event listener
-4. เพิ่ม assertion ใน `tools/test.mjs` แบบเดียวกับข้อ 1 ถ้าทำได้ (เช็คจาก markup ของ `index.html`
-   เป็น text — เช่นมี `role="dialog"`, `aria-modal`, `aria-labelledby` ที่ชี้ไปยัง id ที่มีจริง)
-   แล้ว**พิสูจน์ว่า assertion นั้น fail จริงถ้าถอด attribute ออก** ก่อนจะบอกว่าเสร็จ
+1. อ่าน §7.1 ของ `docs/design-parity.md` ให้จบก่อน — โดยเฉพาะกรอบท้ายหัวข้อ มันบอกว่าทำไม
+   **10 จุดบน `<canvas>` ต้องแยกเป็นคนละรอบ** (canvas 2D ไม่มี CSS cascade)
+2. เพิ่ม `--accent-rgb:255,199,44` ใน `:root` ของ **`design-system/src/tokens.css` ก่อน**
+   แล้วค่อย copy ทับ `:root` ใน `index.html` — assertion ที่ 55 บังคับให้สอง `:root` ตรงกันสองทาง
+   ถ้าเพิ่มฝั่งเดียวจะ fail ทันที (นี่คือพฤติกรรมที่ถูกต้อง ไม่ใช่บั๊ก)
+3. แปลงเฉพาะ **15 จุดใน CSS block** เป็น `rgba(var(--accent-rgb),α)` — **α เดิมทุกค่า ห้ามยุบ
+   ห้ามปัด** (§7.1 บอกว่าการยุบ α scale = เปลี่ยนหน้าตา = ต้องให้เจ้าของเลือก)
+   **ห้ามแตะ 8 จุด `rgba(...)` และ 2 จุด `'#FFC72C'` ที่อยู่ในโค้ดวาด canvas** (บรรทัด 1619,
+   1620, 1719, 3091, 3110, 3184, 3187, 3193, 3468, 3478)
+4. เพิ่ม assertion ที่บังคับให้ `--accent-rgb` กับ `--accent` เป็นสีเดียวกันเสมอ — §7.1 ระบุว่านี่
+   คือข้อเสียของ A′ (สองแหล่งของสีเดียว) ดังนั้นเทสต์ต้องปิดช่องนั้น: parse `--accent` เป็น hex
+   แล้วเทียบกับสาม component ของ `--accent-rgb` **พิสูจน์ว่า fail จริงถ้าแก้ค่าใดค่าหนึ่ง**
+   ก่อนจะบอกว่าเสร็จ
 5. รัน Verify command ให้ครบสองชุด
 
 **รอบถัดๆ ไป** ทำ §8 ต่อทีละข้อ ข้อละหนึ่งรอบ ที่เหลือซึ่งไม่ต้องรอเจ้าของตัดสินใจ:
-ข้อ 3 ทางเลือก A′ (`--accent-rgb`) → ข้อ 7 (badge variant)
+ข้อ 7 (badge variant) → แล้วค่อยเป็นงาน canvas accent (§7.1 กรอบท้ายหัวข้อ) ซึ่งเป็นงานคนละชนิด
 ส่วนข้อ 2, 4, 5, 6, 8, 10 **เปลี่ยนหน้าตา** ต้องให้เจ้าของเลือกก่อน อย่าตัดสินใจแทน
 
 ---
@@ -100,4 +110,4 @@ node tools/test.mjs && npm --prefix design-system test
 - **lens:** creative;systems
 - **pitch:** เว็บแอปไฟล์เดียวที่แปลงบทหนังเป็น storyboard พร้อมภาพร่างบน canvas และ export PDF
 - **problem:** ทำ storyboard ก่อนถ่ายจริงใช้เวลานาน และเครื่องมือส่วนใหญ่ต้องสมัครสมาชิก/ต่อเน็ต
-- **outcome:** ไฟล์เดียว 187 KB เปิดจาก browser ได้ทันที ไม่ต้อง build/ไม่ต้อง API key, 56 automated tests
+- **outcome:** ไฟล์เดียว 187 KB เปิดจาก browser ได้ทันที ไม่ต้อง build/ไม่ต้อง API key, 61 automated tests

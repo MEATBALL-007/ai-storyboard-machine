@@ -281,15 +281,24 @@ design system ไม่มีปัญหานี้เพราะค่าอ
 
 | เรื่อง | แอป | design system |
 |---|---|---|
-| `role="dialog"` / `aria-modal` | มีที่ `#shortcutsModal` (บรรทัด 828) เท่านั้น — `#regenModal` (บรรทัด 815) **ไม่มี** | ทุก modal ได้อัตโนมัติ |
-| `aria-labelledby` | ใช้ `aria-label` แทน | `aria-labelledby` ชี้ไป title จริง |
-| ปิดด้วย Escape | ต้องผูกเองใน JS | `useEffect` ผูกให้ |
-| คลิก backdrop ปิด | ต้องผูกเองใน JS | `onBackdrop` ให้มาแล้ว |
+| `role="dialog"` / `aria-modal` | ~~`#regenModal` ไม่มี~~ **แก้แล้ว** (`6668329`) — มีทั้งสองตัวแล้ว | ทุก modal ได้อัตโนมัติ |
+| `aria-labelledby` | ~~ใช้ `aria-label` แทน~~ **แก้แล้ว** — `#regenModal` ชี้ไป `#regenTitle` | `aria-labelledby` ชี้ไป title จริง |
+| ปิดด้วย Escape | ผูกไว้แล้วใน global keydown handler (บรรทัด 2845) | `useEffect` ผูกให้ |
+| คลิก backdrop ปิด | ผูกไว้แล้ว (บรรทัด 2802) | `onBackdrop` ให้มาแล้ว |
 | ตัวเลือกขนาด | `.modal-wide{width:540px}` | (ไม่มี) |
 
-> ข้อเสนอ: modal เป็นจุดที่ **ไม่ต้องแก้ CSS เลย** งานที่คุ้มที่สุดคือยก a11y contract
-> ของ design system (`role`/`aria-labelledby`/Escape) มาใส่ `#regenModal` และเพิ่ม
-> `--wide` เป็น size variant ใน design system
+> **อัปเดต 2026-08-15 (`6668329`) — §8 ข้อ 9 เสร็จแล้ว** `#regenModal` ได้
+> `role="dialog" aria-modal="true" aria-labelledby="regenTitle"` แล้ว ไม่แตะ CSS เลย
+> assertion ที่ 57–61 ใน `tools/test.mjs` ล็อกไว้ทั้งสองทาง (fail ทั้งกรณีแอปถอด attribute
+> และกรณี `Modal.tsx` ถอด contract)
+
+**ตำแหน่งที่ต่างกันซึ่งตารางเดิมไม่ได้บอก:** `Modal.tsx` ใส่ `role`/`aria-modal`/`aria-labelledby`
+บน **`.pui-modal` ตัวใน** ไม่ใช่บน backdrop `.pui-modal-bg` — ซึ่งถูกตามหลัก ARIA เพราะ backdrop
+เป็นแค่ chrome ไม่ใช่ dialog แต่ `#shortcutsModal` ของแอป (บรรทัด 834) ใส่ไว้บน **backdrop**
+`#regenModal` เดินตาม design system ส่วน `#shortcutsModal` **ยังไม่ถูกแก้** (อยู่นอก scope ข้อ 9)
+
+> เหลือ: เพิ่ม `--wide` เป็น size variant ใน design system (ยังไม่ทำ) และย้าย a11y attribute
+> ของ `#shortcutsModal` จาก backdrop มาไว้บน `.modal` ให้ตรงกับ `#regenModal`
 
 ---
 
@@ -467,7 +476,7 @@ design system ก็มีปัญหาเดียวกัน: `Badge.css` �
 
 | # | คำถาม | ทางเลือก | ผลต่อหน้าตา |
 |---|---|---|---|
-| 1 | `.chip` ควรมี `cursor:pointer` ไหม | ควร — design system ถูก | ไม่เปลี่ยน (แค่ cursor) |
+| 1 | ~~`.chip` ควรมี `cursor:pointer` ไหม~~ **เสร็จ `81ff77a`** | ควร — design system ถูก | ไม่เปลี่ยน (แค่ cursor) |
 | 2 | เพิ่ม `--ok` (§7.2) ไหม และยุบเขียว 3 เฉดเหลือกี่เฉด | A / B | **เปลี่ยน** ถ้ายุบ |
 | 3 | accent-alpha ใช้ A (token ชุด) / A′ (`--accent-rgb`) / B | A′ ไม่เปลี่ยนหน้าตาเลย | A เปลี่ยน · A′ ไม่เปลี่ยน |
 | 4 | `letter-spacing:.4px` บนปุ่ม — เอาเข้าแอปหรือถอดจาก design system | เข้าแอป / ถอด DS | **เปลี่ยน** (เล็กน้อย) |
@@ -475,7 +484,7 @@ design system ก็มีปัญหาเดียวกัน: `Badge.css` �
 | 6 | ปุ่ม primary 3 ขนาด — เพิ่ม size variant ให้ design system หรือบังคับให้แอปใช้ขนาดเดียว | เพิ่ม size / บังคับ | บังคับ = **เปลี่ยนมาก** |
 | 7 | badge 4 variant ที่ไม่มีคู่ — เพิ่มเข้า design system ไหม | เพิ่ม / ปล่อย | ไม่เปลี่ยน ถ้าเพิ่ม |
 | 8 | spacing/font-size scale (§7.3) — A / B / B′ | B′ คือสายกลาง | A **เปลี่ยนมาก** |
-| 9 | ยก a11y contract ของ Modal เข้า `#regenModal` | ควร | ไม่เปลี่ยน |
+| 9 | ~~ยก a11y contract ของ Modal เข้า `#regenModal`~~ **เสร็จ `6668329`** | ควร | ไม่เปลี่ยน |
 | 10 | ชื่อ state class — แอป `.sel`/`.on`/`.active` vs DS `.is-selected`/`.is-open`/`.is-active` | รวมหรือไม่รวม | ไม่เปลี่ยน (ต้องแก้ JS ด้วย) |
 
 **ข้อ 1, 3(A′), 7, 9 เปลี่ยนได้โดยไม่กระทบหน้าตาเลย** — ถ้าอยากเดินหน้าโดยไม่ต้องรอการตัดสินใจ
