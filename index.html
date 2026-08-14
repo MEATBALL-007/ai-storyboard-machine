@@ -9,6 +9,11 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
+  /* Phantom UI tokens — mirrored VERBATIM from design-system/src/tokens.css.
+     This block is the app's copy of the single source of truth; the design system
+     owns the values. If you change a value here, change it there too (and vice
+     versa) — the two blocks must stay byte-identical. Colors + the mono stack
+     only: the design system defines no spacing/radius/type-scale tokens yet. */
   :root{
     --bg:#0D0D0D; --surface:#111111; --surface2:#141414;
     --panel:#0C0C0C; --card:#111111;
@@ -94,10 +99,11 @@
   }
   .radio-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:4px}
   .radio-grid.cols2{grid-template-columns:repeat(2,1fr)}
+  /* clickable <div>, so no cursor is inherited from the button rule — see .pui-chip */
   .chip{
     background:var(--surface); border:1px solid var(--line); border-radius:3px;
     padding:6px 2px; text-align:center; font-size:10px; color:var(--muted); transition:.1s;
-    user-select:none;
+    user-select:none; cursor:pointer;
   }
   .chip:hover{border-color:var(--dim); color:var(--text)}
   .chip.sel{background:var(--accent); color:#000; border-color:var(--accent); font-weight:700}
@@ -813,7 +819,7 @@
 
 <!-- ════ MODALS ════ -->
 <div class="modal-bg" id="regenModal">
-  <div class="modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="regenTitle">
     <h3 id="regenTitle">↻ Regenerate Panel</h3>
     <p class="m-sub">Add a direction note. Claude will re-imagine only this shot while keeping the scene continuity.</p>
     <textarea id="regenNote" placeholder="e.g. 'Push in tighter, emphasize her hand reaching for the cup. More shadow.'"></textarea>
@@ -2225,7 +2231,7 @@ function renderEmptyState(){ $('#grid').innerHTML =
   `<div class="empty-state" style="grid-column:1/-1"><div class="big">✦</div>
    <h2>No storyboard yet</h2><p>Write a scene on the left and press <b>✦ Generate</b> (or G).</p></div>`; }
 function renderSkeleton(n){ $('#grid').innerHTML = Array.from({length:n}, () =>
-  `<div class="panel-card"><div class="pc-canvas-wrap" style="aspect-ratio:16/9;background:linear-gradient(90deg,#111,#161616,#111);background-size:200% 100%;animation:shimmer 1.2s infinite"></div></div>`).join(''); }
+  `<div class="panel-card"><div class="pc-canvas-wrap" style="aspect-ratio:16/9;background:linear-gradient(90deg,var(--surface),#161616,var(--surface));background-size:200% 100%;animation:shimmer 1.2s infinite"></div></div>`).join(''); }
 function renderErrorCard(msg, retry){ $('#grid').innerHTML =
   `<div class="empty-state" style="grid-column:1/-1"><div class="big" style="color:var(--secondary)">⚠</div>
    <h2>Generation failed</h2><p>${escapeHtml(msg)}</p><button id="retryGen" class="tab-btn" style="margin-top:12px">↻ Retry</button></div>`;
