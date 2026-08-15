@@ -43,6 +43,23 @@ function diffTokens(){
   return problems;
 }
 
+// docs/design-parity.md §7.1 option A′: the 15 translucent accents in index.html's CSS
+// are written `rgba(var(--accent-rgb),α)`, so --accent-rgb has to hold exactly the
+// channels of --accent. That is the one documented cost of A′ — a single color with two
+// spellings and nothing in CSS to keep them equal — so it is pinned here. Checked against
+// tokens.css, the declared source of truth; index.html inherits it through diffTokens().
+function accentChannels(css, source){
+  const root = new Map(parseRoot(css, source));
+  const hex = root.get('--accent'), rgb = root.get('--accent-rgb');
+  if(!hex || !rgb) throw new Error(`${source} :root must declare both --accent and --accent-rgb`);
+  const m = hex.match(/^#([0-9a-fA-F]{6})$/);
+  if(!m) throw new Error(`${source}: --accent must be a 6-digit hex for this check, got ${hex}`);
+  return {
+    fromHex: [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16)),
+    fromRgb: rgb.split(',').map(n => Number(n.trim())),
+  };
+}
+
 // Same idea one level down, for component CSS: .chip in index.html must not drift
 // from .pui-chip on the properties the two are meant to agree on. Only `cursor` is
 // enforced — the rest still differs deliberately (docs/design-parity.md §2).
@@ -86,6 +103,12 @@ const tokenProblems = diffTokens();
 assert(tokenProblems.length === 0,
   'index.html :root is out of sync with design-system/src/tokens.css — ' +
   'copy the tokens.css :root block over it. ' + tokenProblems.join('; '));
+
+const accent = accentChannels(tokensCss, 'design-system/src/tokens.css');
+assertEq(accent.fromRgb, accent.fromHex,
+  '--accent-rgb must be the channels of --accent in design-system/src/tokens.css — ' +
+  'rgba(var(--accent-rgb),α) is meant to BE the accent at alpha, so if these drift the app ' +
+  'renders one yellow for solid accents and a different one for every glow and tint —');
 
 const appChipCursor = ruleProp(html, '.chip', 'cursor', 'index.html');
 const dsChipCursor = ruleProp(chipCss, '.pui-chip', 'cursor', 'design-system Chip.css');
