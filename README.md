@@ -118,7 +118,9 @@ Two copies of anything drift. To stop that, they are checked against each other:
 
 That last assertion is what makes this a rule instead of a convention. It lives in `tools/test.mjs` rather than in the in-page test section because the in-page tests run in a sandbox with no filesystem access.
 
-Anything *not* in `tokens.css` (spacing, font sizes, alpha variants of the accent) is still hard-coded in `index.html` and is not yet covered by this guard — see [`docs/design-parity.md`](docs/design-parity.md).
+**The canvas is a special case.** A 2D context has no CSS cascade, so `ctx.strokeStyle = 'var(--accent)'` is silently ignored and the storyboard thumbnails cannot inherit a token the way the rest of the page does. `index.html` bridges that by reading `--accent` and `--accent-rgb` off `:root` **once at load** (`cssVar()` → `ACCENT` / `ACCENT_RGB` / `accentA(α)`) and handing the resulting strings to the drawing code. Read it once, never per draw: `getComputedStyle` forces a synchronous style recalc, and those call sites re-run on every re-render. `tools/test.mjs` enforces both halves — no accent literal left in the drawing code, and `cssVar` called exactly twice, so moving a lookup into a draw function fails the suite.
+
+Anything *not* in `tokens.css` (spacing, font sizes, the greens) is still hard-coded in `index.html` and is not yet covered by this guard — see [`docs/design-parity.md`](docs/design-parity.md).
 
 ---
 
