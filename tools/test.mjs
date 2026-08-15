@@ -60,6 +60,26 @@ function accentChannels(css, source){
   };
 }
 
+// docs/design-parity.md §7.1, the canvas half: a 2D context has no cascade, so the ten
+// accent-coloured strokes and fills in the drawing code cannot use var(--accent) and have
+// to be handed the value as a string. index.html reads it once at load into ACCENT /
+// ACCENT_RGB. Two things can silently undo that and neither shows up as a failing render,
+// so both are pinned here: an accent literal creeping back into the drawing code, and a
+// getComputedStyle call moving into a draw function (it forces a style recalc, and these
+// call sites re-run on every re-render — correct output, dropped frames).
+// The TESTS marker section is cut out first: hexToRgb('#FFC72C') there is a fixture.
+const drawingCode = html.slice(html.indexOf('</style>'))
+  .replace(/\/\/ ==TESTS-START==[\s\S]*?\/\/ ==TESTS-END==/, '');
+
+// The `||` fallbacks in the accent read are the one place the literal legitimately
+// survives in JS. A stale fallback is invisible until the day it is used, so it is
+// pinned to tokens.css like everything else.
+function accentFallback(prop){
+  const m = drawingCode.match(new RegExp("cssVar\\('" + prop + "',\\s*'([^']*)'\\)"));
+  if(!m) throw new Error(`index.html must read ${prop} via cssVar('${prop}', <fallback>)`);
+  return m[1];
+}
+
 // Same idea one level down, for component CSS: .chip in index.html must not drift
 // from .pui-chip on the properties the two are meant to agree on. Only `cursor` is
 // enforced — the rest still differs deliberately (docs/design-parity.md §2).
@@ -109,6 +129,28 @@ assertEq(accent.fromRgb, accent.fromHex,
   '--accent-rgb must be the channels of --accent in design-system/src/tokens.css — ' +
   'rgba(var(--accent-rgb),α) is meant to BE the accent at alpha, so if these drift the app ' +
   'renders one yellow for solid accents and a different one for every glow and tint —');
+
+assert(!/rgba\(\s*255\s*,\s*199\s*,\s*44/.test(drawingCode),
+  "index.html's drawing code still hard-codes rgba(255,199,44,α) — use accentA(α), which " +
+  'is built from --accent-rgb, or changing --accent leaves the canvas painting the old yellow');
+assert(!/(?:fill|stroke)Style\s*=\s*['"]#FFC72C['"]/i.test(drawingCode),
+  "index.html assigns the literal '#FFC72C' to a canvas fillStyle/strokeStyle — use ACCENT");
+assert((drawingCode.match(/getComputedStyle\(/g) || []).length === 1,
+  'index.html must call getComputedStyle exactly once (inside cssVar); got ' +
+  (drawingCode.match(/getComputedStyle\(/g) || []).length +
+  ' — reading it per draw forces a style recalc every frame');
+assert((drawingCode.match(/cssVar\(/g) || []).length === 2,
+  'cssVar must only be called for the two top-level accent constants; got ' +
+  (drawingCode.match(/cssVar\(/g) || []).length +
+  ' calls — a call inside a draw function is the per-frame recalc this caches away');
+assert(/const accentA = a => `rgba\(\$\{ACCENT_RGB\},\$\{a\}\)`/.test(drawingCode),
+  'index.html must build translucent canvas accents from ACCENT_RGB via accentA(α)');
+
+const tokenRoot = new Map(parseRoot(tokensCss, 'design-system/src/tokens.css'));
+assertEq(accentFallback('--accent'), tokenRoot.get('--accent'),
+  "the '#FFC72C' fallback in index.html's accent read vs --accent in tokens.css —");
+assertEq(accentFallback('--accent-rgb'), tokenRoot.get('--accent-rgb'),
+  "the '255,199,44' fallback in index.html's accent read vs --accent-rgb in tokens.css —");
 
 const appChipCursor = ruleProp(html, '.chip', 'cursor', 'index.html');
 const dsChipCursor = ruleProp(chipCss, '.pui-chip', 'cursor', 'design-system Chip.css');
