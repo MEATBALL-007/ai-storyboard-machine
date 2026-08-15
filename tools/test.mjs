@@ -71,10 +71,10 @@ function accentChannels(css, source){
 const drawingCode = html.slice(html.indexOf('</style>'))
   .replace(/\/\/ ==TESTS-START==[\s\S]*?\/\/ ==TESTS-END==/, '');
 
-// The `||` fallbacks in the accent read are the one place the literal legitimately
+// The `||` fallbacks in the cssVar reads are the one place the literal legitimately
 // survives in JS. A stale fallback is invisible until the day it is used, so it is
 // pinned to tokens.css like everything else.
-function accentFallback(prop){
+function cssVarFallback(prop){
   const m = drawingCode.match(new RegExp("cssVar\\('" + prop + "',\\s*'([^']*)'\\)"));
   if(!m) throw new Error(`index.html must read ${prop} via cssVar('${prop}', <fallback>)`);
   return m[1];
@@ -139,18 +139,33 @@ assert((drawingCode.match(/getComputedStyle\(/g) || []).length === 1,
   'index.html must call getComputedStyle exactly once (inside cssVar); got ' +
   (drawingCode.match(/getComputedStyle\(/g) || []).length +
   ' — reading it per draw forces a style recalc every frame');
-assert((drawingCode.match(/cssVar\(/g) || []).length === 2,
-  'cssVar must only be called for the two top-level accent constants; got ' +
-  (drawingCode.match(/cssVar\(/g) || []).length +
+assert((drawingCode.match(/cssVar\(/g) || []).length === 3,
+  'cssVar must only be called for the three top-level colour constants ' +
+  '(ACCENT, ACCENT_RGB, BG); got ' + (drawingCode.match(/cssVar\(/g) || []).length +
   ' calls — a call inside a draw function is the per-frame recalc this caches away');
 assert(/const accentA = a => `rgba\(\$\{ACCENT_RGB\},\$\{a\}\)`/.test(drawingCode),
   'index.html must build translucent canvas accents from ACCENT_RGB via accentA(α)');
 
+// docs/design-parity.md §7.1, the jsPDF half: a third colour API, and the only one that
+// takes numbers rather than a string — doc.setTextColor(r, g, b). Neither ACCENT nor
+// accentA() fits it, so index.html splits ACCENT_RGB once into ACCENT_CH and spreads it.
+// Matched on the accent channels specifically, NOT on `setTextColor(255` — the export
+// legitimately sets white text with setTextColor(255,255,255).
+assert(!/setTextColor\(\s*255\s*,\s*199\s*,\s*44/.test(drawingCode),
+  "index.html's PDF export still hard-codes setTextColor(255, 199, 44) — use " +
+  '...ACCENT_CH, which is split from --accent-rgb, or changing --accent leaves every ' +
+  'exported PDF printing the old yellow while the app on screen prints the new one');
+// Same for the contact sheet's own background, which is --bg painted onto a canvas.
+assert(!/fillStyle\s*=\s*['"]#0D0D0D['"]/i.test(drawingCode),
+  "index.html paints the contact-sheet background with the literal '#0D0D0D' — use BG");
+
 const tokenRoot = new Map(parseRoot(tokensCss, 'design-system/src/tokens.css'));
-assertEq(accentFallback('--accent'), tokenRoot.get('--accent'),
+assertEq(cssVarFallback('--accent'), tokenRoot.get('--accent'),
   "the '#FFC72C' fallback in index.html's accent read vs --accent in tokens.css —");
-assertEq(accentFallback('--accent-rgb'), tokenRoot.get('--accent-rgb'),
+assertEq(cssVarFallback('--accent-rgb'), tokenRoot.get('--accent-rgb'),
   "the '255,199,44' fallback in index.html's accent read vs --accent-rgb in tokens.css —");
+assertEq(cssVarFallback('--bg'), tokenRoot.get('--bg'),
+  "the '#0D0D0D' fallback in index.html's background read vs --bg in tokens.css —");
 
 const appChipCursor = ruleProp(html, '.chip', 'cursor', 'index.html');
 const dsChipCursor = ruleProp(chipCss, '.pui-chip', 'cursor', 'design-system Chip.css');

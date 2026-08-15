@@ -944,6 +944,14 @@ const cssVar = (name, fallback) =>
 const ACCENT = cssVar('--accent', '#FFC72C');           // solid — 'the accent'
 const ACCENT_RGB = cssVar('--accent-rgb', '255,199,44'); // channels only, for alpha
 const accentA = a => `rgba(${ACCENT_RGB},${a})`;
+/* jsPDF is a third colour API on top of CSS strings and canvas strings: setTextColor
+   takes three NUMBERS, so neither ACCENT nor accentA() fits it. Split once here rather
+   than per call — the PDF export walks every panel, and the split would otherwise run
+   inside that loop. Spread it: doc.setTextColor(...ACCENT_CH). */
+const ACCENT_CH = ACCENT_RGB.split(',').map(Number);
+/* The contact-sheet canvas paints its own background, and that colour is exactly --bg.
+   Read here for the same reason as the accent: never inside a draw function. */
+const BG = cssVar('--bg', '#0D0D0D');
 
 const BG_COLORS = {
   warm_day:       ['#f0e4d0', '#c8a870'],
@@ -2474,7 +2482,7 @@ function exportPDF() {
     // header bar
     doc.setFillColor(15, 15, 15);
     doc.rect(0, 0, pageW, headerH, 'F');
-    doc.setTextColor(255, 199, 44);
+    doc.setTextColor(...ACCENT_CH);
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.text(sb.title, margin, 10);
@@ -2541,7 +2549,7 @@ function exportPDF() {
   // color bible page
   doc.addPage();
   doc.setFillColor(15, 15, 15); doc.rect(0, 0, pageW, headerH, 'F');
-  doc.setTextColor(255, 199, 44); doc.setFontSize(11); doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...ACCENT_CH); doc.setFontSize(11); doc.setFont('helvetica', 'bold');
   doc.text('COLOR BIBLE — ' + sb.title, margin, 10);
   const cb = sb.color_bible;
   const roles = [['highlight','HIGHLIGHT'],['midtone','MIDTONE'],['shadow','SHADOW'],['accent','ACCENT']];
@@ -3488,7 +3496,7 @@ function exportContactSheet(){
   const H = header + rows*(chh+labelH+pad) + pad;
   const cv = ce('canvas'); cv.width=W; cv.height=H;
   const ctx = cv.getContext('2d');
-  ctx.fillStyle='#0D0D0D'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle=BG; ctx.fillRect(0,0,W,H);
   ctx.fillStyle=ACCENT; ctx.font='bold 26px ui-monospace'; ctx.fillText(sb.title, pad, 38);
   ctx.fillStyle='#555'; ctx.font='13px ui-monospace';
   ctx.fillText(`${PROJECT.director} · ${sb.panels.length} panels · ${sb.total_duration_seconds}s · PHANTOM CREW OS`, pad, 58);
@@ -3513,7 +3521,7 @@ function exportCallSheet(){
   const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
   const pageW=210, m=12; let y=0;
   doc.setFillColor(15,15,15); doc.rect(0,0,pageW,20,'F');
-  doc.setTextColor(255,199,44); doc.setFont('helvetica','bold'); doc.setFontSize(13);
+  doc.setTextColor(...ACCENT_CH); doc.setFont('helvetica','bold'); doc.setFontSize(13);
   doc.text('CALL SHEET — ' + ($('#projName').value||'Project'), m, 13);
   doc.setTextColor(120,120,120); doc.setFontSize(8); doc.setFont('helvetica','normal');
   doc.text(`Director: ${APP.director}  |  ${new Date().toLocaleDateString()}`, pageW-m, 13, {align:'right'});
@@ -3587,7 +3595,7 @@ function exportStoryboardPDF(scenes, tag){
     while(idx < sb.panels.length){
       if(!firstPage) doc.addPage(); firstPage=false; pageNum++;
       doc.setFillColor(15,15,15); doc.rect(0,0,pageW,headerH,'F');
-      doc.setTextColor(255,199,44); doc.setFontSize(11); doc.setFont('helvetica','bold');
+      doc.setTextColor(...ACCENT_CH); doc.setFontSize(11); doc.setFont('helvetica','bold');
       doc.text(`S${si+1} · ${sb.title}`, margin, 10);
       doc.setTextColor(100,100,100); doc.setFontSize(8); doc.setFont('helvetica','normal');
       doc.text(`Director: ${APP.director}  |  ${dateStr}  |  Page ${pageNum}`, pageW-margin, 10, {align:'right'});
@@ -3621,7 +3629,7 @@ function exportStoryboardPDF(scenes, tag){
   const cb = STATE.storyboard.color_bible;
   doc.addPage();
   doc.setFillColor(15,15,15); doc.rect(0,0,pageW,headerH,'F');
-  doc.setTextColor(255,199,44); doc.setFontSize(11); doc.setFont('helvetica','bold');
+  doc.setTextColor(...ACCENT_CH); doc.setFontSize(11); doc.setFont('helvetica','bold');
   doc.text('COLOR BIBLE — ' + STATE.storyboard.title, margin, 10);
   [['highlight','HIGHLIGHT'],['midtone','MIDTONE'],['shadow','SHADOW'],['accent','ACCENT']].forEach(([k,l],i)=>{
     const sx=margin+i*58, sy=30, rgb=hexToRgb(cb[k]);
