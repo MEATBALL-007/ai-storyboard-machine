@@ -104,6 +104,24 @@ Enable **"Render AI frame art"**, then set an image endpoint, model, and key. Ex
 
 ---
 
+## Design tokens
+
+**`design-system/src/tokens.css` is the single source of truth** for colors and type. The app cannot `@import` it — `index.html` has to stay one self-contained file you can open over `file://` with no build step — so it keeps an inlined copy in its `<style>` `:root{…}` block.
+
+Two copies of anything drift. To stop that, they are checked against each other:
+
+**To change a token:**
+
+1. Edit the value in `design-system/src/tokens.css`.
+2. Copy that whole `:root{…}` block over the `:root{…}` block at the top of `index.html`'s `<style>` (indentation doesn't matter — the check normalizes whitespace).
+3. Run `node tools/test.mjs`. **It fails if you forget step 2**, naming every token that differs, is missing, or is declared only in `index.html`.
+
+That last assertion is what makes this a rule instead of a convention. It lives in `tools/test.mjs` rather than in the in-page test section because the in-page tests run in a sandbox with no filesystem access.
+
+Anything *not* in `tokens.css` (spacing, font sizes, alpha variants of the accent) is still hard-coded in `index.html` and is not yet covered by this guard — see [`docs/design-parity.md`](docs/design-parity.md).
+
+---
+
 ## Recent updates (hardening pass)
 
 ### Undo / Redo
@@ -146,7 +164,7 @@ Enable **"Render AI frame art"**, then set an image endpoint, model, and key. Ex
 The app is a single `index.html` with no build tools — it runs instantly in any browser. For development and testing:
 
 ```bash
-node tools/test.mjs      # headless logic tests (42 assertions)
+node tools/test.mjs      # headless logic tests (55 assertions)
 open "index.html?test"   # in-browser test panel (dev-only)
 ```
 
