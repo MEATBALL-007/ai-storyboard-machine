@@ -54,6 +54,8 @@ function Gallery() {
         <Badge variant="warn">180° line</Badge>
         <Badge variant="note">note</Badge>
         <Badge variant="ok">clean</Badge>
+        <Badge variant="neutral">4.5s</Badge>
+        <Badge variant="accent-solid">EDITED</Badge>
       </section>
 
       <section>

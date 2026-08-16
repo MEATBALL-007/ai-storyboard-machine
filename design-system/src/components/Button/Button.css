@@ -6,7 +6,7 @@
 .pui-btn:disabled{opacity:.5; cursor:not-allowed; box-shadow:none}
 
 .pui-btn--primary{background:var(--accent); color:#000; font-weight:700; padding:7px 16px; font-size:11px}
-.pui-btn--primary:hover{box-shadow:0 0 14px rgba(255,199,44,.4)}
+.pui-btn--primary:hover{box-shadow:0 0 14px rgba(var(--accent-rgb),.4)}
 
 .pui-btn--ghost{background:none; color:var(--muted); border-color:var(--line); padding:7px 16px; font-size:11px}
 .pui-btn--ghost:hover{color:var(--text); border-color:var(--dim)}
