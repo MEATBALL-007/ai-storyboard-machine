@@ -1,112 +1,84 @@
-# Round 2026-08-16_0048
+# รอบ 2026-08-17_0000 — รอคำตอบเจ้าของ + รวมสาย (ครั้งที่ 6)
 
 ## What I did
 
-- **Re-consolidated prior rounds first (`e66cbfc`) — the assigned task was unstartable without it.**
-  This branch was cut from `3503537`, not from the previous round's tip. `ACCENT_RGB`,
-  `cssVar()`, and the `cssVar( === 2` assertion that the task text names explicitly did not
-  exist on it. `git merge --ff-only` and `git cherry-pick` were both denied by the permission
-  layer; `git checkout <prev-branch> -- .` was allowed and restored the tree byte-identically
-  (`git diff <prev-branch> --stat` came back empty before I committed). Fifth consecutive round
-  this has happened.
-- **Closed `docs/design-parity.md` §7.1 (`f31f06a`)** — the five `doc.setTextColor(255, 199, 44)`
-  calls in the jsPDF export now spread `ACCENT_CH`, split once at load from `ACCENT_RGB`:
-  `const ACCENT_CH = ACCENT_RGB.split(',').map(Number)` → `doc.setTextColor(...ACCENT_CH)`.
-- **Same commit: the contact sheet's own background.** `ctx.fillStyle='#0D0D0D'` is exactly
-  `--bg`, and now reads `BG = cssVar('--bg', '#0D0D0D')` at load, alongside the accent — never
-  inside a draw function.
-- **Four regression guards in `tools/test.mjs`, all four mutation-proven** (output below):
-  no `setTextColor(255,199,44)` literal; no `fillStyle='#0D0D0D'` literal; the `cssVar(` call
-  count moved 2 → 3 (so a `cssVar` sinking into a draw function still fails); and the `--bg`
-  fallback pinned to `tokens.css` the same way the two accent fallbacks already were.
-  The generic helper was renamed `accentFallback` → `cssVarFallback` since it now covers `--bg`.
-- **Updated `docs/design-parity.md` §7.1 + §8, and `AUTOPILOT.md`** — including a "Next task"
-  that now says *stop and wait for the owner*, with the three questions that need answering.
+- **ไม่ได้ทำงานดีไซน์ใดๆ เลย ตามที่ plan สั่ง** — Next task ของรอบก่อนคือ 🛑 รอคำตอบจากเจ้าของ
+  (§8 ข้อ 2, 4, 5, 6, 8, 10 เปลี่ยนหน้าตาทุกข้อ) รอบนี้ยังไม่มีคำตอบมา จึงหยุดตามที่สั่งไว้
+- **ตรวจว่ารวมสายมาครบไหม — ไม่ครบ เป็นครั้งที่ 6 ติดต่อกัน** branch รอบนี้ถูกแตกจาก `3503537`
+  (commit ที่เพิ่ม AUTOPILOT.md) อีกครั้ง ทั้งที่ปลายสายรอบก่อนคือ `e8803a5` — **งานของรอบ
+  0002 ถึง 0048 ทั้งหมดไม่มีอยู่บน branch นี้เลยตอนเริ่ม** (index.html เป็นเวอร์ชันก่อน token,
+  `tools/test.mjs` มี 54 assertion ไม่ใช่ 72, ไม่มี `docs/design-parity.md`)
+- **รวมสายใน `e7be3e6`** ด้วย `git checkout e8803a5 -- .` แล้ว commit เอง — tree ตรงกับ
+  `e8803a5` เป๊ะ (`git diff --stat e8803a5` ว่างสนิท) ไม่ได้แก้เนื้อโค้ดเพิ่มแม้แต่บรรทัดเดียว
+- **อัปเดต §⚠️ ใน AUTOPILOT.md** บันทึกครั้งที่ 6 + บทเรียนใหม่ว่า `git branch --contains`
+  ใช้ตรวจการรวมสายในโปรเจคนี้**ไม่ได้** และอัปเดต Next task ให้ยังคงสถานะ "รอคำตอบ"
 
 ## Why
 
-- **`ACCENT_CH` split once, not per call.** The PDF export walks every panel; `.split().map()`
-  inside that loop is pure waste. Same reasoning that put `cssVar()` at module scope in `93cb14e`.
-- **The regression guard matches the accent channels, not `setTextColor(255`.** The task text
-  asked for the latter, but it is wrong: the export legitimately sets white text with
-  `doc.setTextColor(255,255,255)` (line 3533), so a bare `setTextColor(255` guard fails
-  immediately on correct code. I matched `setTextColor\(\s*255\s*,\s*199\s*,\s*44` instead —
-  same shape as the existing `rgba(255,199,44` guard one line up. Noted in the code comment.
-- **`BG` as a name, not `BG_COLOR`.** `BG_COLORS` (a lighting-preset map) already exists twelve
-  lines below; a `BG_COLOR` singular next to a `BG_COLORS` plural is a misreading waiting to
-  happen, and `BG` reads unambiguously at the one call site.
-- **Pinning the `--bg` fallback was not asked for**, but the file's own comment says stale
-  fallbacks are "invisible until the day it is used, so it is pinned to tokens.css like
-  everything else" — leaving `--bg` as the one unpinned fallback would contradict that.
+**ทำไมถึงไม่หยิบงานดีไซน์มาทำสักข้อ:** ข้อที่เหลือทั้งหมด (เฉดเขียว `--ok`, spacing/font-size
+scale, ชื่อ state class) เปลี่ยนสิ่งที่ผู้ใช้เห็น และเป็นการตัดสินใจเรื่องรสนิยมที่ย้อนกลับยาก
+plan เขียนไว้ตรงๆ ว่า "อย่าหางานแทนเพื่อให้รอบดูมีผลงาน" — รอบที่รวมสายอย่างเดียวคือรอบที่สำเร็จ
+
+**ทำไม `git branch --contains` ถึงหลอก (บทเรียนหลักของรอบนี้):** ตอนแรกเช็คด้วย
+`git branch -r --contains 93cb14e` แล้วได้แค่ `…08-16_0025` เดียว ซึ่ง*ดูเหมือน*ว่างานนั้นหาย
+ไปจากปลายสาย ความจริงคือทุกรอบก่อนหน้ารวมสายด้วยการ **squash content เป็น commit ใหม่**
+(เพราะ `git merge` ถูก permission layer ปฏิเสธ) SHA เดิมจึงไม่ได้เป็น ancestor ของใครเลย
+ทั้งที่เนื้องานอยู่ครบ **ตัวชี้ขาดคือ content ไม่ใช่ ancestry** — จึง diff ปลายสาย `e8803a5`
+กับ branch พี่น้องทั้ง 10 อัน แล้วอ่านบรรทัด `+` ทีละอัน: ทุกบรรทัดที่ "มีในพี่น้องแต่ไม่มีใน
+`e8803a5`" ล้วนเป็นของเก่าที่รอบหลังตั้งใจแทนที่ (เช่น `doc.setTextColor(255,199,44)` ที่
+`f31f06a` เปลี่ยนเป็น `doc.setTextColor(...ACCENT_CH)`) ⇒ `e8803a5` เป็น superset จริง
+รวมสายได้โดยไม่มีของหาย
+
+**ทำไมใช้ `git checkout e8803a5 -- .`:** ไล่จากวิธีที่รักษาประวัติได้มากที่สุดลงมาตามที่ §⚠️ แนะนำ
+— `git merge --ff-only e8803a5` ถูกปฏิเสธ (ทั้งที่ `3503537` เป็น ancestor ตรงๆ, fast-forward
+ได้ในทางทฤษฎี) ตัวถัดมา `git checkout <sha> -- .` ผ่าน และเช็คแล้วว่าไม่มีไฟล์ถูกลบระหว่าง
+`3503537`→`e8803a5` (`git diff --name-status` มีแต่ M กับ A) วิธีนี้จึงปลอดภัย
 
 ## Verification
 
+รันคำสั่ง Verify เต็มๆ ด้วยตัวเอง **หลัง**รวมสายแล้ว:
+
 ```
 $ node tools/test.mjs
-72 passed, 0 failed          # was 69; +3 new assertions (the cssVar 2→3 guard modifies an
-                             # existing assertion rather than adding one)
+72 passed, 0 failed
 
 $ npm --prefix design-system test
 Test Files  12 passed (12)
-Tests       41 passed (41)   # unchanged — no design-system file was touched this round
+     Tests  41 passed (41)
 ```
 
-Mutation proof of all four new/changed guards (each mutation applied to `index.html`, suite run,
-then reverted; final row is the unmutated baseline, confirming white `setTextColor` is not
-falsely caught):
+ตรวจการรวมสายเพิ่ม:
 
 ```
-FAILED  setTextColor literal returns  ::  ✗ index.html's PDF export still hard-codes
-                                            setTextColor(255, 199, 44) — use ...ACCENT_CH ...
-FAILED  bg literal returns            ::  ✗ index.html paints the contact-sheet background
-                                            with the literal '#0D0D0D' — use BG
-FAILED  cssVar sinks into a draw fn   ::  ✗ cssVar must only be called for the three top-level
-                                            colour constants (ACCENT, ACCENT_RGB, BG); got 4 ...
-FAILED  --bg fallback goes stale      ::  ✗ the '#0D0D0D' fallback ... vs --bg in tokens.css
-                                            — expected "#0D0D0D" got "#000000"
-PASSED  white setTextColor (baseline) ::  72 passed, 0 failed
+$ git diff --stat e8803a5 -- .        # ว่างเปล่า = tree ตรงกันเป๊ะ
+$ git diff --name-status 3503537 e8803a5   # มีแต่ M/A ไม่มี D = ไม่มีไฟล์หาย
 ```
 
-Working tree confirmed clean after the mutation run (`git status --short` empty) before the
-docs commit.
-
-No-visual-change claim, checked by value rather than by eye: `ACCENT_RGB` is `'255,199,44'`, so
-`ACCENT_CH` is `[255, 199, 44]` — the exact three numbers the literals passed. `--bg` in
-`:root` is `#0D0D0D`, so `BG` is `'#0D0D0D'` — the exact string replaced. Both are additionally
-pinned to `tokens.css` by assertion, so they cannot silently drift.
+ตัวเลข 72/41 ตรงกับที่ AUTOPILOT.md บันทึกไว้ตอนรอบ 0048 — ยืนยันว่ารวมสายมาครบจริง
+(ก่อนรวมสาย branch นี้มีแค่ 54 assertion)
 
 ## What I did NOT do
 
-- **Did not tick either of the first two acceptance criteria.** Criterion 1 still has `#7ac87a`
-  (§7.2) and spacing/font-size (§7.3) outstanding; criterion 2 still has §8 items 4, 5, 6, 10.
-  All of them change what the user sees.
-- **Did not start any §8 item.** Items 2, 4, 5, 6, 8, 10 are all visual-change decisions
-  (which green is *the* green; which spacing scale). Choosing one unattended is a taste call
-  that is hard to walk back, and the contract says not to.
-- **Did not verify `file://` double-click behaviour (criterion 3)** — headless server, no browser.
-  Unchanged from prior rounds; nothing I did this round could affect it (no new module syntax,
-  no fetch, spread-in-call is ES2015).
-- **Did not touch the design system, `storyboard-simulator.html`, or any PURE-LOGIC/TESTS marker.**
+- **ไม่ได้แตะ §8 ข้อ 2, 4, 5, 6, 8, 10 เลย** — ทุกข้อเปลี่ยนหน้าตา ต้องรอเจ้าของเลือก
+  (คำถามสามข้ออยู่ใน `## Next task` ของ AUTOPILOT.md ไม่ได้เปลี่ยนจากรอบก่อน)
+- **ไม่ได้แก้ต้นเหตุของปัญหา branch** — แก้ที่ repo ไม่ได้ ต้องให้ runner merge PR เข้า `main`
+  หรือแตก branch รอบหน้าจากปลายสายรอบนี้ (`…08-17_0000`) `main` ยังอยู่ที่ `ef3220e`
+  ไม่มี branch ไหนถูก merge เข้าเลยสักอัน
+- **ไม่ได้ติ๊ก acceptance criterion ข้อไหนเพิ่ม** — ไม่มีข้อไหนคืบหน้าในรอบนี้ (ข้อ 5, 6, 7
+  ที่ติ๊กไว้แล้วยังเขียวอยู่ ยืนยันด้วยการรันจริงข้างบน)
+- ไม่ได้แตะ `storyboard-simulator.html`, ไม่ได้แตะ marker ของ test runner
 
 ## Risk
 
-- **Highest-value thing for a reviewer to look at is not my diff — it is the branching.**
-  This is the fifth consecutive round spending roughly a fifth of itself re-consolidating work
-  that was already committed. `main` is still at `ef3220e "Add README"`; no round's PR has ever
-  been merged. If round 0049 is cut from `3503537` again, it will be the sixth. The fix is on
-  the runner side (merge the PR, or cut the next branch from this one) — the repo cannot do it.
-- **I deviated from the task's literal instruction for guard #3** (`setTextColor(255` → accent
-  channels only). I believe the instruction was simply wrong and would have red-tested correct
-  code, but a reviewer should confirm they agree with the narrower regex, since it would not
-  catch someone hard-coding a *different* accent value, e.g. `setTextColor(255, 200, 44)`.
-  That gap is shared with the pre-existing `rgba(255,199,44` guard, so it is not new exposure.
-- **The five converted PDF call sites were not visually verified** — I have no way to render a
-  PDF here. The argument is by value (`[255,199,44]` is what the literals were) plus the type:
-  `setTextColor` takes numbers and `.map(Number)` yields numbers, so nothing is being coerced
-  from a string. If `--accent-rgb` were ever written with a unit or a non-numeric token,
-  `.map(Number)` would yield `NaN` and jsPDF would receive garbage; the `--accent-rgb`-equals-
-  channels-of-`--accent` assertion (added in `5d3ef0c`) is what stops that, and it is still green.
-- **Pre-existing, not introduced by me, but worth a reviewer's eye:** `index.html` lines 7–10
-  already load Google Fonts and jsPDF from CDNs. Acceptance criterion 4 is worded as "no *added*
-  external reference", which I satisfied (I added none), but the criterion reads as though the
-  file has none at all. Someone should decide whether that criterion means what it says.
+- **ความเสี่ยงหลัก: ประวัติถูกยุบ** `e7be3e6` เป็น squash ของงาน 7 รอบ (13 commit) ไม่ใช่ merge
+  จริง ประวัติรายบรรทัดของงานเหล่านั้นยังอยู่บน branch `…08-16_0048` และพี่น้อง แต่ *บน branch
+  นี้* จะเห็นเป็น commit เดียว **ถ้า reviewer อยากดูว่าแต่ละ token ถูกแปลงมาอย่างไร ให้ดูที่
+  `origin/auto/deep_dive_AI_Storyboard_Machine/2026-08-16_0048`** — ไม่ใช่ที่ diff ของ commit นี้
+- **ถ้าจะ merge เข้า main ให้ merge branch นี้ (`…08-17_0000`) พอ** — มันเป็น superset ของ
+  branch พี่น้องทั้ง 10 อัน การ merge หลาย branch จะได้ conflict เปล่าๆ
+- **ข้ออ้าง "superset" พิสูจน์ด้วย content diff ไม่ใช่ ancestry** ถ้า reviewer เช็คด้วย
+  `git branch --contains <sha เก่า>` จะดูเหมือนงานหาย — นั่นคือ false alarm อธิบายไว้ใน
+  §⚠️ ของ AUTOPILOT.md แล้ว วิธีเช็คที่ถูกคือ `git diff --stat e8803a5 <branch>`
+- **รอบนี้ไม่มีผลงานด้านฟีเจอร์เลย และรอบหน้าก็จะไม่มีอีก ถ้าเจ้าของยังไม่ตอบ** —
+  ถ้าปล่อยให้ autopilot วนต่อโดยไม่มีคำตอบ จะเป็นการเผารอบทิ้งไปเรื่อยๆ
+  **สิ่งที่ต้องการจากเจ้าของคือคำตอบ 3 ข้อใน `## Next task` เท่านั้น**
