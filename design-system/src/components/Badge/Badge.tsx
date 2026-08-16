@@ -1,7 +1,11 @@
 import type { HTMLAttributes } from 'react';
 import { cn } from '../../lib/cn';
 
-export type BadgeVariant = 'accent' | 'solid' | 'warn' | 'note' | 'ok';
+export const BADGE_VARIANTS = [
+  'accent', 'solid', 'warn', 'note', 'ok', 'neutral', 'accent-solid',
+] as const;
+
+export type BadgeVariant = (typeof BADGE_VARIANTS)[number];
 
 export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   variant?: BadgeVariant;
