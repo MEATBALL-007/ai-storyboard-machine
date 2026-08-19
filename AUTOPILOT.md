@@ -22,8 +22,8 @@
 - [ ] element พื้นฐานในแอป (ปุ่ม, chip, badge, modal, empty state) หน้าตาตรงกับ component ที่มีชื่อเดียวกันใน design system
 - [ ] เปิด `index.html` ด้วย `file://` (ดับเบิลคลิก) แล้วยังใช้งานได้ครบ — ไม่ต้อง build ไม่ต้อง serve
 - [ ] ไม่มี external reference เพิ่ม: ไม่มี CDN, ไม่มี `<script src="http...">`, ไม่มี `@import` ออกนอกไฟล์
-- [ ] `node tools/test.mjs` เขียว 54/54
-- [ ] `npm --prefix design-system test` เขียว 31/31
+- [x] `node tools/test.mjs` เขียว 54/54
+- [x] `npm --prefix design-system test` เขียว 31/31
 - [ ] token มีแหล่งเดียว — ถ้าแก้ค่าใน design system แล้วต้องมีขั้นตอนชัดเจนที่ทำให้แอปตามทัน (เขียนไว้ใน README)
 
 ## Verify
@@ -43,14 +43,33 @@ node tools/test.mjs && npm --prefix design-system test
 
 ## Next task
 
-ขั้นแรกเป็นขั้น**ที่ไม่เปลี่ยนหน้าตาเลย**: อ่าน `design-system/src/tokens.css` แล้วเพิ่ม token
-ชุดนั้นเข้าไปใน `<style>` ของ `index.html` พร้อม map ค่าสี/ระยะที่ hard-code อยู่เดิมให้ชี้มาที่ token
-ที่มีค่าเท่ากันเป๊ะ — ผลลัพธ์ที่ต้องการคือ **หน้าตาเหมือนเดิมทุกพิกเซล แต่ค่าทั้งหมดมาจาก token แล้ว**
+> รอบ 2026-08-20 พบว่า งาน "เพิ่ม token เข้า `index.html`" **ทำไปแล้วตั้งแต่ต้น** — บล็อก `:root`
+> ที่ `index.html:18-25` เหมือน `design-system/src/tokens.css` ทุกตัวอักษร และไม่มีค่า hard-code
+> ที่เหลืออยู่ตัวไหน "ตรงเป๊ะ" กับ token เลยสักตัว (พิสูจน์ไว้ใน SUMMARY.md) จึงไม่มีอะไรให้ substitute
+> รอบนั้นทำได้แค่ใส่คอมเมนต์บอกที่มา + ลิสต์ค่าที่ไม่ match ไว้ให้เจ้าของตัดสินใจ
 
-ถ้าเจอค่าที่ไม่มี token ตรงกัน อย่าเพิ่งเปลี่ยนค่า ให้ลิสต์ไว้ใน SUMMARY.md ว่าค่าไหนไม่ match
-เพราะการเลือกว่าจะขยับสีของแอปหรือขยับ token เป็นการตัดสินใจด้านดีไซน์ที่เจ้าของต้องเป็นคนเลือก
+**ทำ acceptance criterion ข้อสุดท้าย (token มีแหล่งเดียว) ให้เป็นจริงแบบบังคับได้ ไม่ใช่แค่ธรรมเนียม**
 
-รอบถัดไปค่อยเปลี่ยนหน้าตาทีละ element
+ตอนนี้ `:root` ใน `index.html` เป็น **สำเนาที่ก๊อปด้วยมือ** ของ `tokens.css` — เหมือนกันอยู่ตอนนี้
+แต่ไม่มีอะไรจับได้ถ้ามันเพี้ยน แก้ไฟล์ใดไฟล์หนึ่งบรรทัดเดียวก็พังเงียบๆ ให้ทำ:
+
+1. เขียน `tools/check-tokens.mjs` — อ่านบล็อก `:root` จากทั้งสองไฟล์ แล้ว assert ว่า
+   ชุด custom property + ค่า ตรงกันเป๊ะ ถ้าไม่ตรงให้ exit code ไม่ใช่ 0 พร้อมบอกว่าตัวไหนต่าง
+2. **แยกเป็นสคริปต์ต่างหาก อย่าใส่เข้าไปใน `tools/test.mjs`** — ไม่งั้นเลข 54/54 ใน acceptance
+   criteria จะเปลี่ยน ให้อัปเดต Verify เป็น
+   `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`
+3. เขียนขั้นตอน sync ลง README: "แก้ token ที่ `design-system/src/tokens.css` เท่านั้น แล้วก๊อป
+   บล็อก `:root` ทั้งบล็อกมาทับใน `index.html` แล้วรัน `node tools/check-tokens.mjs`"
+4. ติ๊ก acceptance criterion ข้อสุดท้ายเมื่อทั้ง 3 ข้อเสร็จ
+
+**ยังห้ามเปลี่ยนหน้าตา** ห้ามแตะค่าสีใดๆ รอบนี้เป็นงานเครื่องมือ + เอกสารล้วน
+
+รอบถัดๆ ไป (อย่าเพิ่งทำตอนนี้) เรียงไว้ให้แล้ว:
+- เพิ่ม channel token (`--accent-rgb` ฯลฯ) เข้า `tokens.css` + สำเนาในแอป แล้วเปลี่ยน
+  `rgba(255,199,44,.4)` → `rgba(var(--accent-rgb),.4)` — pixel เท่าเดิม ยุบได้ ~20 จุด
+- ตัดสินใจเรื่อง near-miss (`#0a0a0a` vs `--panel`, `#161616`/`#151515` vs `--line`) — **ต้องถามเจ้าของ**
+- เพิ่ม token กลุ่ม spacing/radius/type เข้า `tokens.css` (ตอนนี้ยังไม่มีเลยสักตัว)
+- ค่อยจับหน้าตาทีละ element ให้ตรง component
 
 ---
 
