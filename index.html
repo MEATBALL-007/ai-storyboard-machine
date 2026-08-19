@@ -9,6 +9,12 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
+  /* ───── DESIGN TOKENS ─────
+     Mirrored verbatim from design-system/src/tokens.css (Phantom UI).
+     tokens.css is the single source of truth. This app ships as one file
+     with no build step, so the block is copied rather than @imported.
+     When a token changes there, copy the whole :root block over here —
+     values must stay byte-identical. */
   :root{
     --bg:#0D0D0D; --surface:#111111; --surface2:#141414;
     --panel:#0C0C0C; --card:#111111;
