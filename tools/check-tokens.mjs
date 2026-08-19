@@ -12,9 +12,15 @@ import fs from 'node:fs';
 const tokensPath = new URL('../design-system/src/tokens.css', import.meta.url);
 const htmlPath = new URL('../index.html', import.meta.url);
 
+// Drop CSS comments first: index.html documents its token block in prose that itself
+// mentions ":root{}", and without this the parser locks onto the comment and sees no tokens.
+function stripComments(source) {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '');
+}
+
 /** Pull the first `:root{ ... }` declaration block out of a stylesheet-ish string. */
 function rootBlock(source, label) {
-  const m = source.match(/:root\s*\{([\s\S]*?)\}/);
+  const m = stripComments(source).match(/:root\s*\{([^}]*)\}/);
   if (!m) throw new Error(`No :root{} block found in ${label}`);
   return m[1];
 }
@@ -47,7 +53,9 @@ if (!styleMatch) throw new Error('No <style> block found in index.html');
 const source = parseTokens(rootBlock(tokensCss, 'design-system/src/tokens.css'));
 const app = parseTokens(rootBlock(styleMatch[1], 'index.html <style>'));
 
+// An empty parse on either side means the regex lost its grip, not that everything matches.
 if (source.size === 0) throw new Error('design-system/src/tokens.css declares no tokens');
+if (app.size === 0) throw new Error('index.html declares no tokens in its :root{} block');
 
 const problems = [];
 for (const [name, value] of source) {

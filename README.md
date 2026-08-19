@@ -104,6 +104,45 @@ Enable **"Render AI frame art"**, then set an image endpoint, model, and key. Ex
 
 ---
 
+## Design tokens — single source of truth
+
+The repo holds two things that must look identical: the app (`index.html`) and **Phantom UI**, the React component library in [`design-system/`](design-system). They share one design language, and the shared values live in exactly one place:
+
+> **`design-system/src/tokens.css` is the source of truth.**
+
+`index.html` deliberately cannot `@import` it — the app is one self-contained file with no build step, no bundler and no npm, and it has to keep working when you double-click it from `file://`. So it carries an **inlined mirror** of that `:root{}` block inside its `<style>` tag (marked with a `DESIGN TOKENS` comment).
+
+A mirror maintained by good intentions drifts. This one is machine-checked.
+
+### Changing a token
+
+1. Edit the value in `design-system/src/tokens.css`.
+2. Copy that whole `:root{ … }` block verbatim into the `<style>` block of `index.html`, replacing the existing one.
+3. Run the checker:
+
+```bash
+node tools/check-tokens.mjs
+```
+
+It parses both `:root{}` blocks and compares them declaration by declaration, ignoring only what a browser ignores (hex case, whitespace inside the font stack). Any missing or divergent token prints a diff and exits `1`:
+
+```
+✗ 1 token problem(s) — index.html has drifted from design-system/src/tokens.css
+  ✗ drifted: --accent
+      tokens.css: #FF0000
+      index.html: #FFC72C
+```
+
+Tokens defined only in `index.html` are allowed and reported as a note — each is a candidate for promotion into the design system.
+
+### Full verification
+
+```bash
+node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test
+```
+
+---
+
 ## Recent updates (hardening pass)
 
 ### Undo / Redo
@@ -146,8 +185,9 @@ Enable **"Render AI frame art"**, then set an image endpoint, model, and key. Ex
 The app is a single `index.html` with no build tools — it runs instantly in any browser. For development and testing:
 
 ```bash
-node tools/test.mjs      # headless logic tests (42 assertions)
-open "index.html?test"   # in-browser test panel (dev-only)
+node tools/test.mjs        # headless logic tests (54 assertions)
+node tools/check-tokens.mjs  # design tokens still match the design system
+open "index.html?test"     # in-browser test panel (dev-only)
 ```
 
 The test runner is dev-only and not referenced by the main app.
