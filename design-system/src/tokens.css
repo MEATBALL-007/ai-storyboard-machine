@@ -2,6 +2,8 @@
   --bg:#0D0D0D; --surface:#111111; --surface2:#141414;
   --panel:#0C0C0C; --card:#111111;
   --accent:#FFC72C; --secondary:#FA4616;
+  /* channel form of --accent / --secondary, for rgba(var(--x-rgb), <alpha>) */
+  --accent-rgb:255,199,44; --secondary-rgb:250,70,22;
   --text:#E0E0E0; --muted:#9a9a9a; --dim:#2E2E2E;
   --line:#1c1c1c;
   --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;

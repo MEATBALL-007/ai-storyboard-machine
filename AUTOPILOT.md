@@ -19,17 +19,25 @@
 ## Acceptance criteria
 
 - [ ] `index.html` ใช้ CSS custom properties จาก `design-system/src/tokens.css` แทนค่าสี/ระยะที่ hard-code
+      → **สีเสร็จแล้ว** (2026-08-20): ค่าสีทุกตัวใน `<style>` ที่ตรงกับ token แล้วชี้ไป token หมด
+        เหลือแต่ near-miss (ดู "Open decision" ข้างล่าง) กับสีที่ไม่มี token คู่กัน
+      → **ระยะ/มุมโค้ง/ตัวอักษร ยังไม่เริ่ม** — `tokens.css` ยังไม่มี token กลุ่มนั้นเลย
 - [ ] element พื้นฐานในแอป (ปุ่ม, chip, badge, modal, empty state) หน้าตาตรงกับ component ที่มีชื่อเดียวกันใน design system
 - [ ] เปิด `index.html` ด้วย `file://` (ดับเบิลคลิก) แล้วยังใช้งานได้ครบ — ไม่ต้อง build ไม่ต้อง serve
+      ⚠️ ยังไม่ได้ verify รอบไหนเลย และ jsPDF/Google Fonts โหลดจาก CDN อยู่ (ของเดิม ไม่ใช่ของใหม่)
+        → offline จริงๆ PDF export จะพัง ต้องตัดสินใจว่าจะ inline หรือยอมรับ
 - [ ] ไม่มี external reference เพิ่ม: ไม่มี CDN, ไม่มี `<script src="http...">`, ไม่มี `@import` ออกนอกไฟล์
-- [ ] `node tools/test.mjs` เขียว 54/54
-- [ ] `npm --prefix design-system test` เขียว 31/31
-- [ ] token มีแหล่งเดียว — ถ้าแก้ค่าใน design system แล้วต้องมีขั้นตอนชัดเจนที่ทำให้แอปตามทัน (เขียนไว้ใน README)
+      → ณ 2026-08-20 ยังไม่มีการเพิ่ม; ของเดิมมี 4 จุด (fonts.googleapis ×3, cdnjs jsPDF ×1)
+- [x] `node tools/test.mjs` เขียว 54/54
+- [x] `npm --prefix design-system test` เขียว 31/31
+- [x] token มีแหล่งเดียว — ถ้าแก้ค่าใน design system แล้วต้องมีขั้นตอนชัดเจนที่ทำให้แอปตามทัน (เขียนไว้ใน README)
+      → `design-system/src/tokens.css` เป็นแหล่งเดียว, ขั้นตอน sync อยู่ใน README หัวข้อ
+      "Design tokens — single source of truth", และ `tools/check-tokens.mjs` บังคับให้ตรงกันจริง
 
 ## Verify
 
 ```
-node tools/test.mjs && npm --prefix design-system test
+node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test
 ```
 
 ## Out of scope
@@ -38,19 +46,47 @@ node tools/test.mjs && npm --prefix design-system test
 - **ห้ามแยก `index.html` ออกเป็นหลายไฟล์** — การเป็นไฟล์เดียวคือตัวโปรเจค ไม่ใช่ข้อจำกัดชั่วคราว
 - **ห้ามแตะ marker `// ==PURE-LOGIC-START==` / `==PURE-LOGIC-END==` / `==TESTS-START==` / `==TESTS-END==`**
   — `tools/test.mjs` ดึงโค้ดออกมาด้วย marker เหล่านี้ ถ้า marker หายหรือย้าย test runner จะ throw ทันที
+- **ห้ามแทน `rgba()`/hex ที่อยู่ในโค้ด JS วาด canvas ด้วย `var()`** — `ctx.fillStyle` ไม่รู้จัก
+  CSS custom property จะกลายเป็นสีดำเงียบๆ (ตอนนี้เหลือ literal ในโค้ด canvas 9 จุด ตั้งใจไว้แบบนั้น)
 - ห้ามลบหรือปิดเทสต์เพื่อให้ผ่าน
 - ห้ามแตะ `storyboard-simulator.html` ในรอบนี้
 
-## Next task
+## Next task — do ONLY this
 
-ขั้นแรกเป็นขั้น**ที่ไม่เปลี่ยนหน้าตาเลย**: อ่าน `design-system/src/tokens.css` แล้วเพิ่ม token
-ชุดนั้นเข้าไปใน `<style>` ของ `index.html` พร้อม map ค่าสี/ระยะที่ hard-code อยู่เดิมให้ชี้มาที่ token
-ที่มีค่าเท่ากันเป๊ะ — ผลลัพธ์ที่ต้องการคือ **หน้าตาเหมือนเดิมทุกพิกเซล แต่ค่าทั้งหมดมาจาก token แล้ว**
+**เพิ่ม token กลุ่ม spacing / radius / type เข้า `tokens.css` แล้วยุบค่าที่ซ้ำในแอป**
 
-ถ้าเจอค่าที่ไม่มี token ตรงกัน อย่าเพิ่งเปลี่ยนค่า ให้ลิสต์ไว้ใน SUMMARY.md ว่าค่าไหนไม่ match
-เพราะการเลือกว่าจะขยับสีของแอปหรือขยับ token เป็นการตัดสินใจด้านดีไซน์ที่เจ้าของต้องเป็นคนเลือก
+`tokens.css` ตอนนี้มีแต่สี (+ `--mono`) ไม่มี token ของระยะเลยสักตัว ทั้งที่ `<style>` ของแอป
+ใช้ค่าซ้ำๆ อยู่มาก (`border-radius:2px/3px/4px/5px`, `padding` ชุดเดิมๆ, `font-size:8px…12px`)
 
-รอบถัดไปค่อยเปลี่ยนหน้าตาทีละ element
+1. อ่าน `design-system/src/styles.css` ก่อน — ถ้า Phantom UI มี scale ของตัวเองอยู่แล้วให้ใช้ตามนั้น
+   **อย่าคิด scale ใหม่ขึ้นมาเอง** ถ้ามันมีอยู่แล้ว
+2. นับค่าที่ใช้จริงใน `<style>` ของ `index.html` แล้วตั้ง token เฉพาะค่าที่**ซ้ำตั้งแต่ 3 จุดขึ้นไป**
+   — ค่าที่โผล่ครั้งเดียวปล่อยไว้ อย่าบังคับให้เข้า scale เพราะนั่นคือการเปลี่ยนดีไซน์
+3. เพิ่มใน `design-system/src/tokens.css` → ก๊อกบล็อก `:root` ทับใน `index.html` ตามขั้นตอนใน README
+4. แทนค่าที่ hard-code ด้วย token **เฉพาะจุดที่ค่าตรงเป๊ะ** — หน้าตาต้องเท่าเดิมทุกพิกเซล
+5. รัน Verify ให้ครบ 3 คำสั่ง
+
+## Open decision — ต้องให้เจ้าของตัดสิน (อย่าเดาเอง)
+
+ใน `<style>` ยังมีสีที่ "เกือบ" ตรง token แต่ไม่ตรงเป๊ะ ถ้าจะยุบต้อง**ขยับสีจริง**:
+
+| ค่าในแอป | ใช้ที่ไหน | token ที่ใกล้ที่สุด | ต่างกัน |
+|---|---|---|---|
+| `#0a0a0a` ×4 | menu header, animatic bar/track | `--panel` `#0C0C0C` | สว่างต่างกัน ~2/255 |
+| `#161616` ×2 | เส้นคั่น shotlist / continuity | `--line` `#1c1c1c` | เข้มกว่า token |
+| `#151515` ×1 | เส้นคั่น menu item | `--line` `#1c1c1c` | เข้มกว่า token |
+| `#222` / `#333` | scrollbar thumb + hover | `--dim` `#2E2E2E` | คนละ step |
+| `#7ac87a` ×4, `#ffb4a0`, `#bbb` | สถานะ ok / error / caption | — | ยังไม่มี token คู่กันเลย |
+
+สองทางเลือก: (ก) ขยับสีในแอปให้เท่า token — จะเห็นความต่างนิดหน่อย, (ข) เพิ่ม token ใหม่
+(`--line-strong`, `--ok`, `--warn-soft`, …) ให้ค่าที่ใช้อยู่ — ไม่เปลี่ยนหน้าตาแต่ token เยอะขึ้น
+**agent ห้ามเลือกเอง** เพราะทั้งคู่เปลี่ยนภาษาการออกแบบ
+
+## รอบถัดๆ ไป
+
+- จับหน้าตาทีละ element ให้ตรง component (Button → `.btn-*`, Chip → `.ai-chip`, Badge → `.sev`,
+  Modal → `#tourOverlay`/dialog, EmptyState → empty state ของ panel grid)
+- ตัดสินใจเรื่อง CDN (jsPDF + Google Fonts) กับข้อ acceptance "เปิดด้วย `file://` แล้วใช้งานได้ครบ"
 
 ---
 
