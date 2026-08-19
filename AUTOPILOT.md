@@ -22,14 +22,16 @@
 - [ ] element พื้นฐานในแอป (ปุ่ม, chip, badge, modal, empty state) หน้าตาตรงกับ component ที่มีชื่อเดียวกันใน design system
 - [ ] เปิด `index.html` ด้วย `file://` (ดับเบิลคลิก) แล้วยังใช้งานได้ครบ — ไม่ต้อง build ไม่ต้อง serve
 - [ ] ไม่มี external reference เพิ่ม: ไม่มี CDN, ไม่มี `<script src="http...">`, ไม่มี `@import` ออกนอกไฟล์
-- [ ] `node tools/test.mjs` เขียว 54/54
-- [ ] `npm --prefix design-system test` เขียว 31/31
-- [ ] token มีแหล่งเดียว — ถ้าแก้ค่าใน design system แล้วต้องมีขั้นตอนชัดเจนที่ทำให้แอปตามทัน (เขียนไว้ใน README)
+- [x] `node tools/test.mjs` เขียว 54/54
+- [x] `npm --prefix design-system test` เขียว 31/31
+- [x] token มีแหล่งเดียว — ถ้าแก้ค่าใน design system แล้วต้องมีขั้นตอนชัดเจนที่ทำให้แอปตามทัน (เขียนไว้ใน README)
+      → `design-system/src/tokens.css` เป็นแหล่งเดียว, ขั้นตอน sync อยู่ใน README หัวข้อ
+      "Design tokens — single source of truth", และ `tools/check-tokens.mjs` บังคับให้ตรงกันจริง
 
 ## Verify
 
 ```
-node tools/test.mjs && npm --prefix design-system test
+node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test
 ```
 
 ## Out of scope
@@ -43,14 +45,27 @@ node tools/test.mjs && npm --prefix design-system test
 
 ## Next task
 
-ขั้นแรกเป็นขั้น**ที่ไม่เปลี่ยนหน้าตาเลย**: อ่าน `design-system/src/tokens.css` แล้วเพิ่ม token
-ชุดนั้นเข้าไปใน `<style>` ของ `index.html` พร้อม map ค่าสี/ระยะที่ hard-code อยู่เดิมให้ชี้มาที่ token
-ที่มีค่าเท่ากันเป๊ะ — ผลลัพธ์ที่ต้องการคือ **หน้าตาเหมือนเดิมทุกพิกเซล แต่ค่าทั้งหมดมาจาก token แล้ว**
+**เพิ่ม channel token เข้า `tokens.css` แล้วยุบ `rgba()` ที่ hard-code ค่าสีเดียวกันในแอป**
 
-ถ้าเจอค่าที่ไม่มี token ตรงกัน อย่าเพิ่งเปลี่ยนค่า ให้ลิสต์ไว้ใน SUMMARY.md ว่าค่าไหนไม่ match
-เพราะการเลือกว่าจะขยับสีของแอปหรือขยับ token เป็นการตัดสินใจด้านดีไซน์ที่เจ้าของต้องเป็นคนเลือก
+ตอนนี้ในแอปมี `rgba(255,199,44,…)` (= `--accent` #FFC72C) และ `rgba(250,70,22,…)`
+(= `--secondary` #FA4616) กระจายอยู่หลายจุด — ค่าตรงกับ token เป๊ะแต่เขียนเป็นตัวเลขดิบ
+เพราะ CSS ใส่ alpha ให้ hex token ตรงๆ ไม่ได้ วิธีมาตรฐานคือเพิ่ม **channel token**:
 
-รอบถัดไปค่อยเปลี่ยนหน้าตาทีละ element
+1. เพิ่มใน `design-system/src/tokens.css`:
+   `--accent-rgb:255,199,44; --secondary-rgb:250,70,22;`
+   (ค่าต้องแปลงจาก `--accent`/`--secondary` ให้ตรงเป๊ะ — ห้ามขยับสี)
+2. ก๊อกบล็อก `:root` ทั้งบล็อกมาทับใน `index.html` ตามขั้นตอนใน README
+3. แทนที่ `rgba(255,199,44,X)` → `rgba(var(--accent-rgb),X)` และ
+   `rgba(250,70,22,X)` → `rgba(var(--secondary-rgb),X)` **ทุกจุด**
+   — สีที่เรนเดอร์ออกมาต้องเท่าเดิมทุกพิกเซล
+   ⚠️ แทนเฉพาะใน `<style>` เท่านั้น **ห้ามแตะ `rgba()` ที่อยู่ในโค้ด JS วาด canvas**
+   เพราะ `ctx.fillStyle` ไม่รู้จัก CSS custom property จะกลายเป็นสีดำเงียบๆ
+4. รัน Verify ให้ครบ 3 คำสั่ง
+
+รอบถัดๆ ไป (อย่าเพิ่งทำตอนนี้):
+- ตัดสินใจเรื่อง near-miss (`#0a0a0a` vs `--panel`, `#161616`/`#151515` vs `--line`) — **ต้องถามเจ้าของ**
+- เพิ่ม token กลุ่ม spacing/radius/type เข้า `tokens.css` (ตอนนี้ยังไม่มีเลยสักตัว)
+- ค่อยจับหน้าตาทีละ element ให้ตรง component
 
 ---
 

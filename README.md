@@ -104,6 +104,35 @@ Enable **"Render AI frame art"**, then set an image endpoint, model, and key. Ex
 
 ---
 
+## Design tokens — single source of truth
+
+Colour and font tokens live in **`design-system/src/tokens.css`**. That file is the only
+place a token value may be edited.
+
+`index.html` cannot `@import` it — the app is deliberately one file you can open from
+`file://` with no build step and no server — so the app carries a **verbatim copy** of the
+`:root` block inside its `<style>`. A copy is acceptable; *silent* drift between the two is
+not, so the copy is machine-checked.
+
+### Changing a token
+
+1. Edit the value in `design-system/src/tokens.css`. **Only there.**
+2. Copy that file's entire `:root{ … }` block and paste it over the corresponding block in
+   `index.html` (it sits directly under the `<style>` tag, marked with a comment).
+3. Run the checker:
+
+   ```bash
+   node tools/check-tokens.mjs
+   ```
+
+   It exits `0` when every custom property and value matches, and exits `1` naming each
+   property that is missing, extra, or has a different value.
+
+The checker is a separate script on purpose — it asserts *file consistency*, not app logic,
+so it stays out of `tools/test.mjs` and does not disturb that suite's assertion count.
+
+---
+
 ## Recent updates (hardening pass)
 
 ### Undo / Redo
@@ -146,8 +175,9 @@ Enable **"Render AI frame art"**, then set an image endpoint, model, and key. Ex
 The app is a single `index.html` with no build tools — it runs instantly in any browser. For development and testing:
 
 ```bash
-node tools/test.mjs      # headless logic tests (42 assertions)
-open "index.html?test"   # in-browser test panel (dev-only)
+node tools/test.mjs          # headless logic tests (54 assertions)
+node tools/check-tokens.mjs  # design tokens in index.html match tokens.css
+open "index.html?test"       # in-browser test panel (dev-only)
 ```
 
 The test runner is dev-only and not referenced by the main app.
