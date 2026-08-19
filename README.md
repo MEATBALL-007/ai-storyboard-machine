@@ -104,6 +104,45 @@ Enable **"Render AI frame art"**, then set an image endpoint, model, and key. Ex
 
 ---
 
+## Design tokens — single source of truth
+
+Colours (and, in time, spacing and type) live in **one** place:
+[`design-system/src/tokens.css`](design-system/src/tokens.css). The Phantom UI React
+components import it directly. The app cannot — it is a single file that must open
+over `file://` with no build step, no bundler and no `@import` — so `index.html`
+carries a **verbatim copy** of the same `:root` block inside its `<style>`.
+
+To change a token:
+
+1. Edit the value in `design-system/src/tokens.css`.
+2. Copy the **whole** `:root { … }` block over the one at the top of the `<style>`
+   in `index.html`. Re-indent to match the file; nothing else may change.
+3. Run `node tools/check-tokens.mjs`.
+
+Step 3 is the enforcement: it parses the `:root` block out of both files and fails
+if any custom property is missing, extra, or holds a different value. Indentation,
+comments and line breaks are ignored, so only real drift trips it.
+
+### Alpha variants
+
+CSS cannot apply an alpha channel to a hex custom property — `rgba(var(--accent), .4)`
+is invalid. Tokens that need transparency therefore ship a **channel form** alongside
+the hex one:
+
+```css
+--accent:#FFC72C;  --accent-rgb:255,199,44;
+--secondary:#FA4616; --secondary-rgb:250,70,22;
+```
+
+Use `rgba(var(--accent-rgb), .4)` in CSS rather than writing the numbers out.
+
+> **Canvas is the exception.** `ctx.fillStyle` / `ctx.strokeStyle` are resolved by the
+> 2D context, not the CSS engine, and do **not** understand custom properties — a
+> `var()` there silently renders black. The `rgba()` literals in the drawing code are
+> intentional and must stay literal.
+
+---
+
 ## Recent updates (hardening pass)
 
 ### Undo / Redo
