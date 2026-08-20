@@ -104,6 +104,91 @@ Enable **"Render AI frame art"**, then set an image endpoint, model, and key. Ex
 
 ---
 
+## Design tokens — single source of truth
+
+[`design-system/src/tokens.css`](design-system/src/tokens.css) is authoritative for every
+colour, the corner-radius scale, and the type family. `index.html` carries a **verbatim copy** of that `:root{}` block
+inside its `<style>` element — it cannot `@import` the file, because the app has to keep
+working when you double-click it (`file://` blocks cross-file CSS imports), and adding a
+build step would defeat the whole point of the project.
+
+**To change a token:**
+
+1. Edit the value in `design-system/src/tokens.css`.
+2. Copy the entire `:root{ … }` block into the `<style>` block at the top of `index.html`
+   (keep the extra indentation; nothing else about it changes).
+3. Run `node tools/check-tokens.mjs` — it fails if any token is missing from `index.html`
+   or holds a different value, so the copy cannot silently drift.
+
+Colours that need transparency use the channel tokens (`--accent-rgb`, `--secondary-rgb`,
+`--bg-rgb`) via `rgba(var(--accent-rgb), .4)`, so a glow or ring follows `--accent` instead
+of freezing the old hue into a literal. **Exception:** the `rgba()` / hex literals inside the
+canvas-drawing JavaScript are deliberate — `ctx.fillStyle` does not resolve CSS custom
+properties and would silently paint black.
+
+### Corner radius
+
+| Token | Value | Used for |
+|---|---|---|
+| `--r-xs` | 1px | hairline marks — section bullet, animatic thumbnails |
+| `--r-sm` | 2px | badges, `kbd`, the logo mark, scrubber track |
+| `--r-md` | 3px | the default control radius — buttons, chips, inputs, tabs |
+| `--r-lg` | 4px | primary call-to-action, toasts, scrollbar thumb |
+| `--r-xl` | 5px | panel cards, dropdown menus, tour spotlight |
+| `--r-2xl` | 6px | modals, tour popover, large colour swatches |
+| `--r-full` | 50% | dots and circular buttons |
+
+Both consumers use this scale: the `<style>` block in `index.html` and the Phantom UI
+component CSS under `design-system/src/components/`. Neither one hard-codes a radius, so a
+change here reaches the app and the library together.
+
+> This ramp steps 1px at a time, which is finer than a radius scale usually needs — `--r-xs`
+> through `--r-2xl` are near-indistinguishable in isolation. It is recorded as-is because
+> it is what both codebases already shipped; collapsing it to three steps would move pixels,
+> and that is a design call for the owner rather than a mechanical one.
+
+## Element parity with Phantom UI
+
+Tokens make the two codebases share *values*; this table tracks whether they also share the
+*rules* built from those values. The app cannot import the React components, so parity here
+means the `<style>` block in `index.html` and the matching file under
+`design-system/src/components/` declare the same properties.
+
+| App selector | Phantom UI | Status |
+|---|---|---|
+| `.btn-primary`, `.btn-ghost`, `.icon-btn`, `.tab-btn` | `Button.css` | ✅ every value matches |
+| `.chip` | `Chip.css` | ⚠️ matches except `padding` — see below |
+| `.badge`, `.modal`, empty state | `Badge.css`, `Modal.css`, `EmptyState.css` | not yet compared |
+
+`index.html` has no base `.btn` class; it styles modal buttons through the descendant selector
+`.modal-actions button`. The declarations are equivalent, so this is a structural difference
+rather than a visual one.
+
+### Open decision: chip horizontal padding
+
+`.pui-chip` uses `padding:6px 10px`; the app's `.chip` still uses `6px 2px`. **The DS value does
+not fit the current sidebar**, so it was deliberately not adopted:
+
+| Step | Width |
+|---|---|
+| `#left` | 212px, minus its 1px right border → 211px |
+| minus vertical scrollbar (`::-webkit-scrollbar{width:8px}`) | 203px |
+| minus `.section` padding (12px × 2) | 179px |
+| minus `.radio-grid` gaps (4px × 3) | 167px → **41.75px per `1fr` track** |
+
+The widest label, `16:9`, is 4 characters of 10px monospace ≈ 24px, and `box-sizing:border-box`
+means padding and border come out of the track: `24 + 20 + 2 = 46px` needed against 41.75px
+available. Because `1fr` resolves to `minmax(auto, 1fr)`, the track cannot shrink below that
+min-content width — the grid would instead grow to 196px and push a horizontal scrollbar into
+the sidebar.
+
+**Max horizontal padding that always fits is 7px.** 10px only fits if the sidebar has no
+vertical scrollbar, which it does in normal use. Closing this gap properly means picking one:
+widen `#left`, drop the chip font-size, switch `.radio-grid` to two columns, or set the DS chip
+to a smaller padding. All four move pixels, so the choice belongs to the owner.
+
+---
+
 ## Recent updates (hardening pass)
 
 ### Undo / Redo
