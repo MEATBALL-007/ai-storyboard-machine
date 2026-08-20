@@ -98,8 +98,9 @@ Enable **"Render AI frame art"**, then set an image endpoint, model, and key. Ex
 
 - Vanilla JavaScript (ES6+), no framework, no bundler
 - HTML5 `<canvas>` for all storyboard rendering
-- [jsPDF](https://github.com/parallax/jsPDF) (via CDN) for PDF export
-- JetBrains Mono, dark cinematic theme (`#0D0D0D` / yellow-gold `#FFC72C` / orange `#FA4616`)
+- [jsPDF](https://github.com/parallax/jsPDF) for PDF export — **the one remaining CDN
+  dependency**, so PDF export is the only feature that still needs a network connection
+- JetBrains Mono (self-hosted, embedded in the file), dark cinematic theme (`#0D0D0D` / yellow-gold `#FFC72C` / orange `#FA4616`)
 - Single file: [`index.html`](index.html)
 
 ---
@@ -146,6 +147,37 @@ change here reaches the app and the library together.
 > through `--r-2xl` are near-indistinguishable in isolation. It is recorded as-is because
 > it is what both codebases already shipped; collapsing it to three steps would move pixels,
 > and that is a design call for the owner rather than a mechanical one.
+
+### Typeface
+
+The four JetBrains Mono latin subsets in [`design-system/src/fonts/`](design-system/src/fonts/)
+(weights 400 / 500 / 700 / 800, 86 KB total) are authoritative.
+[`design-system/src/fonts.css`](design-system/src/fonts.css) loads them by relative URL for the
+React library; `index.html` embeds the same bytes as `data:font/woff2;base64,…` inside its
+`@font-face` rules, for the same reason it inlines the tokens — a `file://` page cannot fetch a
+sibling font file, and the app used to paper over that by loading the typeface from Google Fonts.
+That CDN link is gone: the app now renders in its real typeface with no network at all.
+
+**To change a font file:**
+
+1. Replace the `.woff2` in `design-system/src/fonts/` (and its `@font-face` in `fonts.css`
+   if the weight changed).
+2. Re-embed it in `index.html`: base64 the file and swap the payload inside the matching
+   `src:url(data:font/woff2;base64,…)`.
+3. Run `node tools/check-tokens.mjs` — it decodes each embedded payload and compares it
+   byte-for-byte with the file on disk, so a forgotten re-embed fails loudly.
+
+The cost is size: `index.html` is 297 KB instead of 188 KB, because base64 adds about a third.
+That is the price of the headline promise, and it buys back a real one — the app no longer
+degrades to a fallback font when you are offline, which matters here because the sidebar's
+column widths have well under a pixel of slack (see *Element parity* below).
+
+> **Coverage is unchanged, not merely preserved.** These are latin subsets, so the box-drawing
+> (`═` appears 1,576 times), arrows, and Thai characters in the UI fall back to the system
+> monospace font. They did so before too: none of those ranges are in *any* of the subsets
+> Google's `css2` endpoint serves for JetBrains Mono (latin, latin-ext, cyrillic, cyrillic-ext,
+> greek, vietnamese). No character in `index.html` lands in a subset that was fetched before
+> and is missing now.
 
 ## Element parity with Phantom UI
 
