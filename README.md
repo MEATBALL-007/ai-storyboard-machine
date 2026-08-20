@@ -104,6 +104,30 @@ Enable **"Render AI frame art"**, then set an image endpoint, model, and key. Ex
 
 ---
 
+## Design tokens — single source of truth
+
+[`design-system/src/tokens.css`](design-system/src/tokens.css) is authoritative for every
+colour and the type family. `index.html` carries a **verbatim copy** of that `:root{}` block
+inside its `<style>` element — it cannot `@import` the file, because the app has to keep
+working when you double-click it (`file://` blocks cross-file CSS imports), and adding a
+build step would defeat the whole point of the project.
+
+**To change a token:**
+
+1. Edit the value in `design-system/src/tokens.css`.
+2. Copy the entire `:root{ … }` block into the `<style>` block at the top of `index.html`
+   (keep the extra indentation; nothing else about it changes).
+3. Run `node tools/check-tokens.mjs` — it fails if any token is missing from `index.html`
+   or holds a different value, so the copy cannot silently drift.
+
+Colours that need transparency use the channel tokens (`--accent-rgb`, `--secondary-rgb`,
+`--bg-rgb`) via `rgba(var(--accent-rgb), .4)`, so a glow or ring follows `--accent` instead
+of freezing the old hue into a literal. **Exception:** the `rgba()` / hex literals inside the
+canvas-drawing JavaScript are deliberate — `ctx.fillStyle` does not resolve CSS custom
+properties and would silently paint black.
+
+---
+
 ## Recent updates (hardening pass)
 
 ### Undo / Redo

@@ -4,5 +4,6 @@
   --accent:#FFC72C; --secondary:#FA4616;
   --text:#E0E0E0; --muted:#9a9a9a; --dim:#2E2E2E;
   --line:#1c1c1c;
+  --accent-rgb:255,199,44; --secondary-rgb:250,70,22; --bg-rgb:13,13,13;
   --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
