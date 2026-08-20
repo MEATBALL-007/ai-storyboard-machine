@@ -1,124 +1,104 @@
-# Round summary — 2026-08-21 (branch `auto/…/2026-08-21_0030`)
+# Round summary — 2026-08-21_0043
+
+Task: **self-host JetBrains Mono in `index.html`** and drop the Google Fonts CDN.
 
 ## What I did
 
-- **Restored the baseline first — the branch was cut from a stale base again** (`12e8ca7`).
-  The runner cut this branch from `3503537`; the `AUTOPILOT.md` I was handed was generated from
-  branch `2026-08-21_0012`, three commits ahead. Without them `node tools/check-tokens.mjs` —
-  named in my own Verify command — does not exist. Verified `git merge-base --is-ancestor` first,
-  so this is a pure fast-forward of content with **no new work**.
-- **Did the named task: Chip parity** — adopted **2 of the 3** differences against `.pui-chip`
-  (`cursor:pointer`, `font-family:var(--mono)`).
-- **Did NOT adopt `padding:6px 10px` — it does not fit, and the contract told me to stop rather
-  than pick a smaller value myself.** Measured budget below; the decision goes to the owner.
-- **Surveyed the three remaining criterion-2 elements** (Badge, Modal, EmptyState) that no prior
-  round had compared. **All three are already at value parity** — the only differences are
-  properties `body` already supplies. Recorded as a table in `AUTOPILOT.md` so nobody re-measures.
-- **Documented both in README** under a new "Element parity with Phantom UI" heading, and set
-  `## Next task` to self-hosting JetBrains Mono.
+- **Restored the previous rounds' work first** (`f48402a`). The runner cut this branch from
+  `3503537` — the original contract commit — for the third round running, so
+  `tools/check-tokens.mjs`, the radius/channel tokens and the chip-parity work named in the
+  contract handed to me *did not exist in my working tree*. My own Verify command would have
+  crashed on a missing file. Restored the tree of `38ad09b` (previous round's tip) verbatim as
+  a separate commit so this round's real diff stays readable.
+- **Embedded all four JetBrains Mono weights as `data:` URIs** (`6abf6fa`). The 400/500/700/800
+  latin `.woff2` files from `design-system/src/fonts/` (86,144 bytes) now live inside
+  `index.html`'s `<style>` as `@font-face` rules mirroring `design-system/src/fonts.css`.
+  Removed the two `preconnect` hints and the `fonts.googleapis` stylesheet link.
+- **Extended `tools/check-tokens.mjs` to verify the fonts too** (`3162c51`). It walks every
+  `@font-face` in `fonts.css`, decodes the matching base64 payload from `index.html`, and
+  compares it byte-for-byte with the file on disk.
+- **Documented the typeface in README** (`73b8dc3`) — where the source of truth is, the
+  three-step re-embed procedure, the size cost, and the glyph-coverage analysis. Also marked
+  jsPDF as the sole remaining network dependency.
+- **Updated `AUTOPILOT.md`**: criterion 4's note (external refs went 4 → 1, never up),
+  criterion 3's progress and its real blocker, and a new consolidated
+  **"🔴 รอเจ้าของตัดสินใจ"** block listing the four decisions that now gate almost everything.
 
 ## Why
 
-**Why `font-family:var(--mono)` on `.chip` is not a cosmetic no-op but is a render no-op.**
-`body` (line 27) already sets `font-family:var(--mono)`, and the only other `font-family`
-declarations in the file are on `button`, `input/textarea/select`, and one unrelated rule at 502.
-Chips are `<div>`s, so nothing between `body` and `.chip` intercepts the inherited value. Adding it
-explicitly changes zero pixels; it makes the rule self-contained like `.pui-chip`, which is the
-point of parity. `cursor:pointer` is a genuine fix — chips carry `onclick` handlers
-(`index.html:2756`) but rendered a text caret.
-
-**Why the chip padding is blocked.** The width budget, all from fixed px values so no font metrics
-are needed for the container half:
-
-| Step | Width |
-|---|---|
-| `#left` 212px, minus its 1px right border | 211px |
-| minus vertical scrollbar (`::-webkit-scrollbar{width:8px}`) | 203px |
-| minus `.section` padding 12px × 2 | 179px |
-| minus `.radio-grid` gaps 4px × 3 | 167px → **41.75px per track** |
-
-`16:9` is 4 characters of 10px monospace ≈ 24px, and `*{box-sizing:border-box}` means padding and
-border come out of that track: `24 + 20 + 2 = 46px` needed vs 41.75px available. The failure is not
-clipping — `1fr` is `minmax(auto, 1fr)`, so the track cannot shrink below min-content and the grid
-instead grows to 196px, pushing a horizontal scrollbar into the sidebar. **7px is the largest
-padding-x that always fits.** Fixing it means widening `#left`, shrinking the font, going to two
-columns, or changing the DS value — all four move pixels, so per `AUTOPILOT.md` I stopped and
-handed it over rather than quietly shipping `6px 7px`.
-
-**Why I left a CSS comment at the `.chip` rule.** A bare `6px 2px` sitting next to a README that
-says the DS value is `6px 10px` invites the next round to "fix" it and reintroduce the overflow.
+- **All four weights, not the 400+700 shortcut the contract offered.** `index.html` uses
+  `font-weight:` 500, 700 and 800 explicitly plus the 400 default — dropping 500/800 would have
+  forced synthetic weights on live UI. 60 KB is not worth that. (There is also one
+  `font-weight:300` with no matching face, but the CDN request was `wght@400;500;700;800`, so
+  that already resolved to 400. Unchanged.)
+- **Glyph coverage does not regress.** I took a codepoint census of `index.html`: it uses
+  U+2550 box-drawing **1,576 times**, plus arrows, Thai, and emoji. None of those ranges are in
+  *any* subset Google's `css2` endpoint serves for JetBrains Mono (latin, latin-ext, cyrillic,
+  cyrillic-ext, greek, vietnamese), so they already fell back to the system monospace font.
+  The only non-ASCII characters in a range the CDN did serve are `°  ·  —  ’  “  ”  …`, all of
+  which sit in the latin subset I embedded. Nothing that rendered in JetBrains Mono before
+  stops rendering in it now.
+- **The font check belongs in `check-tokens.mjs`, not a new script.** Embedding creates a
+  second copy of the typeface, and this change would otherwise have added a fresh drift vector
+  in the same round that closed one. Same file, same failure mode, same command.
 
 ## Verification
 
-Full Verify command, unmodified, run as one chain after the final code edit:
+Ran the contract's Verify command in full:
 
 ```
-node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test
-```
-```
-54 passed, 0 failed
-tokens in sync: 22/22 from design-system/src/tokens.css present and identical in index.html
-Test Files  12 passed (12)
-     Tests  31 passed (31)
+node tools/test.mjs           → 54 passed, 0 failed
+node tools/check-tokens.mjs   → tokens in sync: 22/22 from design-system/src/tokens.css …
+                                fonts in sync: 4/4 from design-system/src/fonts.css …
+npm --prefix design-system test → Test Files 12 passed (12) / Tests 31 passed (31)
 ```
 
-Additional checks:
+Task-specific checks:
 
-- **Baseline captured green before any edit** (54/54, 22/22, 31/31), so the green above is a
-  comparison rather than a bare assertion.
-- **Base restoration proven content-identical**: after `git checkout 9c719cc -- .`,
-  `git diff 9c719cc` printed nothing. `git diff --stat` between rounds `_0002` and `_0012`
-  confirmed `_0012` is a strict content superset, so folding in only `_0012` loses nothing.
-- Font-inheritance claim checked by enumerating **every** `font-family` in `index.html`
-  (4 declarations, lines 27/35/36/502) — none on the chip's ancestor chain.
-- Chip interactivity confirmed at `index.html:2756` before adding `cursor:pointer`.
-- All 8 chips are static markup (lines 645–657); `grep` found no JS-generated `.chip`, so the
-  longest label really is 4 characters and the measurement covers every instance.
+- `fonts.googleapis` occurrences: **0**. `fonts.gstatic`: **0**. `@import`: **0**.
+- Remaining external refs in the file: exactly one —
+  `<script src="https://cdnjs.cloudflare.com/…/jspdf.umd.min.js">`, pre-existing.
+- **Base64 round-trip, all four weights**: decoded each embedded payload and compared with
+  `Buffer.equals` against the source file — `OK 21168B / 21832B / 21908B / 21236B`, each
+  starting with the `wOF2` magic. The four distinct byte lengths also prove the weights were
+  embedded in the right order.
+- **Negative-tested the new check, both failure modes** (then `git checkout --` to restore):
+  - flipped one byte of the 500 `.woff2` → `FAIL font drift: weight 500 …`, exit 1
+  - added a phantom weight-600 face to `fonts.css` → `FAIL missing in index.html: no
+    @font-face weight 600 …`, exit 1
+- `index.html`: 188 KB → 297 KB (the contract predicted ~303 KB).
 
 ## What I did NOT do
 
-- **Did not change chip padding.** Reasoning above; deliberately handed to the owner.
-- **No browser check — and this time it is not just "no display".** I tried the Playwright and
-  Chrome-DevTools MCP tools to open `file://…/index.html` and measure the real track width;
-  **both were permission-denied.** `git merge`, `git cherry-pick`, and `git reset` are denied too
-  (I used `git checkout <sha> -- .` instead). Criterion 3 is unverified for the fifth round, and
-  no future round can fix that without the owner opening the permission. Noted in `AUTOPILOT.md`
-  so nobody burns another round rediscovering it.
-- **Did not add the `.btn` base class.** Values already match `Button.css`; the gap is structural
-  and would mean editing `class=` in markup *and* in the JS that generates HTML. Its own round.
-- **Did not touch the 3 rgba literals** in `Button.css:9`, `Badge.css:7-8`. Still noted as a
-  pick-up-anytime item.
-- **Did not tokenize spacing/font-size.** Prior round established these are a continuum, not a
-  scale; unchanged.
+- **Did not touch the jsPDF CDN line** — the contract said to leave it, and I could not have
+  done it anyway: there is no copy of jsPDF anywhere on this machine (searched
+  `C:/PHANTOM-AUTOPILOT` and the npm global root) and network access is blocked. **The owner
+  has to vendor `jspdf.umd.min.js` into the repo before any round can inline it.** I recorded
+  this in AUTOPILOT.md so no future round burns itself discovering it again.
+- **Did not tick criterion 3** (`file://` fully working). The font half is done, but jsPDF
+  still needs the network, and nobody has opened the app in a real browser yet.
+- **Did not add `unicode-range`.** The contract said to match "the original", but
+  `design-system/src/fonts.css` — the source of truth — declares none, and with exactly one
+  file per weight `unicode-range` would only ever narrow coverage. Matching the DS file is the
+  behaviour-preserving choice.
+- **Did not touch spacing/font-size tokens, chip padding, or the DS `rgba` literals.** The
+  first two are blocked on owner decisions (recorded); the third is now the Next task.
 
 ## Risk
 
-**The branching defect is still the top problem, and it is getting worse, not better.** There are
-now 28 `auto/…` branches all cut from `3503537`, and `main` is still at `ef3220e` with 2 commits —
-no design system, no token work. This is the **second consecutive round** that had to spend its
-opening on base restoration. Every round produces a PR that overlaps its siblings; rounds are not
-accumulating. **This is a runner configuration fix, not a code fix**, and no amount of agent work
-inside a round can resolve it.
-
-**Commit `12e8ca7` duplicates content from two unmerged sibling PRs** (`_0002`, `_0012`). If either
-merges first this PR conflicts on `index.html`, `README.md`, `AUTOPILOT.md`, `tools/check-tokens.mjs`
-and the DS component CSS. The content is textually identical, so conflicts resolve trivially — but
-a reviewer should expect them. **If `_0012` has already merged, drop `12e8ca7` and keep only the
-two commits after it.**
-
-**The overflow claim is arithmetic, not observation.** The container half (41.75px) is exact — every
-input is a fixed px value. The text half is an estimate: I assumed ~0.6em advance width for 10px
-monospace. JetBrains Mono is 0.6em, and the offline fallbacks are close (Consolas 0.55em, Courier
-New 0.6em), so `16:9` lands at 22–24px against a 19.75px budget under every candidate font — the
-conclusion holds across the range, but **the margin is single-digit pixels and I could not look at
-it.** If the owner has a browser, this is a ten-second check worth doing before acting on my number.
-Note the scrollbar assumption matters: without a vertical scrollbar the budget is 43.75px and 10px
-padding *nearly* fits, which is likely why the DS value looked plausible in the first place.
-
-**Parity here means "same declared values", not "same rendered output".** I compared CSS rules by
-reading them. For Badge/Modal/EmptyState I verified the missing properties are supplied by `body`,
-but I did not render either codebase side by side. A difference arising from surrounding context
-(a parent's `line-height`, a stacking or `backdrop-filter` interaction) would not show up in this
-method. `.pc-badge` also adds `position:absolute` and `backdrop-filter:blur(2px)` that `.pui-badge`
-lacks — I judged those app-specific placement concerns rather than parity gaps, which is a
-judgement call a reviewer may disagree with.
+- **Not verified in a browser.** Six rounds of CSS changes, zero rendered pixels seen. This
+  round changes *how the typeface loads*, which is the one kind of change most likely to show
+  up visually. The byte-level round-trip proves the font data is intact and the CSS is
+  syntactically a copy of `fonts.css`, but that is not the same as seeing it render.
+  Playwright and Chrome-DevTools MCP are permission-blocked, not merely headless.
+- **A reviewer should sanity-check one thing by eye**: open `index.html` offline and confirm
+  the UI is in JetBrains Mono, not a fallback. A malformed data URI would fail *silently* —
+  the page renders fine, just in the wrong font.
+- **The 109 KB size increase is real and irreversible-ish.** If the owner considers 297 KB too
+  large for the "one file you can open" pitch, the fix is to drop weights, and I've documented
+  which ones are actually used so that call can be made with the facts.
+- **The stale-base problem is now costing a commit every round.** Three rounds in a row have
+  opened with a restore commit. If two of these branches are ever merged in the wrong order,
+  the restore commits will conflict against each other. This is a runner bug, not a repo bug —
+  it needs fixing at the source (cut from the previous round's tip, or merge PRs into `main`).
+  There are 29 stacked `auto/*` branches now.

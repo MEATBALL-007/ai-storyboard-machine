@@ -50,12 +50,20 @@
         **padding-x สูงสุดที่ปลอดภัยคือ 7px** ทางเลือกคือ ขยาย `#left` / ลด font-size / ใช้ 2 คอลัมน์ /
         ลดค่าใน DS — ทุกทาง**ขยับพิกเซล** จึงเป็นการตัดสินใจของเจ้าของ ไม่ใช่ของ agent
 - [ ] เปิด `index.html` ด้วย `file://` (ดับเบิลคลิก) แล้วยังใช้งานได้ครบ — ไม่ต้อง build ไม่ต้อง serve
-      ⚠️ **ยังไม่เคย verify ด้วยเบราว์เซอร์จริงสักรอบ** (รันบน headless server) และ jsPDF/Google Fonts
-        โหลดจาก CDN อยู่ (ของเดิม ไม่ใช่ของใหม่) → offline จริงๆ PDF export จะพัง ต้องตัดสินใจว่าจะ inline หรือยอมรับ
+      → **ฟอนต์เสร็จแล้ว** (2026-08-21) — JetBrains Mono 4 น้ำหนัก (400/500/700/800) ฝังเป็น
+        `data:font/woff2;base64` ใน `<style>` แล้ว, `fonts.googleapis`/`fonts.gstatic` เหลือ 0 จุด
+        `index.html` โตจาก 188 KB → 297 KB, `tools/check-tokens.mjs` เช็ค byte ตรงกับ
+        `design-system/src/fonts/` ทุกรอบ
+      ⚠️ **เหลือ jsPDF ตัวเดียว** (`cdnjs.cloudflare.com`, บรรทัด 7) → offline แล้ว PDF export พัง
+        **agent inline ให้ไม่ได้ในสภาพแวดล้อมนี้**: ไม่มีสำเนา jsPDF บนเครื่องเลย (ค้นทั้ง
+        `C:/PHANTOM-AUTOPILOT` และ npm global แล้ว) และ network ถูกบล็อก → **เจ้าของต้อง vendor
+        ไฟล์ `jspdf.umd.min.js` เข้า repo เองก่อน** รอบถัดๆ ไปถึงจะ inline ได้
+      ⚠️ **ยังไม่เคย verify ด้วยเบราว์เซอร์จริงสักรอบ** (รันบน headless server)
         (2026-08-21: ลอง Playwright/Chrome-DevTools MCP แล้ว — **ถูก permission บล็อกทั้งคู่**
          ไม่ใช่แค่ "ไม่มีจอ" อย่าเสียรอบไปลองซ้ำ ถ้าเจ้าของอยากให้ verify จริงต้องเปิด permission ให้ก่อน)
 - [x] ไม่มี external reference เพิ่ม: ไม่มี CDN, ไม่มี `<script src="http...">`, ไม่มี `@import` ออกนอกไฟล์
-      → ของเดิมมี 4 จุดใน `<head>` (fonts.googleapis ×3, cdnjs jsPDF ×1) และยังไม่มีการเพิ่ม
+      → ของเดิมมี 4 จุดใน `<head>` — **ตอนนี้เหลือ 1** (cdnjs jsPDF) เพราะ fonts.googleapis ×3
+        ถูกลบออกในรอบ 2026-08-21 ไม่เคยมีการ *เพิ่ม* external reference เลยสักรอบ
 - [x] `node tools/test.mjs` เขียว 54/54
 - [x] `npm --prefix design-system test` เขียว 31/31
 - [x] token มีแหล่งเดียว — ถ้าแก้ค่าใน design system แล้วต้องมีขั้นตอนชัดเจนที่ทำให้แอปตามทัน (เขียนไว้ใน README)
@@ -63,6 +71,9 @@
         "Design tokens — single source of truth", และ `tools/check-tokens.mjs` บังคับให้ตรงกันจริง
         (2026-08-21: เขียน script จริงแล้ว — เดิม AUTOPILOT.md อ้างว่ามีทั้งที่ยังไม่มี;
         ทดสอบแล้วว่า fail จริงทั้งกรณี value เพี้ยนและ token หาย)
+        (2026-08-21 รอบ 0043: script เช็ค **ฟอนต์** ด้วยแล้ว — decode base64 ใน `index.html`
+        เทียบ byte กับ `design-system/src/fonts/*.woff2`; ทดสอบ fail จริงทั้ง 2 กรณี
+        คือ byte เพี้ยน และ `fonts.css` มีน้ำหนักที่ `index.html` ไม่มี)
 
 ## Verify
 
@@ -97,39 +108,52 @@ generate มาจาก branch ของรอบก่อน — ไฟล์�
 - **ห้ามแทน `rgba()`/hex ที่อยู่ในโค้ด JS วาด canvas ด้วย `var()`** — `ctx.fillStyle` ไม่รู้จัก
   CSS custom property จะกลายเป็นสีดำเงียบๆ (literal ในโค้ด canvas บรรทัด ~1346–1741, ~3092–3195 ตั้งใจไว้แบบนั้น)
 
+## 🔴 รอเจ้าของตัดสินใจ — งานที่เหลือเกือบทั้งหมดบล็อกอยู่ที่นี่
+
+สำรวจครบแล้วทุกข้อ agent ทำต่อเองไม่ได้เพราะเป็นการตัดสินใจ ไม่ใช่การขาดข้อมูล
+ตราบใดที่ 4 ข้อนี้ยังไม่ตอบ รอบถัดๆ ไปจะเหลือแต่งานเก็บกวาดเล็กๆ
+
+1. **jsPDF** — vendor `jspdf.umd.min.js` เข้า repo ไหม? ถ้าไม่ เกณฑ์ข้อ 3 ติ๊กไม่ได้ตลอดไป
+   (agent ดาวน์โหลดเองไม่ได้ — ไม่มี network และไม่มีสำเนาบนเครื่อง)
+   ถ้าตอบว่า "ไม่ vendor" อย่างน้อยควรใส่ `integrity="sha384-…" crossorigin="anonymous"`
+   ให้ `<script>` ตัวนั้น — ตอนนี้ถ้า CDN ถูกแทรกโค้ด แอปรันให้ทันทีโดยไม่มีอะไรกัน
+2. **chip padding** — ขยาย `#left` / ลด font-size / 2 คอลัมน์ / ลดค่าใน DS? (ดูเกณฑ์ข้อ 2)
+3. **spacing + font-size scale** — อนุมัติสเกล 4px grid ไหม? การ snap = ขยับพิกเซลทั้งแอป
+4. **browser verification** — เปิด permission ให้ Playwright/Chrome-DevTools MCP ไหม?
+   ตอนนี้ไม่เคยมีใครเห็นแอปจริงหลังแก้ CSS มา 6 รอบ
+
 ## Next task — do ONLY this
 
-**ย้าย JetBrains Mono มา self-host ใน `index.html`** (เอา `fonts.googleapis` 3 บรรทัดออก)
+**ให้ DS component CSS ใช้ channel token แทน rgba literal 3 จุดสุดท้าย**
 
-ตอนนี้ **ตัวอักษรมี 2 แหล่ง**: DS self-host `.woff2` อยู่ใน `design-system/src/fonts/`
-แต่ `index.html` ดึงจาก Google Fonts CDN (บรรทัด 7–9) — นี่คือการละเมิดเป้าหมาย
-"แก้ที่เดียวแล้วเปลี่ยนทั้งระบบ" ที่ยังเหลืออยู่จุดสุดท้าย และเป็นสาเหตุที่**เกณฑ์ข้อ 3
-(เปิดด้วย `file://` แล้วใช้งานได้ครบ) ยังติ๊กไม่ได้** — offline แล้วแอปจะ fallback
-ไปฟอนต์ระบบ ซึ่ง**เปลี่ยนความกว้างตัวอักษรจริง** (ดูเรื่อง chip padding ข้างบน — งบความกว้าง
-ตึงระดับ 0.25px การเปลี่ยนฟอนต์คือการเปลี่ยน layout)
+`index.html` ใช้ `rgba(var(--accent-rgb),α)` ครบแล้วตั้งแต่รอบ 2026-08-21_0002 แต่
+**ฝั่ง design system ยังไม่ตาม** — เหลือ literal ที่ derive จากสี token อยู่ 3 จุด
+ถ้าเจ้าของเปลี่ยน `--accent` ในภายหลัง แอปจะตามทันแต่ library จะค้างสีเก่า
+ซึ่งพังเป้าหมาย "แก้ที่เดียวแล้วเปลี่ยนทั้งระบบ" ในทิศทางตรงข้ามกับที่เคยแก้มา
 
-วิธีทำ:
-1. อ่านไฟล์ 4 ตัวใน `design-system/src/fonts/` (400/500/700/800, รวม 86,144 bytes)
-   แปลงเป็น base64 แล้วฝังเป็น `@font-face` + `src:url(data:font/woff2;base64,…) format('woff2')`
-   ใน `<style>` ของ `index.html` — ดู `design-system/src/fonts.css` เป็นแม่แบบ ใช้ `font-display:swap`
-   และ `unicode-range` ให้ตรงกับของเดิม
-2. ลบบรรทัด 7–9 (`preconnect` ×2 + `fonts.googleapis` ×1) ออกจาก `<head>`
-3. **อย่าแตะบรรทัด 10 (jsPDF CDN)** — การ inline jsPDF เป็นคนละเรื่องและใหญ่กว่ามาก
-   ให้แยกเป็นรอบของตัวเอง เกณฑ์ข้อ 3 จะยังติ๊กไม่ได้จนกว่าจะจัดการอันนั้น ให้บันทึกไว้เฉยๆ
-4. verify ครบ 3 คำสั่ง + `grep -c "fonts.googleapis" index.html` ต้องได้ 0
+แก้ 3 บรรทัดนี้เท่านั้น (ค่าสีเท่าเดิมเป๊ะ ไม่ขยับพิกเซล):
 
-> **ผลกระทบด้านขนาดที่ต้องยอมรับ:** `index.html` จะโตจาก **188 KB → ~303 KB**
-> (base64 พองขึ้น ~33%) ถ้าคิดว่าแพงเกินไป ทางเลือกคือฝังเฉพาะ **400 + 700**
-> (เหลือ ~245 KB) แล้วปล่อยให้ 500/800 synthesize เอา — **ให้บันทึกทางเลือกไว้ใน SUMMARY
-> อย่าตัดสินใจเงียบๆ** ถ้าเลือกฝังไม่ครบ ต้องเช็คว่าที่ไหนใช้ `font-weight:500/800` บ้าง
+| ไฟล์ | เดิม | ใหม่ |
+|---|---|---|
+| `design-system/src/components/Button/Button.css:9` | `rgba(255,199,44,.4)` | `rgba(var(--accent-rgb),.4)` |
+| `design-system/src/components/Badge/Badge.css:7` | `rgba(250,70,22,.18)` | `rgba(var(--secondary-rgb),.18)` |
+| `design-system/src/components/Badge/Badge.css:8` | `rgba(255,199,44,.16)` | `rgba(var(--accent-rgb),.16)` |
+
+จากนั้น**ขยาย `tools/check-tokens.mjs` ให้กันไม่ให้มันกลับมา**: สแกน
+`design-system/src/components/**/*.css` + `<style>` ของ `index.html` แล้ว fail ถ้าเจอ
+`rgba(r,g,b,…)` ที่ `r,g,b` ตรงกับค่าของ channel token ตัวใดตัวหนึ่ง หรือเจอ hex ที่ตรงกับ
+token สี — พร้อมทดสอบ negative จริง (ใส่ literal กลับเข้าไปแล้วต้อง exit 1) ก่อน commit
+
+> **อย่าแตะ literal ที่เหลือ** — `rgba(0,0,0,…)`, `rgba(255,255,255,…)`, `#000`, `#0a0a0a`,
+> `#7ac87a`, `#ffb4a0`, `rgba(120,200,120,.15)` **ไม่มี token คู่กัน** การตั้ง token ใหม่ให้มัน
+> คือการ**ขยายภาษาการออกแบบ** = เจ้าของตัดสิน ไม่ใช่ agent (สำรวจครบแล้ว อย่าไล่ซ้ำ)
 
 > **ผลสำรวจที่ทำไว้แล้ว อย่าเสียเวลาทำซ้ำ:**
 > - element parity สำรวจครบ 5 ตัวแล้ว (ตารางในเกณฑ์ข้อ 2) — เหลือ chip `padding` ที่บล็อกรอเจ้าของ
 > - `index.html` ไม่มี base class `.btn` (ใช้ selector `.modal-actions button` แทน) แต่**ค่าตรงกันหมด**
 >   การเพิ่ม `.btn` ต้องแก้ `class=` ทั้งใน markup และ JS ที่ generate HTML → **แยกเป็นรอบของตัวเอง**
 >   และเป็นเรื่อง**โครงสร้าง ไม่ใช่หน้าตา** (ไม่ขยับพิกเซลเลย) จะทำหรือไม่ทำก็ได้
-> - DS component CSS ยังมี rgba literal 3 จุดที่ควรใช้ channel token
->   (`Button.css:9`, `Badge.css:7`, `Badge.css:8`) — งานเล็ก เก็บพ่วงรอบไหนก็ได้
+> - ฟอนต์ self-host เสร็จแล้ว (รอบ 0043) — `fonts.googleapis` เหลือ 0 จุด อย่าไปหาอีก
 
 > **spacing / font-size: อย่าเพิ่งทำ tokenization** — สำรวจแล้วพบว่าเป็น *continuum* ไม่ใช่ scale
 > `padding` ใช้เกือบทุกค่าตั้งแต่ 1–12px (+16/20/24/80), `gap` ใช้ 3,4,5,6,7,8,12,14,24
