@@ -107,7 +107,7 @@ Enable **"Render AI frame art"**, then set an image endpoint, model, and key. Ex
 ## Design tokens — single source of truth
 
 [`design-system/src/tokens.css`](design-system/src/tokens.css) is authoritative for every
-colour and the type family. `index.html` carries a **verbatim copy** of that `:root{}` block
+colour, the corner-radius scale, and the type family. `index.html` carries a **verbatim copy** of that `:root{}` block
 inside its `<style>` element — it cannot `@import` the file, because the app has to keep
 working when you double-click it (`file://` blocks cross-file CSS imports), and adding a
 build step would defeat the whole point of the project.
@@ -125,6 +125,27 @@ Colours that need transparency use the channel tokens (`--accent-rgb`, `--second
 of freezing the old hue into a literal. **Exception:** the `rgba()` / hex literals inside the
 canvas-drawing JavaScript are deliberate — `ctx.fillStyle` does not resolve CSS custom
 properties and would silently paint black.
+
+### Corner radius
+
+| Token | Value | Used for |
+|---|---|---|
+| `--r-xs` | 1px | hairline marks — section bullet, animatic thumbnails |
+| `--r-sm` | 2px | badges, `kbd`, the logo mark, scrubber track |
+| `--r-md` | 3px | the default control radius — buttons, chips, inputs, tabs |
+| `--r-lg` | 4px | primary call-to-action, toasts, scrollbar thumb |
+| `--r-xl` | 5px | panel cards, dropdown menus, tour spotlight |
+| `--r-2xl` | 6px | modals, tour popover, large colour swatches |
+| `--r-full` | 50% | dots and circular buttons |
+
+Both consumers use this scale: the `<style>` block in `index.html` and the Phantom UI
+component CSS under `design-system/src/components/`. Neither one hard-codes a radius, so a
+change here reaches the app and the library together.
+
+> This ramp steps 1px at a time, which is finer than a radius scale usually needs — `--r-xs`
+> through `--r-2xl` are near-indistinguishable in isolation. It is recorded as-is because
+> it is what both codebases already shipped; collapsing it to three steps would move pixels,
+> and that is a design call for the owner rather than a mechanical one.
 
 ---
 
