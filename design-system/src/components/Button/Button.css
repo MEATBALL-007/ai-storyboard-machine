@@ -1,6 +1,6 @@
 .pui-btn{
   font-family:var(--mono); cursor:pointer; display:inline-flex; align-items:center;
-  gap:6px; border:1px solid transparent; border-radius:3px; letter-spacing:.4px;
+  gap:6px; border:1px solid transparent; border-radius:var(--r-md); letter-spacing:.4px;
   transition:.12s; font-size:10.5px;
 }
 .pui-btn:disabled{opacity:.5; cursor:not-allowed; box-shadow:none}
