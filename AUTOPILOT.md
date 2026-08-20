@@ -24,8 +24,13 @@
         hex literal ที่เหลือใน `<style>` (`#000`, `#222`, `#333`, `#fff`, `#161616`, `#151515`, `#0a0a0a`,
         `#bbb`, `#ffb4a0`, `#7ac87a`) **ไม่ตรงกับ token ตัวไหนเลย** — ไม่มีอะไรให้ map เพิ่ม
         `rgba()` ที่เหลือใน `<style>` เป็น `rgba(0,0,0,α)` / `rgba(255,255,255,α)` / เขียว — ไม่มี token คู่กัน
-      → **ยังเหลือ: radius / spacing / typography** — `tokens.css` มี 15 token (สี 11 + channel 3 + `--mono`)
-        ยังไม่มีกลุ่ม radius/spacing/type เลย → radius คือ Next task
+      → **radius: เสร็จแล้ว** (2026-08-21) — `--r-xs/sm/md/lg/xl/2xl/full` อยู่ใน `tokens.css` แล้ว
+        `border-radius` literal ใน `index.html` **หมดเกลี้ยง 61 จุด** (60 ใน `<style>` + 1 inline `style=`
+        บนปุ่ม export ใน body) และ component CSS ของ design system อีก 9 จุดก็ชี้มาที่ token เดียวกัน
+        จำนวนต่อค่าเท่าเดิมเป๊ะทั้งก่อนและหลัง (md 32 / sm 11 / lg 5 / xl 4 / full 4 / 2xl 3 / xs 2)
+        ⚠️ สเกลนี้ไล่ทีละ 1px (1,2,3,4,5,6) ซึ่งละเอียดเกินกว่าที่ radius scale ควรเป็น —
+        บันทึกไว้ตามของเดิมเพราะการยุบเหลือ 3 ขั้นคือการ**เปลี่ยนดีไซน์** เจ้าของต้องเลือกเอง
+      → **ยังเหลือ: spacing / typography** — `tokens.css` มี 22 token (สี 11 + channel 3 + radius 7 + `--mono`)
 - [ ] element พื้นฐานในแอป (ปุ่ม, chip, badge, modal, empty state) หน้าตาตรงกับ component ที่มีชื่อเดียวกันใน design system
 - [ ] เปิด `index.html` ด้วย `file://` (ดับเบิลคลิก) แล้วยังใช้งานได้ครบ — ไม่ต้อง build ไม่ต้อง serve
       ⚠️ **ยังไม่เคย verify ด้วยเบราว์เซอร์จริงสักรอบ** (รันบน headless server) และ jsPDF/Google Fonts
@@ -46,6 +51,22 @@
 node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test
 ```
 
+## ⚠️ อ่านก่อนเริ่มทุกรอบ — branch ถูกตัดจาก base เก่า
+
+runner ตัด branch `auto/…` **ทุกอันจาก commit เดียวกันคือ `3503537`** ไม่ได้ตัดต่อจากรอบก่อน
+และ `main` ยังอยู่ที่ `ef3220e` (2 commits, ไม่มีทั้ง design-system และงาน token เลย)
+แปลว่า **งานของรอบก่อนจะไม่อยู่ใน branch ของคุณ** ทั้งที่ AUTOPILOT.md ที่คุณได้รับถูก
+generate มาจาก branch ของรอบก่อน — ไฟล์อย่าง `tools/check-tokens.mjs` จะหายไปเฉยๆ
+ทำให้ Verify command ของตัวเองรันไม่ได้
+
+**สิ่งที่ต้องทำเป็นอย่างแรกของทุกรอบ:** `git log --oneline -5` แล้วเทียบกับ AUTOPILOT.md
+ถ้า base ไม่ตรงกับที่ contract อ้าง ให้ดึงงานรอบก่อนมาก่อน (รอบนี้ใช้
+`git checkout <sha> -- <paths>` เพราะ `git cherry-pick` ถูก permission บล็อก)
+แล้ว commit แยกไว้ต่างหาก **ก่อน**เริ่มงานจริง
+
+> เจ้าของควรแก้ที่ runner: ให้ตัด branch ต่อจากรอบก่อน หรือ merge PR เข้า `main` ให้ทัน
+> ตอนนี้มี 27 branch ที่ค้างอยู่และซ้อนทับกันเอง
+
 ## Out of scope
 
 - **ห้ามแปลง `index.html` เป็น React และห้ามเพิ่ม build step / bundler / npm dependency ให้แอป**
@@ -59,23 +80,41 @@ node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system
 
 ## Next task — do ONLY this
 
-เริ่มกลุ่ม token ที่สอง: **radius** (ไม่เปลี่ยนหน้าตาแม้แต่พิกเซลเดียว)
-ตอนนี้ใน `<style>` (บรรทัด 11–571) มี `border-radius:` **60 จุด** เป็น literal ทั้งหมด:
-`3px` ×31, `2px` ×11, `4px` ×5, `50%` ×4, `5px` ×4, `6px` ×3, `1px` ×2
+ขึ้น**เกณฑ์ข้อ 2** (element parity) เริ่มที่ **Chip** — เป็นตัวเดียวที่วัดแล้วเจอ delta จริง
+
+`.chip` ใน `index.html` (บรรทัด ~100–105) เทียบกับ `.pui-chip`
+(`design-system/src/components/Chip/Chip.css`) ต่างกัน 3 อย่าง:
+
+| property | `index.html` `.chip` | DS `.pui-chip` |
+|---|---|---|
+| `padding` | `6px 2px` | `6px 10px` ← **ต่างจริง เปลี่ยนหน้าตา** |
+| `cursor` | ไม่มี | `pointer` |
+| `font-family` | ไม่มี (รับจาก `body`) | `var(--mono)` |
+
+`.chip:hover` และ `.chip.sel` ตรงกับ `.pui-chip:hover` / `.pui-chip.is-selected` อยู่แล้ว
 
 วิธีทำ:
-1. เพิ่มลง `design-system/src/tokens.css` — `--r-xs:1px; --r-sm:2px; --r-md:3px; --r-lg:4px;`
-   `--r-xl:5px; --r-2xl:6px; --r-full:50%;` (ค่าตรงกับของเดิมเป๊ะ ไม่ปัดไม่รวมสเกล)
-2. copy `:root{}` ทั้งก้อนมาที่ `<style>` ของ `index.html` (ต้องเหมือนกันเป๊ะ ไม่งั้น check-tokens แดง)
-3. แทน `border-radius:3px` → `border-radius:var(--r-md)` ให้ครบทั้ง 60 จุด **เฉพาะใน `<style>` เท่านั้น**
-   (`border-radius` ที่อยู่ในสตริง JS/inline style ก็นับ ถ้าเป็น DOM element ไม่ใช่ canvas — ตรวจก่อนแก้)
-4. `node tools/check-tokens.mjs` เขียว, `node tools/test.mjs` 54/54, DS test 31/31
-   และไม่เหลือ `border-radius:` ที่เป็นตัวเลข literal ในช่วงบรรทัดของ `<style>`
+1. แก้ `.chip` ใน `index.html` ให้ตรงกับ `.pui-chip` ทั้ง 3 property
+2. `padding` แนวนอน 2px → 10px จะทำให้ chip **กว้างขึ้น** — chip อยู่ใน `.radio-grid`
+   (`grid-template-columns:repeat(N,1fr)`) ซึ่งกว้างคงที่ ให้เช็คว่าข้อความยาวสุดไม่ล้น/ไม่ตัดคำ
+   ถ้าล้นจริงให้บันทึกไว้ใน SUMMARY แล้ว**หยุด** อย่าลดค่ากลับเงียบๆ — ให้เจ้าของเลือก
+3. อัปเดต README ตาราง parity (ถ้ายังไม่มี ให้เพิ่มหัวข้อ "Element parity with Phantom UI")
+4. verify ครบ 3 คำสั่ง
 
-> **อย่าจับสเกลใหม่ / อย่ารวม 3px กับ 4px เข้าด้วยกัน** — นั่นคือการเปลี่ยนดีไซน์ ต้องให้เจ้าของเลือกเอง
-> รอบนี้แค่ทำให้ค่าที่มีอยู่มีชื่อ
+> **ผลสำรวจที่ทำไว้แล้ว อย่าเสียเวลาทำซ้ำ:**
+> - `Button`: `.btn-primary` / `.btn-ghost` / `.icon-btn` / `.tab-btn` **ตรงกับ `Button.css` อยู่แล้วทุกค่า**
+>   เหลืออย่างเดียวคือ `index.html` ไม่มี base class `.btn` (ใช้ selector `.modal-actions button` แทน)
+>   การเพิ่ม `.btn` ต้องไปแก้ `class=` ในทั้ง markup และ JS ที่ generate HTML → **แยกเป็นรอบของตัวเอง**
+> - `Badge` / `Modal` / `EmptyState`: ยังไม่ได้เทียบ
+> - DS component CSS ยังมี rgba literal 3 จุดที่ควรใช้ channel token
+>   (`Button.css:9`, `Badge.css:7`, `Badge.css:8`) — งานเล็ก เก็บพ่วงรอบไหนก็ได้
 
-รอบถัดไป: spacing scale (`padding`/`gap`) แล้วค่อยไล่หน้าตาทีละ element
+> **spacing / font-size: อย่าเพิ่งทำ tokenization** — สำรวจแล้วพบว่าเป็น *continuum* ไม่ใช่ scale
+> `padding` ใช้เกือบทุกค่าตั้งแต่ 1–12px (+16/20/24/80), `gap` ใช้ 3,4,5,6,7,8,12,14,24
+> `font-size` ไล่ทีละ 0.5px จาก 7 ถึง 13 (11 ค่า) แล้วกระโดดไป 14/15/16/18/26/40
+> map 1:1 จะได้ token ~16 ตัวที่ไม่ได้ให้ประโยชน์อะไรนอกจากตั้งชื่อ ส่วนการ snap เข้า 4px grid
+> **ขยับพิกเซล** = การตัดสินใจด้านดีไซน์ → ต้องให้เจ้าของอนุมัติสเกลก่อน ค่อยลงมือ
+> (`font-family` ตอนนี้ใช้ `var(--mono)` ครบทั้ง 4 จุดแล้ว ไม่มีอะไรเหลือ)
 
 ---
 
