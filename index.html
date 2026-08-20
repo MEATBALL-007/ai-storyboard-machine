@@ -97,10 +97,14 @@
   }
   .radio-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:4px}
   .radio-grid.cols2{grid-template-columns:repeat(2,1fr)}
+  /* Mirrors .pui-chip (design-system/src/components/Chip/Chip.css) except padding-x:
+     DS uses 6px 10px, but the 212px sidebar leaves each 1fr track ~41.75px and "16:9"
+     needs 24px + 22px chrome = 46px min-content, which widens the grid past .section.
+     Do not raise padding-x above 7px without also widening #left. See SUMMARY.md. */
   .chip{
     background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md);
     padding:6px 2px; text-align:center; font-size:10px; color:var(--muted); transition:.1s;
-    user-select:none;
+    user-select:none; cursor:pointer; font-family:var(--mono);
   }
   .chip:hover{border-color:var(--dim); color:var(--text)}
   .chip.sel{background:var(--accent); color:#000; border-color:var(--accent); font-weight:700}
