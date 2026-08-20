@@ -19,17 +19,31 @@
 ## Acceptance criteria
 
 - [ ] `index.html` ใช้ CSS custom properties จาก `design-system/src/tokens.css` แทนค่าสี/ระยะที่ hard-code
+      → **สี: เสร็จแล้ว** (2026-08-21) — hex ที่ match token map หมดแล้ว, และ `rgba()` ที่ derive จากสี token
+        20 จุดใน `<style>` เปลี่ยนเป็น `rgba(var(--accent-rgb),α)` แล้ว (accent 15 / secondary 3 / bg 2)
+        hex literal ที่เหลือใน `<style>` (`#000`, `#222`, `#333`, `#fff`, `#161616`, `#151515`, `#0a0a0a`,
+        `#bbb`, `#ffb4a0`, `#7ac87a`) **ไม่ตรงกับ token ตัวไหนเลย** — ไม่มีอะไรให้ map เพิ่ม
+        `rgba()` ที่เหลือใน `<style>` เป็น `rgba(0,0,0,α)` / `rgba(255,255,255,α)` / เขียว — ไม่มี token คู่กัน
+      → **ยังเหลือ: radius / spacing / typography** — `tokens.css` มี 15 token (สี 11 + channel 3 + `--mono`)
+        ยังไม่มีกลุ่ม radius/spacing/type เลย → radius คือ Next task
 - [ ] element พื้นฐานในแอป (ปุ่ม, chip, badge, modal, empty state) หน้าตาตรงกับ component ที่มีชื่อเดียวกันใน design system
 - [ ] เปิด `index.html` ด้วย `file://` (ดับเบิลคลิก) แล้วยังใช้งานได้ครบ — ไม่ต้อง build ไม่ต้อง serve
-- [ ] ไม่มี external reference เพิ่ม: ไม่มี CDN, ไม่มี `<script src="http...">`, ไม่มี `@import` ออกนอกไฟล์
-- [ ] `node tools/test.mjs` เขียว 54/54
-- [ ] `npm --prefix design-system test` เขียว 31/31
-- [ ] token มีแหล่งเดียว — ถ้าแก้ค่าใน design system แล้วต้องมีขั้นตอนชัดเจนที่ทำให้แอปตามทัน (เขียนไว้ใน README)
+      ⚠️ **ยังไม่เคย verify ด้วยเบราว์เซอร์จริงสักรอบ** (รันบน headless server) และ jsPDF/Google Fonts
+        โหลดจาก CDN อยู่ (ของเดิม ไม่ใช่ของใหม่) → offline จริงๆ PDF export จะพัง ต้องตัดสินใจว่าจะ inline หรือยอมรับ
+- [x] ไม่มี external reference เพิ่ม: ไม่มี CDN, ไม่มี `<script src="http...">`, ไม่มี `@import` ออกนอกไฟล์
+      → ของเดิมมี 4 จุดใน `<head>` (fonts.googleapis ×3, cdnjs jsPDF ×1) และยังไม่มีการเพิ่ม
+- [x] `node tools/test.mjs` เขียว 54/54
+- [x] `npm --prefix design-system test` เขียว 31/31
+- [x] token มีแหล่งเดียว — ถ้าแก้ค่าใน design system แล้วต้องมีขั้นตอนชัดเจนที่ทำให้แอปตามทัน (เขียนไว้ใน README)
+      → `design-system/src/tokens.css` เป็นแหล่งเดียว, ขั้นตอน sync อยู่ใน README หัวข้อ
+        "Design tokens — single source of truth", และ `tools/check-tokens.mjs` บังคับให้ตรงกันจริง
+        (2026-08-21: เขียน script จริงแล้ว — เดิม AUTOPILOT.md อ้างว่ามีทั้งที่ยังไม่มี;
+        ทดสอบแล้วว่า fail จริงทั้งกรณี value เพี้ยนและ token หาย)
 
 ## Verify
 
 ```
-node tools/test.mjs && npm --prefix design-system test
+node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test
 ```
 
 ## Out of scope
@@ -40,17 +54,28 @@ node tools/test.mjs && npm --prefix design-system test
   — `tools/test.mjs` ดึงโค้ดออกมาด้วย marker เหล่านี้ ถ้า marker หายหรือย้าย test runner จะ throw ทันที
 - ห้ามลบหรือปิดเทสต์เพื่อให้ผ่าน
 - ห้ามแตะ `storyboard-simulator.html` ในรอบนี้
+- **ห้ามแทน `rgba()`/hex ที่อยู่ในโค้ด JS วาด canvas ด้วย `var()`** — `ctx.fillStyle` ไม่รู้จัก
+  CSS custom property จะกลายเป็นสีดำเงียบๆ (literal ในโค้ด canvas บรรทัด ~1346–1741, ~3092–3195 ตั้งใจไว้แบบนั้น)
 
-## Next task
+## Next task — do ONLY this
 
-ขั้นแรกเป็นขั้น**ที่ไม่เปลี่ยนหน้าตาเลย**: อ่าน `design-system/src/tokens.css` แล้วเพิ่ม token
-ชุดนั้นเข้าไปใน `<style>` ของ `index.html` พร้อม map ค่าสี/ระยะที่ hard-code อยู่เดิมให้ชี้มาที่ token
-ที่มีค่าเท่ากันเป๊ะ — ผลลัพธ์ที่ต้องการคือ **หน้าตาเหมือนเดิมทุกพิกเซล แต่ค่าทั้งหมดมาจาก token แล้ว**
+เริ่มกลุ่ม token ที่สอง: **radius** (ไม่เปลี่ยนหน้าตาแม้แต่พิกเซลเดียว)
+ตอนนี้ใน `<style>` (บรรทัด 11–571) มี `border-radius:` **60 จุด** เป็น literal ทั้งหมด:
+`3px` ×31, `2px` ×11, `4px` ×5, `50%` ×4, `5px` ×4, `6px` ×3, `1px` ×2
 
-ถ้าเจอค่าที่ไม่มี token ตรงกัน อย่าเพิ่งเปลี่ยนค่า ให้ลิสต์ไว้ใน SUMMARY.md ว่าค่าไหนไม่ match
-เพราะการเลือกว่าจะขยับสีของแอปหรือขยับ token เป็นการตัดสินใจด้านดีไซน์ที่เจ้าของต้องเป็นคนเลือก
+วิธีทำ:
+1. เพิ่มลง `design-system/src/tokens.css` — `--r-xs:1px; --r-sm:2px; --r-md:3px; --r-lg:4px;`
+   `--r-xl:5px; --r-2xl:6px; --r-full:50%;` (ค่าตรงกับของเดิมเป๊ะ ไม่ปัดไม่รวมสเกล)
+2. copy `:root{}` ทั้งก้อนมาที่ `<style>` ของ `index.html` (ต้องเหมือนกันเป๊ะ ไม่งั้น check-tokens แดง)
+3. แทน `border-radius:3px` → `border-radius:var(--r-md)` ให้ครบทั้ง 60 จุด **เฉพาะใน `<style>` เท่านั้น**
+   (`border-radius` ที่อยู่ในสตริง JS/inline style ก็นับ ถ้าเป็น DOM element ไม่ใช่ canvas — ตรวจก่อนแก้)
+4. `node tools/check-tokens.mjs` เขียว, `node tools/test.mjs` 54/54, DS test 31/31
+   และไม่เหลือ `border-radius:` ที่เป็นตัวเลข literal ในช่วงบรรทัดของ `<style>`
 
-รอบถัดไปค่อยเปลี่ยนหน้าตาทีละ element
+> **อย่าจับสเกลใหม่ / อย่ารวม 3px กับ 4px เข้าด้วยกัน** — นั่นคือการเปลี่ยนดีไซน์ ต้องให้เจ้าของเลือกเอง
+> รอบนี้แค่ทำให้ค่าที่มีอยู่มีชื่อ
+
+รอบถัดไป: spacing scale (`padding`/`gap`) แล้วค่อยไล่หน้าตาทีละ element
 
 ---
 
