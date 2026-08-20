@@ -32,9 +32,28 @@
         บันทึกไว้ตามของเดิมเพราะการยุบเหลือ 3 ขั้นคือการ**เปลี่ยนดีไซน์** เจ้าของต้องเลือกเอง
       → **ยังเหลือ: spacing / typography** — `tokens.css` มี 22 token (สี 11 + channel 3 + radius 7 + `--mono`)
 - [ ] element พื้นฐานในแอป (ปุ่ม, chip, badge, modal, empty state) หน้าตาตรงกับ component ที่มีชื่อเดียวกันใน design system
+      → **สำรวจครบทั้ง 5 ตัวแล้ว (2026-08-21) — เหลือ delta จริงแค่ 1 จุดเดียว**
+        | app | DS | ผล |
+        |---|---|---|
+        | `.btn-primary` / `.btn-ghost` / `.icon-btn` / `.tab-btn` | `Button.css` | ✅ ตรงทุกค่า |
+        | `.chip` (บรรทัด ~100) | `Chip.css` | ⚠️ เหลือ `padding` — **บล็อกอยู่ รอเจ้าของตัดสิน** |
+        | `.pc-badge` (บรรทัด ~189) | `.pui-badge` + `--accent` | ✅ ตรงทุกค่า |
+        | `.modal-bg` / `.modal` (บรรทัด ~304) | `Modal.css` | ✅ ตรงทุกค่า |
+        | `.empty-state` (บรรทัด ~224) | `EmptyState.css` | ✅ ตรงทุกค่า |
+        badge / modal / empty-state ต่างจาก DS แค่ `font-family:var(--mono)` (+ `color:var(--text)` ใน modal)
+        ซึ่ง **`body` set ให้อยู่แล้วและไม่มีอะไรมา override** → render เหมือนกันเป๊ะ ไม่ต้องแก้
+        ต่างแค่**ชื่อ class** (`.pc-badge` vs `.pui-badge--accent`) ซึ่งไม่ใช่เรื่องหน้าตา
+        `.chip` รับ `cursor:pointer` + `font-family:var(--mono)` ไปแล้ว เหลือ `padding` อย่างเดียว
+        ⚠️ **`padding:6px 10px` ของ DS ใส่ไม่ได้ — sidebar แคบเกิน** (คำนวณละเอียดใน README
+        หัวข้อ "Element parity with Phantom UI"): track กว้าง ~41.75px แต่ `16:9` ต้องการ 46px
+        และ `1fr` = `minmax(auto,1fr)` หดต่ำกว่า min-content ไม่ได้ → grid จะดันจนเกิด scrollbar แนวนอน
+        **padding-x สูงสุดที่ปลอดภัยคือ 7px** ทางเลือกคือ ขยาย `#left` / ลด font-size / ใช้ 2 คอลัมน์ /
+        ลดค่าใน DS — ทุกทาง**ขยับพิกเซล** จึงเป็นการตัดสินใจของเจ้าของ ไม่ใช่ของ agent
 - [ ] เปิด `index.html` ด้วย `file://` (ดับเบิลคลิก) แล้วยังใช้งานได้ครบ — ไม่ต้อง build ไม่ต้อง serve
       ⚠️ **ยังไม่เคย verify ด้วยเบราว์เซอร์จริงสักรอบ** (รันบน headless server) และ jsPDF/Google Fonts
         โหลดจาก CDN อยู่ (ของเดิม ไม่ใช่ของใหม่) → offline จริงๆ PDF export จะพัง ต้องตัดสินใจว่าจะ inline หรือยอมรับ
+        (2026-08-21: ลอง Playwright/Chrome-DevTools MCP แล้ว — **ถูก permission บล็อกทั้งคู่**
+         ไม่ใช่แค่ "ไม่มีจอ" อย่าเสียรอบไปลองซ้ำ ถ้าเจ้าของอยากให้ verify จริงต้องเปิด permission ให้ก่อน)
 - [x] ไม่มี external reference เพิ่ม: ไม่มี CDN, ไม่มี `<script src="http...">`, ไม่มี `@import` ออกนอกไฟล์
       → ของเดิมมี 4 จุดใน `<head>` (fonts.googleapis ×3, cdnjs jsPDF ×1) และยังไม่มีการเพิ่ม
 - [x] `node tools/test.mjs` เขียว 54/54
@@ -80,32 +99,35 @@ generate มาจาก branch ของรอบก่อน — ไฟล์�
 
 ## Next task — do ONLY this
 
-ขึ้น**เกณฑ์ข้อ 2** (element parity) เริ่มที่ **Chip** — เป็นตัวเดียวที่วัดแล้วเจอ delta จริง
+**ย้าย JetBrains Mono มา self-host ใน `index.html`** (เอา `fonts.googleapis` 3 บรรทัดออก)
 
-`.chip` ใน `index.html` (บรรทัด ~100–105) เทียบกับ `.pui-chip`
-(`design-system/src/components/Chip/Chip.css`) ต่างกัน 3 อย่าง:
-
-| property | `index.html` `.chip` | DS `.pui-chip` |
-|---|---|---|
-| `padding` | `6px 2px` | `6px 10px` ← **ต่างจริง เปลี่ยนหน้าตา** |
-| `cursor` | ไม่มี | `pointer` |
-| `font-family` | ไม่มี (รับจาก `body`) | `var(--mono)` |
-
-`.chip:hover` และ `.chip.sel` ตรงกับ `.pui-chip:hover` / `.pui-chip.is-selected` อยู่แล้ว
+ตอนนี้ **ตัวอักษรมี 2 แหล่ง**: DS self-host `.woff2` อยู่ใน `design-system/src/fonts/`
+แต่ `index.html` ดึงจาก Google Fonts CDN (บรรทัด 7–9) — นี่คือการละเมิดเป้าหมาย
+"แก้ที่เดียวแล้วเปลี่ยนทั้งระบบ" ที่ยังเหลืออยู่จุดสุดท้าย และเป็นสาเหตุที่**เกณฑ์ข้อ 3
+(เปิดด้วย `file://` แล้วใช้งานได้ครบ) ยังติ๊กไม่ได้** — offline แล้วแอปจะ fallback
+ไปฟอนต์ระบบ ซึ่ง**เปลี่ยนความกว้างตัวอักษรจริง** (ดูเรื่อง chip padding ข้างบน — งบความกว้าง
+ตึงระดับ 0.25px การเปลี่ยนฟอนต์คือการเปลี่ยน layout)
 
 วิธีทำ:
-1. แก้ `.chip` ใน `index.html` ให้ตรงกับ `.pui-chip` ทั้ง 3 property
-2. `padding` แนวนอน 2px → 10px จะทำให้ chip **กว้างขึ้น** — chip อยู่ใน `.radio-grid`
-   (`grid-template-columns:repeat(N,1fr)`) ซึ่งกว้างคงที่ ให้เช็คว่าข้อความยาวสุดไม่ล้น/ไม่ตัดคำ
-   ถ้าล้นจริงให้บันทึกไว้ใน SUMMARY แล้ว**หยุด** อย่าลดค่ากลับเงียบๆ — ให้เจ้าของเลือก
-3. อัปเดต README ตาราง parity (ถ้ายังไม่มี ให้เพิ่มหัวข้อ "Element parity with Phantom UI")
-4. verify ครบ 3 คำสั่ง
+1. อ่านไฟล์ 4 ตัวใน `design-system/src/fonts/` (400/500/700/800, รวม 86,144 bytes)
+   แปลงเป็น base64 แล้วฝังเป็น `@font-face` + `src:url(data:font/woff2;base64,…) format('woff2')`
+   ใน `<style>` ของ `index.html` — ดู `design-system/src/fonts.css` เป็นแม่แบบ ใช้ `font-display:swap`
+   และ `unicode-range` ให้ตรงกับของเดิม
+2. ลบบรรทัด 7–9 (`preconnect` ×2 + `fonts.googleapis` ×1) ออกจาก `<head>`
+3. **อย่าแตะบรรทัด 10 (jsPDF CDN)** — การ inline jsPDF เป็นคนละเรื่องและใหญ่กว่ามาก
+   ให้แยกเป็นรอบของตัวเอง เกณฑ์ข้อ 3 จะยังติ๊กไม่ได้จนกว่าจะจัดการอันนั้น ให้บันทึกไว้เฉยๆ
+4. verify ครบ 3 คำสั่ง + `grep -c "fonts.googleapis" index.html` ต้องได้ 0
+
+> **ผลกระทบด้านขนาดที่ต้องยอมรับ:** `index.html` จะโตจาก **188 KB → ~303 KB**
+> (base64 พองขึ้น ~33%) ถ้าคิดว่าแพงเกินไป ทางเลือกคือฝังเฉพาะ **400 + 700**
+> (เหลือ ~245 KB) แล้วปล่อยให้ 500/800 synthesize เอา — **ให้บันทึกทางเลือกไว้ใน SUMMARY
+> อย่าตัดสินใจเงียบๆ** ถ้าเลือกฝังไม่ครบ ต้องเช็คว่าที่ไหนใช้ `font-weight:500/800` บ้าง
 
 > **ผลสำรวจที่ทำไว้แล้ว อย่าเสียเวลาทำซ้ำ:**
-> - `Button`: `.btn-primary` / `.btn-ghost` / `.icon-btn` / `.tab-btn` **ตรงกับ `Button.css` อยู่แล้วทุกค่า**
->   เหลืออย่างเดียวคือ `index.html` ไม่มี base class `.btn` (ใช้ selector `.modal-actions button` แทน)
->   การเพิ่ม `.btn` ต้องไปแก้ `class=` ในทั้ง markup และ JS ที่ generate HTML → **แยกเป็นรอบของตัวเอง**
-> - `Badge` / `Modal` / `EmptyState`: ยังไม่ได้เทียบ
+> - element parity สำรวจครบ 5 ตัวแล้ว (ตารางในเกณฑ์ข้อ 2) — เหลือ chip `padding` ที่บล็อกรอเจ้าของ
+> - `index.html` ไม่มี base class `.btn` (ใช้ selector `.modal-actions button` แทน) แต่**ค่าตรงกันหมด**
+>   การเพิ่ม `.btn` ต้องแก้ `class=` ทั้งใน markup และ JS ที่ generate HTML → **แยกเป็นรอบของตัวเอง**
+>   และเป็นเรื่อง**โครงสร้าง ไม่ใช่หน้าตา** (ไม่ขยับพิกเซลเลย) จะทำหรือไม่ทำก็ได้
 > - DS component CSS ยังมี rgba literal 3 จุดที่ควรใช้ channel token
 >   (`Button.css:9`, `Badge.css:7`, `Badge.css:8`) — งานเล็ก เก็บพ่วงรอบไหนก็ได้
 
