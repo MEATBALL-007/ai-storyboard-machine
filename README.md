@@ -207,6 +207,18 @@ anything installed, will not even synthesize one. `.add-card .ac-plus` asked for
 been rendering at `400` since the fonts were embedded, with nothing on screen to give it away.
 To use a new weight, add its `.woff2` and `@font-face` first; the check then lets the rule through.
 
+The **name** of the family is held to one place the same way. `--mono` in `tokens.css` carries
+the family and its fallback list, and every `font-family` across the same three scan targets
+must read `var(--mono)` and nothing else — not even `var(--mono), monospace`, since the
+fallbacks belong in the token where every consumer inherits them at once. The `@font-face`
+blocks are skipped, as with `font-weight`: they *name* the family rather than draw on it.
+This one is a pure regression guard — all 17 declarations in scope already read the token —
+and it matters precisely because a stray `font-family:'JetBrains Mono', ui-monospace` renders
+identically today. The day the owner swaps the typeface, that one rule keeps the old face and
+surfaces as a single odd-looking element rather than an obvious break. Only the longhand is
+read; a `font:` shorthand in a stylesheet would slip past it (there are none today — the one
+`font:` in the project is inside `<script>`, which no check ever sees).
+
 The cost is size: `index.html` is 297 KB instead of 188 KB, because base64 adds about a third.
 That is the price of the headline promise, and it buys back a real one — the app no longer
 degrades to a fallback font when you are offline, which matters here because the sidebar's

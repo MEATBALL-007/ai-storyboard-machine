@@ -114,11 +114,20 @@
         `border-radius:3px` ที่บรรทัด 810 + `#FFC72C` ใน `title=` และใน text ของ body→exit 1 เฉพาะ radius
         (พิสูจน์ว่าอ่านแค่เนื้อใน `style=` และ offset ตรงแม้ห่างจากจุดอื่น))
 
-      ⚠️ **token ตัวเดียวที่ยังไม่มี checker: `--mono`** (22 token = สี 11 ✅ + channel 3 ✅ + radius 7 ✅ + `--mono` ❌)
-        สำรวจแล้ว (รอบ 0036): `font-family` ทุกจุดใน stylesheet **ใช้ `var(--mono)` ครบอยู่แล้ว**
-        (`index.html` 5 จุด + DS component CSS 12 จุด) literal ที่เหลือมีแค่ใน `@font-face`
-        (ซึ่ง*คือ*ตัวประกาศชื่อ family) และใน `ctx.font` ของ canvas (เป็น JS นอกขอบเขต)
-        → ถูกอยู่แล้ว แต่**ไม่มีอะไรบังคับ** เหมือนกรณี radius ก่อนรอบ 0024 เป๊ะ
+        (2026-08-22 รอบ 0048: `check-tokens.mjs` เพิ่มการเช็คที่ 6 — **`font-family` ต้องอ่าน `var(--mono)`**
+        วนบน `scanTargets` เดิม (15 target ไม่เพิ่ม) blank `@font-face{…}` ทิ้งก่อน แล้ว fail ถ้าฝั่งค่า
+        ไม่ใช่ `var(--mono)` เป๊ะๆ — **ไม่รับแม้แต่ `var(--mono), monospace`** เพราะ fallback list
+        ต้องอยู่ใน token ที่เดียว `(?<![-\w])` กัน custom property ชื่อ `--font-family`
+        อ่านเฉพาะ longhand — `font:` shorthand จะรอดสายตา (วันนี้ไม่มีในสไตล์ชีต มีจุดเดียวใน `<script>`)
+        **ไม่ต้องแก้ CSS สักบรรทัด** — 17 จุดในขอบเขตใช้ token ครบอยู่แล้ว เป็น regression guard ล้วน
+        ทดสอบจริง 5 กรณี: literal ใน `<style>`→exit 1 ที่ `index.html:522`,
+        `font-family:monospace` ใน `Badge.css`→exit 1 ที่ `Badge.css:3`,
+        literal ใน `style=` attribute→exit 1 ที่ `index.html:635`,
+        `--font-family:'Nope'` บรรทัดเดียวกับกรณีที่ 2→**ไม่ถูกจับ** (lookbehind ทำงาน),
+        literal ใน template string ของ `<script>`→**pass** (พิสูจน์ว่า `scanTargets` ไม่เห็น JS))
+
+      ✅ **ตอนนี้ token ทั้ง 22 ตัวมี checker ครบแล้ว** (สี 11 + channel 3 + radius 7 + `--mono` 1)
+        → **งาน tooling ฝั่ง token จบแล้ว** รอบถัดไปไม่ควรเพิ่มเช็คที่ 7 เพราะไม่เหลืออะไรให้บังคับ
 
 ## Verify
 
@@ -169,42 +178,27 @@ generate มาจาก branch ของรอบก่อน — ไฟล์�
 
 ## Next task — do ONLY this
 
-**เพิ่มการเช็คที่ 6 ใน `tools/check-tokens.mjs` — `font-family` ต้องอ่านจาก `var(--mono)`
-เป็น token ตัวสุดท้ายใน `tokens.css` ที่ยังไม่มีอะไรบังคับ**
+**ย้ายรายการ "รอเจ้าของตัดสินใจ" 4 ข้อ ออกจาก `AUTOPILOT.md` ไปไว้ใน `README.md`
+เป็นหัวข้อ `## Open decisions` แล้วให้หัวข้อ 🔴 ด้านบนเหลือแค่ลิงก์ชี้ไปที่นั่น**
 
-รอบ 0036 ปิดช่อง `style="…"` attribute แล้ว → `scanTargets` ครอบคลุมครบ (DS CSS 13 ไฟล์ +
-`<style>` + `style=` attribute = 15 target) และเช็คทั้ง 5 ตัววนบนมันหมด
-เหลือช่องเดียวที่เป็น **แกนของ token** ไม่ใช่แกนของ scan target:
-`--mono` เป็น token ตัวเดียวใน 22 ตัวที่ไม่มี checker (สี 11 ✅ / channel 3 ✅ / radius 7 ✅ / `--mono` ❌)
+เหตุผล: เกณฑ์ที่ยังไม่ติ๊ก 3 ข้อ **บล็อกที่เจ้าของทั้งหมด ไม่ใช่ที่ agent** และงาน tooling
+ฝั่ง token จบครบแล้ว (เช็ค 1–6 คุม token ทั้ง 22 ตัว) รอบถัดๆ ไปจึงไม่มีอะไรเดินต่อได้จริง
+จนกว่าจะมีคำตอบ — แต่ตอนนี้คำถามอยู่ใน `AUTOPILOT.md` ซึ่งเป็น**เอกสารสัญญาของ runner**
+ที่เขียนทับทุกรอบและเจ้าของไม่ได้เปิดอ่านตามปกติ ส่วน `README.md` คือหน้าแรกของ repo
+จึงไม่ใช่การทำสำเนาซ้ำ แต่คือการย้ายคำถามไปวางตรงที่คนตอบมองเห็น
 
-**สำรวจไว้ให้แล้ว — ตอนนี้ถูกหมด ไม่ต้องแก้ CSS สักบรรทัด** เช็คนี้เป็น *regression guard* ล้วนๆ
-เหมือนตอนตั้งเช็ค radius: `font-family` ใน stylesheet ใช้ `var(--mono)` ครบ
-— `index.html` 5 จุด (บรรทัด 43, 51, 52, 123, 522) + DS component CSS 12 จุด
-literal `'JetBrains Mono'` ที่เหลือมีแค่ใน `@font-face` ของ `index.html` (บรรทัด 13/17/21/25)
-กับ `fonts.css` (2/6/10/14) และ `--mono:` เองใน `:root` — **ทั้งหมดเป็นตัว *ประกาศ* ไม่ใช่ผู้ใช้**
+เนื้อหาที่ต้องย้าย (**สำรวจครบแล้วทุกข้อ ห้ามไล่สำรวจซ้ำ** ดึงจากหัวข้อ 🔴 ด้านบน + README เดิม):
+1. **jsPDF** — vendor เข้า repo ไหม? ถ้าไม่ อย่างน้อยใส่ `integrity=`/`crossorigin=` (เกณฑ์ข้อ 3)
+2. **chip `padding`** — `6px 10px` ของ DS ใส่ไม่ได้เพราะ track แคบไป 4.25px (เกณฑ์ข้อ 2)
+3. **spacing + font-size scale** — อนุมัติ 4px grid ไหม? การ snap = ขยับพิกเซลทั้งแอป (เกณฑ์ข้อ 1)
+4. **browser verification** — เปิด permission ให้ Playwright / Chrome-DevTools MCP ไหม? (เกณฑ์ข้อ 3)
 
-วิธี: วนบน `scanTargets` เดิม (อย่าเพิ่ม target — ครบแล้ว) หา declaration `font-family`
-แล้ว fail ถ้าฝั่งค่าไม่ใช่ `var(--mono)` ล้วน
-⚠️ **ต้อง `blankOut` `@font-face{…}` ก่อน** เหมือนที่เช็ค font-weight ทำอยู่ ไม่งั้นจะ fail
-ใส่ตัวประกาศ family เอง 8 จุด (`blankOut(text, /@font-face\s*\{[^}]*\}/g)` — คัดลอกได้เลย)
-⚠️ `:root` ของ `index.html` มี `--mono:'JetBrains Mono', …` ซึ่ง**ไม่ใช่** declaration ชื่อ
-`font-family` จึงไม่โดนจับอยู่แล้ว — แต่ regex ต้องมี `(?<![-\w])` กัน custom property ชื่อ
-`--font-family` ไว้ด้วย เหมือนที่ `RADIUS_DECL` ทำ
-⚠️ **อย่าแตะ `ctx.font` ใน canvas** (บรรทัด 1616, 1674, 1722, 3134, 3491–3502) — เป็น JS
-`scanTargets` ไม่เคยส่ง `<script>` มาให้อยู่แล้ว จึงปลอดภัยโดยโครงสร้าง ไม่ต้องเขียนกันเพิ่ม
-⚠️ `font:` shorthand: มีจุดเดียวในโปรเจคคือ `index.html:3008` ซึ่งอยู่ใน template string ของ JS
-→ นอก `scanTargets` ตัดสินใจได้เลยว่า **ไม่ต้องรองรับ shorthand** แต่เขียน comment บอกไว้ว่า
-ถ้าวันหนึ่งมีคนใช้ `font:` ใน stylesheet จริง เช็คนี้จะมองไม่เห็น (เหมือนที่เช็ค font-weight บอกไว้)
+แต่ละข้อต้องเขียนให้ **ตัดสินใจได้จบในตัว**: อะไรถูกบล็อกอยู่, ทางเลือกมีอะไรบ้าง,
+แต่ละทางแลกอะไร, และถ้าตอบแล้ว agent เดินต่อได้ยังไง — เจ้าของไม่ควรต้องไปขุด SUMMARY เก่า
 
-**ทดสอบ negative จริงก่อน commit** อย่างน้อย 4 กรณี:
-`font-family:'JetBrains Mono', ui-monospace, …` ใน `<style>` → exit 1 พร้อมเลขบรรทัดจริง,
-`font-family:monospace` ใน `Badge.css` → exit 1,
-`style="font-family:'JetBrains Mono'"` ใน attribute → exit 1 (พิสูจน์ว่า target ใหม่ต่อยอดได้จริง),
-`@font-face{font-family:'JetBrains Mono'; …}` เดิมทั้ง 8 จุด → **ต้อง pass**
-
-หลังจบเช็คที่ 6 แล้ว **token ทุกตัวใน `tokens.css` มี checker ครบ** → รอบถัดไปควรเลิกทำ tooling
-แล้วไปเขียน *สรุปการตัดสินใจที่ค้างเจ้าของ* ไว้ที่เดียว (chip `padding` / spacing scale /
-font-size scale / vendor jsPDF) เพราะทั้ง 3 เกณฑ์ที่ยังไม่ติ๊ก **บล็อกที่เจ้าของหมดแล้ว ไม่ใช่ที่ agent**
+⚠️ **เป็นงานเอกสารล้วน ห้ามแตะ `index.html`, CSS หรือ `tools/` แม้แต่บรรทัดเดียว**
+⚠️ อย่าเพิ่ม**เช็คที่ 7** — token ครบทั้ง 22 ตัวแล้ว ไม่เหลืออะไรให้บังคับ
+⚠️ **อย่า*ตอบ*คำถามทั้ง 4 ข้อเอง** — ทุกข้อขยับพิกเซลหรือเพิ่มไฟล์เข้า repo = สิทธิ์ของเจ้าของ
 
 > **อย่าแตะ literal สีที่เหลือ** — `rgba(0,0,0,…)`, `rgba(255,255,255,…)`, `#000`, `#0a0a0a`,
 > `#7ac87a`, `#ffb4a0`, `rgba(120,200,120,.15)` **ไม่มี token คู่กัน** การตั้ง token ใหม่ให้มัน
