@@ -157,6 +157,22 @@ Both consumers use this scale: the `<style>` block in `index.html` and the Phant
 component CSS under `design-system/src/components/`. Neither one hard-codes a radius, so a
 change here reaches the app and the library together.
 
+`check-tokens.mjs` keeps it that way. It reads the **value side of `border-*-radius`
+declarations only** — shorthand, the four corner longhands, and vendor-prefixed spellings —
+across the same two consumers, and fails on any length that is not a `var()`. When the value
+matches a token it names the token (`3px` → `var(--r-md)`); when it matches none it prints the
+whole scale, because inventing an eighth radius is the owner's call, not a checker's.
+Skipped: `0` and `0px` (a square corner is not a design value, and `border-radius:4px 4px 0 0`
+is an everyday idiom), keywords like `inherit`, and `calc()`. Nothing outside a
+`border-*-radius` declaration is read — a bare `3px` is far more likely to be padding, gap or
+`font-size`, and **spacing is deliberately not tokenised** (measured across both files it is a
+continuum from 1–12px, not a ladder, so naming it would take a design decision first).
+
+**Gap worth knowing:** like the colour and `font-weight` scans, this one only sees the
+`<style>` element. A `style="…"` attribute in the body is invisible to it — `index.html` has
+one radius written that way, on the export button, and it reads `var(--r-md)` today by hand
+rather than by enforcement.
+
 > This ramp steps 1px at a time, which is finer than a radius scale usually needs — `--r-xs`
 > through `--r-2xl` are near-indistinguishable in isolation. It is recorded as-is because
 > it is what both codebases already shipped; collapsing it to three steps would move pixels,

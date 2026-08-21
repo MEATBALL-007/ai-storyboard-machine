@@ -1,99 +1,109 @@
-# SUMMARY — round 2026-08-22_0015
+# Round 2026-08-22_0024 — `check-tokens.mjs` check #5: corner-radius literals
 
 ## What I did
 
-- **Restored the previous round's work first.** The branch was cut from `3503537` again
-  (the stale base), so `tools/check-tokens.mjs`, the embedded fonts and every token/radius
-  change were missing from the tree even though the contract describes them. Restored
-  `auto/deep_dive_AI_Storyboard_Machine/2026-08-22_0001` (tip `b6c4ef4`) as its own commit
-  `3d0d245` so this round's real diff stays readable.
-- **`index.html:558`: `font-weight:300` → `400`.** `.add-card .ac-plus` asked for a weight
-  that has no font file behind it — only 400 / 500 / 700 / 800 are embedded.
-- **Added a 4th check to `tools/check-tokens.mjs`: every `font-weight` must have an
-  `@font-face`.** It scans `index.html`'s `<style>` plus `design-system/src/**/*.css`,
-  resolves `normal`→400 and `bold`→700, skips the relative keywords (`bolder`/`lighter`),
-  blanks out `@font-face` blocks (they *declare* the inventory rather than draw on it),
-  and reports real `index.html` line numbers via the existing `lineOffset` machinery.
-- **Documented it in README** under *Typeface*, including why this bug is invisible on
-  screen and what to do if you actually want a new weight.
-- Updated `AUTOPILOT.md`: recorded the 4th check under the "single source of truth"
-  criterion, added the `font-weight` survey to the "already surveyed, don't redo" block,
-  and set a new *Next task*.
+- **Restored the previous round's work first.** `git merge-base HEAD auto/…/2026-08-22_0015`
+  returned `3503537` — the original contract commit — proving this branch was cut from the
+  stale base *again* (5th time) and contained zero of the last 21 rounds' work. The
+  `AUTOPILOT.md` on disk was the round-0 version, which is why the `## Next task` section
+  arrived empty in the prompt. Recovered with `git checkout <prev-tip> -- .` in commit
+  `7c0e3c8`, before touching anything else.
+- **Added the 5th check to `tools/check-tokens.mjs`: `border-radius` must read a token.**
+  It parses the *value side* of `border-*-radius` declarations — shorthand, all four corner
+  longhands, and vendor-prefixed spellings — over the existing `scanTargets`
+  (`design-system/src/**/*.css` + the `<style>` block of `index.html`), and fails on any
+  length that isn't a `var()`. Matching values are reported with the token to use
+  (`3px` → `var(--r-md)`); non-matching values print the whole 7-value scale, because adding
+  an eighth radius is a design decision the owner has to make.
+- **Documented it in `README.md`** under "Corner radius", including what the check
+  deliberately does *not* read and the `style="…"` gap below.
+- **Updated `AUTOPILOT.md`**: recorded check #5 under acceptance criterion 7 with all six
+  test cases, and set the next task to closing the inline-`style` gap.
 
 ## Why
 
-The one non-obvious judgement here is **why `300` → `400` is not a design change.** CSS
-font matching, for a desired weight below 400, first walks *down* the available weights and
-only then walks up. With nothing below 400 installed it lands on 400 — and browsers
-synthesize *bolder* faces but never thinner ones. So the rule has been rendering at 400
-ever since the fonts were embedded in round 0043. Writing `400` records what already
-happens; it does not move a pixel. (Caveat under Risk.)
-
-Two smaller calls:
-
-- **`normal`/`bold` are checked, `bolder`/`lighter` are not.** The first two resolve to
-  fixed numbers, so they can be wrong in exactly the same way. The other two are relative
-  to the inherited weight and have no fixed answer to check.
-- **`fonts.css` is the inventory for both sides.** Check #2 already proves `index.html`
-  embeds byte-identical copies of every weight `fonts.css` declares, so one list serves
-  both scan targets rather than two lists that could disagree.
+- **Only the value side of a `border-*-radius` declaration is read**, never a bare `3px`.
+  AUTOPILOT is explicit that spacing is *not* tokenised on purpose — measured across both
+  files, `padding` is a continuum from 1–12px and `font-size` steps by 0.5px, so a file-wide
+  `\d+px` sweep would produce hundreds of false positives on values that were never meant to
+  be tokens.
+- **`0` and `0px` are skipped.** `border-radius:4px 4px 0 0` — rounded top, flat bottom — is
+  an everyday idiom; a square corner isn't a design value. Flagging it would push someone to
+  invent a `--r-none:0` token, i.e. widen the design language to satisfy a checker.
+- **Reused `scanTargets` instead of writing a new scan.** That array is `<style>`-only by
+  construction, so the canvas `roundRect()`/`arc()` radii in the `<script>` are structurally
+  unreachable rather than merely unmatched by a regex — the Out-of-scope rule is enforced by
+  the data flow, not by my regex being careful.
+- **`(?<![-\w])` in the property regex** keeps a custom property named `--border-radius` out
+  of scope: *declaring* a value is a different act from re-hardcoding one. Vendor prefixes
+  are then listed explicitly so that lookbehind doesn't quietly become a bypass.
 
 ## Verification
 
-`node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`
-— all green:
+Ran the Verify command from `AUTOPILOT.md` verbatim:
 
 ```
+$ node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test
 54 passed, 0 failed
 tokens in sync: 22/22 from design-system/src/tokens.css present and identical in index.html
 fonts in sync: 4/4 from design-system/src/fonts.css embedded byte-identical in index.html
 no derived-colour literals: 14 stylesheet(s) scanned, none re-hardcode a tokenised colour
 font weights available: 14 stylesheet(s) scanned, every font-weight is one of 400, 500, 700, 800
-Test Files  12 passed (12)
-     Tests  31 passed (31)
+no radius literals: 14 stylesheet(s) scanned, every border-radius reads a --r-* token
+ Test Files  12 passed (12)
+      Tests  31 passed (31)
 ```
 
-A green checker proves nothing on its own, so I ran four negative trials — each one edits a
-file, runs the checker, and restores the file:
+A checker that only ever prints "ok" proves nothing, so I broke it on purpose six times.
+Each edit was reverted with `git checkout --` afterwards; `git status` was clean apart from
+`tools/check-tokens.mjs` before committing.
 
-| trial | expected | got |
+| # | Injected | Result |
 |---|---|---|
-| put `font-weight:300` back in `index.html` | exit 1 | exit 1 — `index.html:558: "font-weight:300" asks for a weight with no @font-face — design-system/src/fonts.css ships 400, 500, 700, 800` |
-| `font-weight:900` in `Button.css` | exit 1 | exit 1 — `design-system/src/components/Button/Button.css:8: …` |
-| `font-weight:bold` in `Button.css` | exit 0 (700 exists) | exit 0 |
-| `font-weight:lighter` in `Badge.css` | exit 0 (relative) | exit 0 |
+| 1 | `border-radius:3px` at `index.html:49` | exit 1 — `index.html:49: "border-radius: 3px" hardcodes … --r-md — write var(--r-md)` |
+| 2 | `border-radius:9px` | exit 1 — `uses 9px, which matches no radius token — … offers 1px (--r-xs), 2px (--r-sm), 3px (--r-md), 4px (--r-lg), 5px (--r-xl), 6px (--r-2xl), 50% (--r-full)` |
+| 3 | `border-radius:4px 4px 0 0` | exit 1 — **two** findings, both on `4px`; the two `0`s silent |
+| 4 | `border-radius:var(--r-lg) var(--r-lg) 0 0` + `--border-radius:3px` + `border-top-left-radius:inherit`, same line | **pass** — mixed `var()` shorthand, custom property, and keyword all correctly ignored |
+| 5 | `border-top-left-radius:2px` and `-webkit-border-radius:50%` in `Badge.css` | exit 1 — both caught at `Badge.css:5`, naming `--r-sm` and `--r-full` |
+| 6 | `/* historically border-radius:3px here */` in `Badge.css` | **pass** — comments are blanked before scanning |
 
-Line numbers in both failures are the real ones. `git status` was clean afterwards and the
-checker was re-run to confirm the tree came back intact.
+Line numbers in cases 1–4 are the real `index.html` line, not one relative to the `<style>`
+block, because the check inherits the existing `lineOffset` machinery.
 
 ## What I did NOT do
 
-- **Did not add a 300-weight font file.** That is the alternative fix if the owner wants a
-  genuinely lighter plus sign, and it needs `jetbrains-mono-latin-300-normal.woff2`, which
-  cannot be fetched here (no network, no local copy). The contract said to prefer 300→400
-  when unsure, and I did.
-- **Did not touch `ctx.font` in the canvas code.** `font-weight` appears there too; it is
-  JavaScript, it is out of scope, and the checker only ever sees the `<style>` block.
-- **Did not touch the untokenised colour literals, chip padding, spacing/font-size, or
-  jsPDF.** All four are still blocked on owner decisions listed in `AUTOPILOT.md`.
-- **Did not attempt browser verification.** Playwright and Chrome-DevTools MCP were both
-  permission-blocked in an earlier round; retrying would waste the round.
+- **Did not extend the scan to `style="…"` attributes.** `index.html` has 24 of them and one
+  (line 616, the export button) carries a `border-radius`. It reads `var(--r-md)` today, but
+  by hand, not by enforcement — and *all four* checks share this blind spot, not just the new
+  one. Fixing it is a separate, well-scoped change (one new entry in `scanTargets`), so I made
+  it the next task rather than doing two things this round.
+- **Did not touch any CSS or markup.** The only production file changed is
+  `tools/check-tokens.mjs`; `README.md` and `AUTOPILOT.md` are documentation. Nothing moves a
+  pixel.
+- **Did not add a `--r-none:0` token or any other token.** Widening the palette stays an owner
+  decision — the four items under "🔴 รอเจ้าของตัดสินใจ" in `AUTOPILOT.md` are all still open
+  and still block most of the remaining work.
+- **Did not verify anything in a real browser.** Playwright and Chrome-DevTools MCP are both
+  permission-blocked on this host (established in an earlier round; I did not retry). This
+  round changes no rendered CSS, so the risk from that is nil *this time*.
 
 ## Risk
 
-1. **The 300→400 claim is read off the CSS Fonts spec, not off a rendered page.** Nobody has
-   opened this app in a browser across seven rounds of CSS work. The reasoning is sound and
-   the fallback is benign — worst case the plus sign was already 400 and stays 400 — but it
-   is unverified, like every other visual claim in this project. This is the strongest
-   argument for unblocking item 4 in *รอเจ้าของตัดสินใจ*.
-2. **The checker only understands the `font-weight` longhand.** I confirmed neither side
-   uses the `font:` shorthand today (0 occurrences), and said so in both the code comment
-   and the README, but a future `font: 300 12px/1 …` would slip through.
-3. **The restore commit `3d0d245` is large and is not this round's work.** Review it as a
-   re-application of `b6c4ef4`, not as new code — `git diff b6c4ef4 3d0d245` is empty.
-   This is the fifth consecutive round that has had to do this; the runner bug is still
-   unfixed and `main` is still at `ef3220e` with none of this merged.
-4. **A weight embedded in `index.html` but absent from `fonts.css` is still unchecked.**
-   Check #2 only iterates `fonts.css`'s faces, so the reverse direction has no guard. It
-   cannot cause a wrong render today (the inventory is derived from `fonts.css` either way),
-   so I left it rather than widening this round's scope.
+- **Low, and structurally bounded: this round ships a linter, not a style change.** If the new
+  check is wrong, the failure mode is a build that fails or a violation that slips through —
+  never a visual regression. `git show --stat` on the work commit is one file.
+- **The check is line-oriented.** A `border-radius` declaration split across two source lines
+  (`border-radius:\n  3px`) would not be seen. Neither stylesheet does this today, and the
+  colour and `font-weight` checks have the same property, so this is consistent rather than a
+  new weakness — but it is a real hole a reviewer should know about.
+- **`calc()` values are skipped entirely** rather than half-parsed. Zero uses today; a
+  `calc(3px + 1px)` added later would pass unexamined.
+- **The `--r-*` prefix is load-bearing.** The radius map is built from token names starting
+  `--r-`, so renaming the scale in `tokens.css` would silently empty it. I guarded the obvious
+  case — the script now hard-fails if *no* `--r-*` token exists — but a partial rename
+  (e.g. `--radius-md`) would shrink the map without failing. Worth a look.
+- **Duplicate messages on shorthand.** `4px 4px 0 0` reports the same finding twice (case 3).
+  Accurate, since there really are two literals, but noisier than it needs to be.
+- **Still unresolved from prior rounds, unchanged by this one:** the jsPDF CDN `<script>` at
+  `index.html:7` has no `integrity` attribute and cannot be inlined without the owner
+  vendoring the file, so acceptance criterion 3 stays unticked.

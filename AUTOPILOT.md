@@ -88,6 +88,21 @@
          เพราะมัน*คือ*ตัวประกาศ inventory ไม่ใช่ผู้ใช้) รายงานเลขบรรทัดจริงของ `index.html`
         ทดสอบ negative จริง 4 กรณี: `300` ใน `index.html` → exit 1 ที่ `index.html:558`,
         `900` ใน `Button.css` → exit 1 ที่ `Button.css:8`, `bold` → pass, `lighter` → pass)
+        (2026-08-22 รอบ 0024: `check-tokens.mjs` เพิ่มการเช็คที่ 5 — **`border-radius` ต้องอ่านจาก token**
+        อ่านเฉพาะ*ฝั่งค่า*ของ declaration `border-*-radius` (shorthand + longhand 4 มุม + vendor prefix)
+        ใน `scanTargets` เดิม แล้ว fail ถ้าเจอความยาวที่ไม่ใช่ `var()` — ถ้าค่าตรง token บอกชื่อ token
+        ถ้าไม่ตรงเลยพิมพ์สเกลทั้งชุดให้ดู (การตั้ง token ที่ 8 ยังเป็นของเจ้าของ)
+        ข้าม `0`/`0px` (มุมเหลี่ยมไม่ใช่ค่าดีไซน์ และ `4px 4px 0 0` เป็นสำนวนปกติ), keyword, `calc()`
+        `(?<![-\w])` กัน custom property ชื่อ `--border-radius` ไม่ให้โดนจับ แต่ยังจับ `-webkit-` อยู่
+        **ไม่สแกน `\d+px` ลอยๆ ทั้งไฟล์** เพราะ spacing ตั้งใจไม่ tokenize
+        ทดสอบจริง 6 กรณี: `3px`→exit 1 พร้อม `--r-md` ที่ `index.html:49`,
+        `9px`→exit 1 พร้อมลิสต์ 7 ค่า, `4px 4px 0 0`→exit 1 ที่ `4px` ×2 ไม่บ่นเรื่อง `0`,
+        `var(--r-lg) var(--r-lg) 0 0` + `--border-radius:3px` + `border-top-left-radius:inherit`→pass,
+        `border-top-left-radius:2px` + `-webkit-border-radius:50%` ใน `Badge.css`→exit 1 ทั้งคู่,
+        literal ใน `/* comment */`→pass
+        ⚠️ **ช่องที่ยังเปิดอยู่ (ทั้ง 4 เช็ค ไม่ใช่แค่ radius): `style="…"` attribute ใน body**
+        `scanTargets` ดึงมาแค่ `<style>` → `index.html` มี 24 บรรทัด (markup 11 / JS 13) และบรรทัด 616 (ปุ่ม export)
+        มี `border-radius` + `color:#000` + `font-weight:700` ที่ไม่มีใครเช็ค — ตอนนี้บังเอิญถูกหมด)
 
 ## Verify
 
@@ -138,33 +153,46 @@ generate มาจาก branch ของรอบก่อน — ไฟล์�
 
 ## Next task — do ONLY this
 
-**ขยาย `tools/check-tokens.mjs` ให้กัน `border-radius` ที่เขียนค่าดิบกลับเข้ามา (การเช็คที่ 5)**
+**ให้ `tools/check-tokens.mjs` มองเห็น `style="…"` attribute ใน body ของ `index.html` ด้วย
+— ทั้ง 4 เช็คทีเดียว ไม่ใช่แค่ radius**
 
-รอบ 2026-08-21 เปลี่ยน `border-radius` literal ครบ **61 จุดใน `index.html`** + 9 จุดใน DS
-component CSS ให้ชี้มาที่ `--r-xs/sm/md/lg/xl/2xl/full` แล้ว — **ตอนนี้เหลือ 0 จุดทั้งสองฝั่ง
-(ยืนยันซ้ำแล้วรอบ 0015)** แต่ยัง**ไม่มีอะไรกันไม่ให้มันกลับมา** พิมพ์ `border-radius:3px`
-เพิ่มพรุ่งนี้ก็ผ่านหมดทุกเช็ค นี่คือช่องเดียวกับที่การเช็คสี (รอบ 0001) และการเช็ค
-font-weight (รอบ 0015) ปิดไปแล้ว เหลือแกนนี้แกนเดียวที่ยังเปิดอยู่
+การเช็คที่ 5 (radius) ปิดจบแล้วในรอบ 0024 → **แกนหลักครบทั้ง 4 แล้ว** (สี / ฟอนต์ / font-weight /
+radius) แต่ตอนทำรอบ 0024 เจอช่องที่**ทุกเช็คแชร์กันหมด**: `scanTargets` ประกอบขึ้นจาก
+`design-system/src/**/*.css` + regex `<style>…</style>` ของ `index.html` เท่านั้น
+→ CSS ที่เขียนใน attribute `style="…"` **ไม่มีเช็คไหนเห็นเลยสักตัว**
 
-วิธี: เดินตามรูปแบบเดิมของการเช็คสีเป๊ะๆ — ใช้ `scanTargets` ตัวเดิม (มันให้ทั้ง
-`design-system/src/**/*.css` และ `<style>` ของ `index.html` พร้อม `lineOffset` แล้ว)
-แล้วจับเฉพาะ declaration `border-radius` (รวม longhand `border-*-radius` ด้วย)
-ที่ค่า**ไม่มี `var(`** ถ้าค่านั้นตรงกับ token ตัวไหน ให้บอกชื่อ token นั้นตรงๆ
-(`3px` → `var(--r-md)`) ถ้าไม่ตรงกับ token ไหนเลย ให้ fail พร้อมลิสต์ค่าที่มีให้เลือก
-— การตั้ง token ใหม่ยังเป็นเรื่องของเจ้าของเหมือนเดิม
+`index.html` มี `style="` อยู่ **24 บรรทัด (markup 11 / JS 13 — ดูรายละเอียดข้างล่าง)**
+และจุดที่บรรทัด 616 (ปุ่ม `#exportMenuBtn`) มีครบทั้ง
+`border-radius:var(--r-md)`, `background:var(--accent)`, `color:#000`, `font-weight:700`
+— ตอนนี้**ถูกหมดโดยบังเอิญ** เพราะรอบก่อนๆ ไล่แก้ด้วยมือ ไม่ใช่เพราะมีอะไรบังคับ
+พิมพ์ `style="border-radius:3px; background:#FFC72C"` เพิ่มพรุ่งนี้ก็ผ่านทั้ง 4 เช็ค
 
-⚠️ **จับเฉพาะ declaration `border-radius` เท่านั้น** อย่าสแกน `\d+px` ลอยๆ ทั้งไฟล์
-เพราะ `3px` ยังเป็น padding / gap / font-size ได้อีกเยอะ และ **spacing ยังไม่ได้ tokenize
-โดยตั้งใจ** (ดูหมายเหตุท้ายหัวข้อนี้) — สแกนกว้างไปจะได้ false positive เป็นร้อย
-⚠️ อย่าลืมว่า `border-radius` มี shorthand หลายค่า (`4px 4px 0 0`) — `0` ไม่มี token
-และไม่ควร fail เพราะ `0` ไม่ใช่ค่าดีไซน์ ให้ข้าม `0`/`0px` ไป
-⚠️ **`ctx.roundRect()` / `arc()` ในโค้ด canvas ห้ามแตะ** ตาม Out of scope — `scanTargets`
-ตัดให้อยู่แล้วเพราะมันดึงมาแค่ `<style>` แต่อย่าเผลอเขียน scan ใหม่ที่กินทั้งไฟล์
+วิธี: **เพิ่ม scan target ตัวที่ 3** เข้า array `scanTargets` — อย่าไปแก้ logic ของเช็คไหนเลย
+ทั้ง 4 เช็ควนบน `scanTargets` อยู่แล้ว เพิ่ม target แล้วมันได้ของแถมพร้อมกันหมด
+ทำโดยไล่ `html.matchAll(/\sstyle\s*=\s*"([^"]*)"/g)` **เฉพาะส่วนหลัง `</style>`**
+แล้วสร้าง text ที่ *รักษาเลขบรรทัดไว้* (เทคนิคเดิมกับ `blankOut`: แทนทุกอย่างที่ไม่ใช่ค่าใน
+attribute ด้วย space/newline) จะได้รายงาน `index.html:616` ตรงกับไฟล์จริงเหมือนเช็คอื่น
 
-**ทดสอบ negative จริงก่อน commit** อย่างน้อย 3 กรณี:
-`border-radius:3px` ใน `index.html` → exit 1 พร้อมชื่อ `--r-md`,
-`border-radius:9px` (ไม่ตรง token ไหน) → exit 1 พร้อมลิสต์ค่าที่มี,
-`border-radius:4px 4px 0 0` → exit 1 ที่ `4px` แต่ไม่บ่นเรื่อง `0`
+⚠️ **ต้องกัน `<script>` ให้ขาด — สำรวจแล้ว ยืนยันว่าอันตรายจริง** จาก 24 บรรทัด มี **11 บรรทัดที่อยู่ใน
+markup จริง** (616, 635, 707, 713, 716, 718, 726, 730, 731, 747, 810)
+อีก **13 บรรทัดอยู่ใน template string ของ JS** (935, 2248, 2251,
+2253–2254, 2295, 2302, 2366, 2393–2395, 2710, 3008, 3257) และในนั้นมีระเบิดฝังอยู่:
+- `2251`: `linear-gradient(90deg,#111,#161616,#111)` — `#111` normalize แล้ว = `#111111` = **`--surface`**
+- `3008`: `color:${fail?'#FA4616':'#7ac87a'}` — `#FA4616` = **`--secondary`** และบรรทัดเดียวกัน
+  มี `font:14px ui-monospace` ซึ่งเป็น `font:` shorthand ตัวเดียวในโปรเจค
+ถ้าสแกนทั้งไฟล์ เช็คสีจะ fail ทันที 3 จุด ทั้งที่เป็นโค้ด JS
+→ **ตัด `<script>…</script>` ออกด้วย `blankOut` ก่อน แล้วค่อยหา attribute** และให้ต่อยอด
+เฉพาะ attribute ที่อยู่ใน markup เท่านั้น
+⚠️ `style` attribute เป็น declaration list ไม่มี `{}` ครอบ — `blankOut(…, /:root\s*\{[^}]*\}/g)`
+ของเช็คสีจึงไม่กระทบ และไม่มี `@font-face` ให้ตัด ไม่ต้องแก้อะไรตรงนั้น
+⚠️ ถ้าเพิ่ม target แล้ว**มีเช็คไหน fail ขึ้นมาจริง** อย่าเพิ่งแก้ค่าใน markup ทันที
+ให้ดูก่อนว่ามันเป็น literal ที่มี token คู่กันจริงไหม ถ้าเป็นสีที่ไม่มี token (`#000`) มันจะไม่ fail อยู่แล้ว
+
+**ทดสอบ negative จริงก่อน commit** อย่างน้อย 4 กรณี:
+`style="border-radius:3px"` → exit 1 พร้อม `--r-md` และเลขบรรทัดตรงกับไฟล์จริง,
+`style="background:#FFC72C"` → exit 1 พร้อม `--accent`,
+`style="font-weight:300"` → exit 1,
+เพิ่มสตริง `style="border-radius:3px"` ใน `<script>` → **ต้อง pass** (พิสูจน์ว่า JS ถูกตัดจริง)
 
 > **อย่าแตะ literal สีที่เหลือ** — `rgba(0,0,0,…)`, `rgba(255,255,255,…)`, `#000`, `#0a0a0a`,
 > `#7ac87a`, `#ffb4a0`, `rgba(120,200,120,.15)` **ไม่มี token คู่กัน** การตั้ง token ใหม่ให้มัน
