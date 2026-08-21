@@ -1,104 +1,94 @@
-# Round summary — 2026-08-21_0043
-
-Task: **self-host JetBrains Mono in `index.html`** and drop the Google Fonts CDN.
+# Round 2026-08-22_0001 — channel tokens in design-system component CSS
 
 ## What I did
 
-- **Restored the previous rounds' work first** (`f48402a`). The runner cut this branch from
-  `3503537` — the original contract commit — for the third round running, so
-  `tools/check-tokens.mjs`, the radius/channel tokens and the chip-parity work named in the
-  contract handed to me *did not exist in my working tree*. My own Verify command would have
-  crashed on a missing file. Restored the tree of `38ad09b` (previous round's tip) verbatim as
-  a separate commit so this round's real diff stays readable.
-- **Embedded all four JetBrains Mono weights as `data:` URIs** (`6abf6fa`). The 400/500/700/800
-  latin `.woff2` files from `design-system/src/fonts/` (86,144 bytes) now live inside
-  `index.html`'s `<style>` as `@font-face` rules mirroring `design-system/src/fonts.css`.
-  Removed the two `preconnect` hints and the `fonts.googleapis` stylesheet link.
-- **Extended `tools/check-tokens.mjs` to verify the fonts too** (`3162c51`). It walks every
-  `@font-face` in `fonts.css`, decodes the matching base64 payload from `index.html`, and
-  compares it byte-for-byte with the file on disk.
-- **Documented the typeface in README** (`73b8dc3`) — where the source of truth is, the
-  three-step re-embed procedure, the size cost, and the glyph-coverage analysis. Also marked
-  jsPDF as the sole remaining network dependency.
-- **Updated `AUTOPILOT.md`**: criterion 4's note (external refs went 4 → 1, never up),
-  criterion 3's progress and its real blocker, and a new consolidated
-  **"🔴 รอเจ้าของตัดสินใจ"** block listing the four decisions that now gate almost everything.
+- **Restored the previous round's work first.** The runner cut this branch from `3503537`
+  again, not from the previous tip `c7cfd80`, so the tree was missing `tools/check-tokens.mjs`,
+  the token/radius mapping and the embedded fonts that `AUTOPILOT.md` describes as done.
+  Restored verbatim as its own commit (`59a8732`) so this round's real diff stays readable.
+- **Replaced the last three token-derived colour literals in the design system**
+  (`Button.css:9`, `Badge.css:7`, `Badge.css:8`) with the channel tokens `--accent-rgb` /
+  `--secondary-rgb`. Rendered colour is identical; nothing moves.
+- **Extended `tools/check-tokens.mjs` with a third check** that scans every stylesheet under
+  `design-system/src` plus the `<style>` block of `index.html`, and fails on any `rgb()`/`rgba()`
+  triple or hex matching a token's value, naming the token that should have been used.
+- **Fixed a real defect in that new check before committing it:** it numbered `index.html`
+  findings from the start of the `<style>` block, so a literal at file line 65 was reported as
+  line 58. In a 3,756-line file that is worse than printing no line number.
+- Documented the new check in `README.md` and updated `AUTOPILOT.md`.
 
 ## Why
 
-- **All four weights, not the 400+700 shortcut the contract offered.** `index.html` uses
-  `font-weight:` 500, 700 and 800 explicitly plus the 400 default — dropping 500/800 would have
-  forced synthetic weights on live UI. 60 KB is not worth that. (There is also one
-  `font-weight:300` with no matching face, but the CDN request was `wght@400;500;700;800`, so
-  that already resolved to 400. Unchanged.)
-- **Glyph coverage does not regress.** I took a codepoint census of `index.html`: it uses
-  U+2550 box-drawing **1,576 times**, plus arrows, Thai, and emoji. None of those ranges are in
-  *any* subset Google's `css2` endpoint serves for JetBrains Mono (latin, latin-ext, cyrillic,
-  cyrillic-ext, greek, vietnamese), so they already fell back to the system monospace font.
-  The only non-ASCII characters in a range the CDN did serve are `°  ·  —  ’  “  ”  …`, all of
-  which sit in the latin subset I embedded. Nothing that rendered in JetBrains Mono before
-  stops rendering in it now.
-- **The font check belongs in `check-tokens.mjs`, not a new script.** Embedding creates a
-  second copy of the typeface, and this change would otherwise have added a fresh drift vector
-  in the same round that closed one. Same file, same failure mode, same command.
+The app moved to `rgba(var(--accent-rgb),α)` in an earlier round but the library never
+followed. That is the "single source of truth" goal inverted: re-tinting `--accent` would have
+moved the app and stranded the component library on the old yellow. Three lines, no pixels
+moved — but the guard is the part that matters, because this is the second time this class of
+drift had to be cleaned up by hand.
+
+`tokens.css` and `index.html`'s `:root{}` are exempt from the scan. They *are* the palette
+declaration, and the two checks above already prove they agree — flagging them would have made
+the check unusable and invited someone to delete it.
 
 ## Verification
 
-Ran the contract's Verify command in full:
+Ran the Verify command in full:
 
 ```
-node tools/test.mjs           → 54 passed, 0 failed
-node tools/check-tokens.mjs   → tokens in sync: 22/22 from design-system/src/tokens.css …
-                                fonts in sync: 4/4 from design-system/src/fonts.css …
-npm --prefix design-system test → Test Files 12 passed (12) / Tests 31 passed (31)
+node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test
 ```
 
-Task-specific checks:
+```
+54 passed, 0 failed
+tokens in sync: 22/22 from design-system/src/tokens.css present and identical in index.html
+fonts in sync: 4/4 from design-system/src/fonts.css embedded byte-identical in index.html
+no derived-colour literals: 14 stylesheet(s) scanned, none re-hardcode a tokenised colour
+Test Files  12 passed (12)
+     Tests  31 passed (31)
+```
 
-- `fonts.googleapis` occurrences: **0**. `fonts.gstatic`: **0**. `@import`: **0**.
-- Remaining external refs in the file: exactly one —
-  `<script src="https://cdnjs.cloudflare.com/…/jspdf.umd.min.js">`, pre-existing.
-- **Base64 round-trip, all four weights**: decoded each embedded payload and compared with
-  `Buffer.equals` against the source file — `OK 21168B / 21832B / 21908B / 21236B`, each
-  starting with the `wOF2` magic. The four distinct byte lengths also prove the weights were
-  embedded in the right order.
-- **Negative-tested the new check, both failure modes** (then `git checkout --` to restore):
-  - flipped one byte of the 500 `.woff2` → `FAIL font drift: weight 500 …`, exit 1
-  - added a phantom weight-600 face to `fonts.css` → `FAIL missing in index.html: no
-    @font-face weight 600 …`, exit 1
-- `index.html`: 188 KB → 297 KB (the contract predicted ~303 KB).
+**A guard that cannot fail is worthless, so I proved this one fails.** Three negative tests,
+each reverted afterwards:
+
+| reintroduced | result |
+|---|---|
+| `rgba(250,70,22,.18)` in `Badge.css` | exit 1 — `Badge.css:7 … --secondary-rgb` |
+| `#FFC72C` in `Chip.css` (replacing `var(--accent)`) | exit 1 — `Chip.css:7 … --accent` |
+| `rgba(255,199,44,` in `index.html` `<style>` | exit 1 — `index.html:65 … --accent-rgb` |
+
+The third is what exposed the off-by-seven line number; after the fix it reports `index.html:65`,
+which is the true file line. The `:root{}` exemption is proven by the green run — the block
+declares `--accent:#FFC72C`, and the scan does not flag it.
 
 ## What I did NOT do
 
-- **Did not touch the jsPDF CDN line** — the contract said to leave it, and I could not have
-  done it anyway: there is no copy of jsPDF anywhere on this machine (searched
-  `C:/PHANTOM-AUTOPILOT` and the npm global root) and network access is blocked. **The owner
-  has to vendor `jspdf.umd.min.js` into the repo before any round can inline it.** I recorded
-  this in AUTOPILOT.md so no future round burns itself discovering it again.
-- **Did not tick criterion 3** (`file://` fully working). The font half is done, but jsPDF
-  still needs the network, and nobody has opened the app in a real browser yet.
-- **Did not add `unicode-range`.** The contract said to match "the original", but
-  `design-system/src/fonts.css` — the source of truth — declares none, and with exactly one
-  file per weight `unicode-range` would only ever narrow coverage. Matching the DS file is the
-  behaviour-preserving choice.
-- **Did not touch spacing/font-size tokens, chip padding, or the DS `rgba` literals.** The
-  first two are blocked on owner decisions (recorded); the third is now the Next task.
+- **Did not touch the remaining literals** — `rgba(0,0,0,…)`, `rgba(255,255,255,…)`, `#000`,
+  `#0a0a0a`, `#7ac87a`, `#ffb4a0`, `rgba(120,200,120,.15)`. None has a matching token; inventing
+  one would widen the design language, which is the owner's call.
+- **Did not tokenize spacing or font-size.** A previous round surveyed these and correctly
+  concluded they are a continuum (0.5px font-size steps, near-every padding value 1–12px), not a
+  scale. Snapping them moves pixels and needs owner approval — it is item 3 in the blocked list.
+- **Did not fix the `font-weight:300` I found** at `index.html:558`. It is real (only 400/500/
+  700/800 are embedded) but it is a separate task, so I made it the next one instead of quietly
+  widening this round's scope.
+- Did not open a browser. Playwright and Chrome-DevTools MCP are permission-blocked here, which
+  a previous round already established — I did not spend the round retrying them.
 
 ## Risk
 
-- **Not verified in a browser.** Six rounds of CSS changes, zero rendered pixels seen. This
-  round changes *how the typeface loads*, which is the one kind of change most likely to show
-  up visually. The byte-level round-trip proves the font data is intact and the CSS is
-  syntactically a copy of `fonts.css`, but that is not the same as seeing it render.
-  Playwright and Chrome-DevTools MCP are permission-blocked, not merely headless.
-- **A reviewer should sanity-check one thing by eye**: open `index.html` offline and confirm
-  the UI is in JetBrains Mono, not a fallback. A malformed data URI would fail *silently* —
-  the page renders fine, just in the wrong font.
-- **The 109 KB size increase is real and irreversible-ish.** If the owner considers 297 KB too
-  large for the "one file you can open" pitch, the fix is to drop weights, and I've documented
-  which ones are actually used so that call can be made with the facts.
-- **The stale-base problem is now costing a commit every round.** Three rounds in a row have
-  opened with a restore commit. If two of these branches are ever merged in the wrong order,
-  the restore commits will conflict against each other. This is a runner bug, not a repo bug —
-  it needs fixing at the source (cut from the previous round's tip, or merge PRs into `main`).
-  There are 29 stacked `auto/*` branches now.
+- **The scan is textual, so it cannot see literals built by string concatenation** or set from
+  JavaScript. It only proves that no *stylesheet* re-hardcodes a token colour.
+- **I widened the scan past what the task specified.** The task said
+  `design-system/src/components/**/*.css`; I scan all of `design-system/src` except `tokens.css`,
+  which additionally covers `styles.css` and `fonts.css`. I verified both are clean, so this is
+  green today, but it is slightly more than was asked for.
+- **The `:root{ … }` exemption uses `/:root\s*\{[^}]*\}/`, which stops at the first `}`.** That is
+  correct for this repo's flat declaration block, but it would silently under-strip if someone
+  ever nested a rule inside `:root`. It would then report a false positive, not miss a real one —
+  the safe direction to fail.
+- **The three colour changes are verified by reasoning and by the checker, not by eye.** They are
+  textual substitutions of identical values, and the DS test suite passes, but no one has looked
+  at the rendered result — as with every CSS round on this project so far.
+- **The `font-weight:300` claim in the next task is spec-reading, not observation.** I state in
+  `AUTOPILOT.md` that it currently renders as 400; that follows from the CSS font-matching
+  algorithm and the fact that browsers do not synthesize lighter weights, but it has not been
+  seen in a browser. The next round should treat it as a claim to check, not a fact.

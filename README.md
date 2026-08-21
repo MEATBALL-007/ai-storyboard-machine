@@ -123,9 +123,23 @@ build step would defeat the whole point of the project.
 
 Colours that need transparency use the channel tokens (`--accent-rgb`, `--secondary-rgb`,
 `--bg-rgb`) via `rgba(var(--accent-rgb), .4)`, so a glow or ring follows `--accent` instead
-of freezing the old hue into a literal. **Exception:** the `rgba()` / hex literals inside the
-canvas-drawing JavaScript are deliberate — `ctx.fillStyle` does not resolve CSS custom
-properties and would silently paint black.
+of freezing the old hue into a literal. This holds on **both** sides — the app's `<style>`
+and the library's component CSS — because a token the library ignores re-tints half the
+system and strands the other half.
+
+`check-tokens.mjs` enforces that: it scans every stylesheet under `design-system/src` plus
+the `<style>` block of `index.html`, and fails on any `rgb()`/`rgba()` triple or hex that
+matches a token's value, naming the token you should have used. `tokens.css` and the
+`:root{ … }` block of `index.html` are exempt — they *are* the palette, and the check above
+already proves the two agree.
+
+**Exception:** the `rgba()` / hex literals inside the canvas-drawing JavaScript are
+deliberate — `ctx.fillStyle` does not resolve CSS custom properties and would silently paint
+black. The scan only reads the `<style>` block, so it never sees them.
+
+Literals with no token behind them (`rgba(0,0,0,…)`, `rgba(255,255,255,…)`, `#7ac87a`,
+`#ffb4a0`, `#0a0a0a`) are left alone on purpose. Giving those a token would widen the design
+language, which is a decision for the owner rather than something a checker should force.
 
 ### Corner radius
 

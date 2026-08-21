@@ -74,6 +74,13 @@
         (2026-08-21 รอบ 0043: script เช็ค **ฟอนต์** ด้วยแล้ว — decode base64 ใน `index.html`
         เทียบ byte กับ `design-system/src/fonts/*.woff2`; ทดสอบ fail จริงทั้ง 2 กรณี
         คือ byte เพี้ยน และ `fonts.css` มีน้ำหนักที่ `index.html` ไม่มี)
+        (2026-08-22 รอบ 0001: ปิดช่องโหว่ฝั่ง **library** — DS component CSS 3 จุดสุดท้าย
+        (`Button.css:9`, `Badge.css:7`, `Badge.css:8`) เลิกใช้ rgba literal มาใช้ channel token แล้ว
+        และ `check-tokens.mjs` เพิ่มการเช็คที่ 3: สแกน `design-system/src/**/*.css` + `<style>`
+        ของ `index.html` แล้ว fail ถ้าเจอ rgb/rgba/hex ที่ตรงกับค่า token — ยกเว้น `tokens.css`
+        และ `:root{}` ของ `index.html` ซึ่ง*คือ*ตัวประกาศ palette เอง
+        ทดสอบ negative จริง 3 กรณี (rgba ใน DS / hex ใน DS / rgba ใน `index.html`) exit 1 ทุกกรณี
+        **หมายเหตุ: ตอนนี้ literal ที่ derive จาก token เหลือ 0 จุดทั้งสองฝั่ง**)
 
 ## Verify
 
@@ -124,29 +131,40 @@ generate มาจาก branch ของรอบก่อน — ไฟล์�
 
 ## Next task — do ONLY this
 
-**ให้ DS component CSS ใช้ channel token แทน rgba literal 3 จุดสุดท้าย**
+**แก้ `font-weight:300` ที่ `index.html:558` ซึ่งไม่มีไฟล์ฟอนต์รองรับ แล้วกันไม่ให้เกิดซ้ำ**
 
-`index.html` ใช้ `rgba(var(--accent-rgb),α)` ครบแล้วตั้งแต่รอบ 2026-08-21_0002 แต่
-**ฝั่ง design system ยังไม่ตาม** — เหลือ literal ที่ derive จากสี token อยู่ 3 จุด
-ถ้าเจ้าของเปลี่ยน `--accent` ในภายหลัง แอปจะตามทันแต่ library จะค้างสีเก่า
-ซึ่งพังเป้าหมาย "แก้ที่เดียวแล้วเปลี่ยนทั้งระบบ" ในทิศทางตรงข้ามกับที่เคยแก้มา
+รอบ 0043 ฝัง JetBrains Mono ไว้ **4 น้ำหนักเท่านั้น: 400 / 500 / 700 / 800**
+แต่ `index.html:558` (`.add-card .ac-plus`) สั่ง `font-weight:300` ซึ่ง**ไม่มีอยู่จริง**
 
-แก้ 3 บรรทัดนี้เท่านั้น (ค่าสีเท่าเดิมเป๊ะ ไม่ขยับพิกเซล):
+```
+.add-card .ac-plus{font-size:26px; line-height:1; font-weight:300}
+```
 
-| ไฟล์ | เดิม | ใหม่ |
-|---|---|---|
-| `design-system/src/components/Button/Button.css:9` | `rgba(255,199,44,.4)` | `rgba(var(--accent-rgb),.4)` |
-| `design-system/src/components/Badge/Badge.css:7` | `rgba(250,70,22,.18)` | `rgba(var(--secondary-rgb),.18)` |
-| `design-system/src/components/Badge/Badge.css:8` | `rgba(255,199,44,.16)` | `rgba(var(--accent-rgb),.16)` |
+ตาม CSS font matching เมื่อ desired weight < 400 เบราว์เซอร์จะไล่หาน้ำหนักที่**น้อยกว่า**ก่อน
+(ไม่มี) แล้วจึงไล่ขึ้น → ได้ **400** และเบราว์เซอร์**ไม่ synthesize น้ำหนักที่บางกว่า**
+แปลว่าทุกวันนี้มันเรนเดอร์เป็น 400 อยู่แล้ว ดังนั้น **เปลี่ยน `300` → `400` ไม่ขยับพิกเซล**
+เป็นการเขียนสิ่งที่เกิดขึ้นจริงให้ตรงกับความจริง ไม่ใช่การเปลี่ยนดีไซน์
 
-จากนั้น**ขยาย `tools/check-tokens.mjs` ให้กันไม่ให้มันกลับมา**: สแกน
-`design-system/src/components/**/*.css` + `<style>` ของ `index.html` แล้ว fail ถ้าเจอ
-`rgba(r,g,b,…)` ที่ `r,g,b` ตรงกับค่าของ channel token ตัวใดตัวหนึ่ง หรือเจอ hex ที่ตรงกับ
-token สี — พร้อมทดสอบ negative จริง (ใส่ literal กลับเข้าไปแล้วต้อง exit 1) ก่อน commit
+⚠️ **ข้อนี้ยังไม่ได้ยืนยันด้วยเบราว์เซอร์จริง** (ดูข้อ 4 ในหัวข้อรอเจ้าของ) — เป็นการอ่านสเปก
+ถ้าเจ้าของอยากได้ 300 จริงๆ ทางแก้คือ**เพิ่มไฟล์ `jetbrains-mono-latin-300-normal.woff2`**
+เข้า `design-system/src/fonts/` + `fonts.css` แล้วฝังใน `index.html` — นั่นคือคนละงาน
+(และ agent ดาวน์โหลดไฟล์เองไม่ได้ ไม่มี network) → **ถ้าไม่แน่ใจ ให้เลือกทาง 300→400**
 
-> **อย่าแตะ literal ที่เหลือ** — `rgba(0,0,0,…)`, `rgba(255,255,255,…)`, `#000`, `#0a0a0a`,
+จากนั้น**ขยาย `tools/check-tokens.mjs` ให้กันไม่ให้มันกลับมา**: อ่าน `font-weight:<ตัวเลข>`
+ทุกจุดใน `<style>` ของ `index.html` + `design-system/src/**/*.css` แล้ว fail ถ้าเจอน้ำหนักที่
+**ไม่มี `@font-face` รองรับใน `fonts.css`** พร้อมบอกว่ามีน้ำหนักไหนให้ใช้บ้าง
+(`parseFontFaces()` คืนน้ำหนักมาอยู่แล้ว ใช้ต่อได้เลย ไม่ต้องเขียนใหม่
+ และ `blankOut()` + `lineOffset` ที่เพิ่มรอบนี้ทำให้รายงานเลขบรรทัดจริงได้ฟรี)
+**ทดสอบ negative จริงก่อน commit** (ใส่ `font-weight:300` กลับเข้าไปแล้วต้อง exit 1)
+
+> ระวัง: `font-weight` ปรากฏใน**โค้ด JS วาด canvas** ด้วย (`ctx.font`) — สแกนเฉพาะ `<style>`
+> เท่านั้น อย่าไปแตะ ตามข้อห้ามใน Out of scope
+> และ `font-weight` ที่เป็นคีย์เวิร์ด (`bold`, `normal`) ไม่ต้องเช็ค — ใน `<style>` มีแต่ตัวเลข
+
+> **อย่าแตะ literal สีที่เหลือ** — `rgba(0,0,0,…)`, `rgba(255,255,255,…)`, `#000`, `#0a0a0a`,
 > `#7ac87a`, `#ffb4a0`, `rgba(120,200,120,.15)` **ไม่มี token คู่กัน** การตั้ง token ใหม่ให้มัน
 > คือการ**ขยายภาษาการออกแบบ** = เจ้าของตัดสิน ไม่ใช่ agent (สำรวจครบแล้ว อย่าไล่ซ้ำ)
+> **รอบ 0001 ปิดจบแล้ว: literal ที่ derive จาก token เหลือ 0 จุดทั้งสองฝั่ง และมี checker บังคับ**
 
 > **ผลสำรวจที่ทำไว้แล้ว อย่าเสียเวลาทำซ้ำ:**
 > - element parity สำรวจครบ 5 ตัวแล้ว (ตารางในเกณฑ์ข้อ 2) — เหลือ chip `padding` ที่บล็อกรอเจ้าของ
