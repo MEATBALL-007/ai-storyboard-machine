@@ -181,6 +181,16 @@ That CDN link is gone: the app now renders in its real typeface with no network 
 3. Run `node tools/check-tokens.mjs` — it decodes each embedded payload and compares it
    byte-for-byte with the file on disk, so a forgotten re-embed fails loudly.
 
+**Those four weights are the whole inventory**, and `check-tokens.mjs` holds the stylesheets to
+it: every `font-weight` in `index.html`'s `<style>` and in `design-system/src/**/*.css` must have
+an `@font-face` in `fonts.css` behind it (`normal` and `bold` count as 400 and 700; `bolder` /
+`lighter` are relative and are skipped, as are the `@font-face` blocks themselves, which declare
+the inventory rather than draw on it). Asking for a weight that does not exist is not an error in
+CSS — the browser substitutes the nearest available face and, for a request *lighter* than
+anything installed, will not even synthesize one. `.add-card .ac-plus` asked for `300` and had
+been rendering at `400` since the fonts were embedded, with nothing on screen to give it away.
+To use a new weight, add its `.woff2` and `@font-face` first; the check then lets the rule through.
+
 The cost is size: `index.html` is 297 KB instead of 188 KB, because base64 adds about a third.
 That is the price of the headline promise, and it buys back a real one — the app no longer
 degrades to a fallback font when you are offline, which matters here because the sidebar's
