@@ -98,9 +98,166 @@ Enable **"Render AI frame art"**, then set an image endpoint, model, and key. Ex
 
 - Vanilla JavaScript (ES6+), no framework, no bundler
 - HTML5 `<canvas>` for all storyboard rendering
-- [jsPDF](https://github.com/parallax/jsPDF) (via CDN) for PDF export
-- JetBrains Mono, dark cinematic theme (`#0D0D0D` / yellow-gold `#FFC72C` / orange `#FA4616`)
+- [jsPDF](https://github.com/parallax/jsPDF) for PDF export — **the one remaining CDN
+  dependency**, so PDF export is the only feature that still needs a network connection
+- JetBrains Mono (self-hosted, embedded in the file), dark cinematic theme (`#0D0D0D` / yellow-gold `#FFC72C` / orange `#FA4616`)
 - Single file: [`index.html`](index.html)
+
+---
+
+## Design tokens — single source of truth
+
+[`design-system/src/tokens.css`](design-system/src/tokens.css) is authoritative for every
+colour, the corner-radius scale, and the type family. `index.html` carries a **verbatim copy** of that `:root{}` block
+inside its `<style>` element — it cannot `@import` the file, because the app has to keep
+working when you double-click it (`file://` blocks cross-file CSS imports), and adding a
+build step would defeat the whole point of the project.
+
+**To change a token:**
+
+1. Edit the value in `design-system/src/tokens.css`.
+2. Copy the entire `:root{ … }` block into the `<style>` block at the top of `index.html`
+   (keep the extra indentation; nothing else about it changes).
+3. Run `node tools/check-tokens.mjs` — it fails if any token is missing from `index.html`
+   or holds a different value, so the copy cannot silently drift.
+
+Colours that need transparency use the channel tokens (`--accent-rgb`, `--secondary-rgb`,
+`--bg-rgb`) via `rgba(var(--accent-rgb), .4)`, so a glow or ring follows `--accent` instead
+of freezing the old hue into a literal. This holds on **both** sides — the app's `<style>`
+and the library's component CSS — because a token the library ignores re-tints half the
+system and strands the other half.
+
+`check-tokens.mjs` enforces that: it scans every stylesheet under `design-system/src`, the
+`<style>` block of `index.html`, **and every `style="…"` attribute in its body**, and fails on
+any `rgb()`/`rgba()` triple or hex that matches a token's value, naming the token you should
+have used. `tokens.css` and the `:root{ … }` block of `index.html` are exempt — they *are* the
+palette, and the check above already proves the two agree.
+
+**Exception:** the `rgba()` / hex literals inside the JavaScript are deliberate. In the
+canvas-drawing code `ctx.fillStyle` does not resolve CSS custom properties and would silently
+paint black; in the markup-generating template strings a couple of literals (`#111` in the
+shimmer gradient, `#FA4616` in the self-test banner) *do* match tokens but are code, not a
+stylesheet. `<script>` is blanked out before the attribute scan runs, so none of them is read.
+
+Literals with no token behind them (`rgba(0,0,0,…)`, `rgba(255,255,255,…)`, `#7ac87a`,
+`#ffb4a0`, `#0a0a0a`) are left alone on purpose. Giving those a token would widen the design
+language, which is a decision for the owner rather than something a checker should force.
+
+### Corner radius
+
+| Token | Value | Used for |
+|---|---|---|
+| `--r-xs` | 1px | hairline marks — section bullet, animatic thumbnails |
+| `--r-sm` | 2px | badges, `kbd`, the logo mark, scrubber track |
+| `--r-md` | 3px | the default control radius — buttons, chips, inputs, tabs |
+| `--r-lg` | 4px | primary call-to-action, toasts, scrollbar thumb |
+| `--r-xl` | 5px | panel cards, dropdown menus, tour spotlight |
+| `--r-2xl` | 6px | modals, tour popover, large colour swatches |
+| `--r-full` | 50% | dots and circular buttons |
+
+Both consumers use this scale: the `<style>` block in `index.html` and the Phantom UI
+component CSS under `design-system/src/components/`. Neither one hard-codes a radius, so a
+change here reaches the app and the library together.
+
+`check-tokens.mjs` keeps it that way. It reads the **value side of `border-*-radius`
+declarations only** — shorthand, the four corner longhands, and vendor-prefixed spellings —
+across the same two consumers, and fails on any length that is not a `var()`. When the value
+matches a token it names the token (`3px` → `var(--r-md)`); when it matches none it prints the
+whole scale, because inventing an eighth radius is the owner's call, not a checker's.
+Skipped: `0` and `0px` (a square corner is not a design value, and `border-radius:4px 4px 0 0`
+is an everyday idiom), keywords like `inherit`, and `calc()`. Nothing outside a
+`border-*-radius` declaration is read — a bare `3px` is far more likely to be padding, gap or
+`font-size`, and **spacing is deliberately not tokenised** (measured across both files it is a
+continuum from 1–12px, not a ladder, so naming it would take a design decision first).
+
+Like the colour and `font-weight` scans, this one also reads the `style="…"` attributes in the
+body, so the radius on the export button is enforced rather than merely correct.
+
+> This ramp steps 1px at a time, which is finer than a radius scale usually needs — `--r-xs`
+> through `--r-2xl` are near-indistinguishable in isolation. It is recorded as-is because
+> it is what both codebases already shipped; collapsing it to three steps would move pixels,
+> and that is a design call for the owner rather than a mechanical one.
+
+### Typeface
+
+The four JetBrains Mono latin subsets in [`design-system/src/fonts/`](design-system/src/fonts/)
+(weights 400 / 500 / 700 / 800, 86 KB total) are authoritative.
+[`design-system/src/fonts.css`](design-system/src/fonts.css) loads them by relative URL for the
+React library; `index.html` embeds the same bytes as `data:font/woff2;base64,…` inside its
+`@font-face` rules, for the same reason it inlines the tokens — a `file://` page cannot fetch a
+sibling font file, and the app used to paper over that by loading the typeface from Google Fonts.
+That CDN link is gone: the app now renders in its real typeface with no network at all.
+
+**To change a font file:**
+
+1. Replace the `.woff2` in `design-system/src/fonts/` (and its `@font-face` in `fonts.css`
+   if the weight changed).
+2. Re-embed it in `index.html`: base64 the file and swap the payload inside the matching
+   `src:url(data:font/woff2;base64,…)`.
+3. Run `node tools/check-tokens.mjs` — it decodes each embedded payload and compares it
+   byte-for-byte with the file on disk, so a forgotten re-embed fails loudly.
+
+**Those four weights are the whole inventory**, and `check-tokens.mjs` holds the stylesheets to
+it: every `font-weight` in `index.html`'s `<style>` and `style="…"` attributes, and in
+`design-system/src/**/*.css`, must have an `@font-face` in `fonts.css` behind it (`normal` and `bold` count as 400 and 700; `bolder` /
+`lighter` are relative and are skipped, as are the `@font-face` blocks themselves, which declare
+the inventory rather than draw on it). Asking for a weight that does not exist is not an error in
+CSS — the browser substitutes the nearest available face and, for a request *lighter* than
+anything installed, will not even synthesize one. `.add-card .ac-plus` asked for `300` and had
+been rendering at `400` since the fonts were embedded, with nothing on screen to give it away.
+To use a new weight, add its `.woff2` and `@font-face` first; the check then lets the rule through.
+
+The cost is size: `index.html` is 297 KB instead of 188 KB, because base64 adds about a third.
+That is the price of the headline promise, and it buys back a real one — the app no longer
+degrades to a fallback font when you are offline, which matters here because the sidebar's
+column widths have well under a pixel of slack (see *Element parity* below).
+
+> **Coverage is unchanged, not merely preserved.** These are latin subsets, so the box-drawing
+> (`═` appears 1,576 times), arrows, and Thai characters in the UI fall back to the system
+> monospace font. They did so before too: none of those ranges are in *any* of the subsets
+> Google's `css2` endpoint serves for JetBrains Mono (latin, latin-ext, cyrillic, cyrillic-ext,
+> greek, vietnamese). No character in `index.html` lands in a subset that was fetched before
+> and is missing now.
+
+## Element parity with Phantom UI
+
+Tokens make the two codebases share *values*; this table tracks whether they also share the
+*rules* built from those values. The app cannot import the React components, so parity here
+means the `<style>` block in `index.html` and the matching file under
+`design-system/src/components/` declare the same properties.
+
+| App selector | Phantom UI | Status |
+|---|---|---|
+| `.btn-primary`, `.btn-ghost`, `.icon-btn`, `.tab-btn` | `Button.css` | ✅ every value matches |
+| `.chip` | `Chip.css` | ⚠️ matches except `padding` — see below |
+| `.badge`, `.modal`, empty state | `Badge.css`, `Modal.css`, `EmptyState.css` | not yet compared |
+
+`index.html` has no base `.btn` class; it styles modal buttons through the descendant selector
+`.modal-actions button`. The declarations are equivalent, so this is a structural difference
+rather than a visual one.
+
+### Open decision: chip horizontal padding
+
+`.pui-chip` uses `padding:6px 10px`; the app's `.chip` still uses `6px 2px`. **The DS value does
+not fit the current sidebar**, so it was deliberately not adopted:
+
+| Step | Width |
+|---|---|
+| `#left` | 212px, minus its 1px right border → 211px |
+| minus vertical scrollbar (`::-webkit-scrollbar{width:8px}`) | 203px |
+| minus `.section` padding (12px × 2) | 179px |
+| minus `.radio-grid` gaps (4px × 3) | 167px → **41.75px per `1fr` track** |
+
+The widest label, `16:9`, is 4 characters of 10px monospace ≈ 24px, and `box-sizing:border-box`
+means padding and border come out of the track: `24 + 20 + 2 = 46px` needed against 41.75px
+available. Because `1fr` resolves to `minmax(auto, 1fr)`, the track cannot shrink below that
+min-content width — the grid would instead grow to 196px and push a horizontal scrollbar into
+the sidebar.
+
+**Max horizontal padding that always fits is 7px.** 10px only fits if the sidebar has no
+vertical scrollbar, which it does in normal use. Closing this gap properly means picking one:
+widen `#left`, drop the chip font-size, switch `.radio-grid` to two columns, or set the DS chip
+to a smaller padding. All four move pixels, so the choice belongs to the owner.
 
 ---
 
