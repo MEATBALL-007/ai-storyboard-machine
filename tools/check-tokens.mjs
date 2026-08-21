@@ -267,3 +267,77 @@ if (weightErrors.length) {
 }
 
 console.log(`font weights available: ${scanTargets.length} stylesheet(s) scanned, every font-weight is one of ${weightList}`);
+
+// --- corner radii that already have a token --------------------------------
+//
+// Same argument as the colour check, one axis over. The radius scale was named
+// in the 2026-08-21 round and every one of the 61 literals in index.html plus
+// the 9 in the component CSS now points at --r-xs..--r-full — but nothing stops
+// `border-radius:3px` being typed back in tomorrow, and it would look identical
+// until the day the owner decides corners should be rounder. Then the app moves
+// and the stray literal does not.
+//
+// Deliberately narrow: only the value side of a `border-*-radius` declaration is
+// read. A bare `3px` elsewhere in the file is very likely padding, gap or
+// font-size, and spacing is NOT tokenised on purpose (the scale is a continuum,
+// not a ladder — see AUTOPILOT.md), so a file-wide \d+px sweep would produce
+// hundreds of false positives. The canvas code's roundRect()/arc() radii are out
+// of reach for the same reason as everything else here: scanTargets only ever
+// hands over the <style> block, never the <script>.
+//
+// Not covered: `style="border-radius:…"` attributes in the body. index.html has
+// one (the export button), and it uses var(--r-md) today, but no check enforces
+// that — scanTargets is <style>-only for all four scans.
+
+const radiusToken = new Map();
+for (const [name, value] of source) {
+  if (name.startsWith('--r-')) radiusToken.set(value.replace(/\s+/g, ''), name);
+}
+if (radiusToken.size === 0) {
+  console.error(`FAIL  ${SOURCE} defines no --r-* radius tokens; this check has nothing to enforce`);
+  process.exit(1);
+}
+const radiusList = [...radiusToken].map(([v, n]) => `${v} (${n})`).join(', ');
+
+// (?<![-\w]) keeps a custom property named --border-radius out of it: declaring a
+// value is not the same as re-hardcoding one. Vendor prefixes are spelled out so
+// they stay in scope rather than slipping through that same lookbehind.
+const RADIUS_DECL = /(?<![-\w])((?:-webkit-|-moz-)?border-(?:[a-z]+-[a-z]+-)?radius)\s*:\s*([^;}\n]*)/gi;
+const ZERO = /^0(px|rem|em|%)?$/;
+const LENGTH = /^\d*\.?\d+(px|rem|em|%)$/;
+const radiusErrors = [];
+
+for (const { label, text, lineOffset } of scanTargets) {
+  const scrubbed = blankOut(text, /\/\*[\s\S]*?\*\//g);
+  scrubbed.split('\n').forEach((line, i) => {
+    for (const m of line.matchAll(RADIUS_DECL)) {
+      const [, prop, rawValue] = m;
+      const raw = rawValue.trim();
+      // calc() contains its own spaces, so the split below would shred it. Rare
+      // enough (zero uses today) to skip rather than half-parse.
+      if (!raw || raw.includes('calc(')) continue;
+      const at = `${label}:${lineOffset + i + 1}`;
+      // Elliptical radii are written `<horizontal> / <vertical>`; both sides are
+      // ordinary lengths, so splitting on the slash too is enough.
+      for (const part of raw.toLowerCase().split(/[\s/]+/)) {
+        if (!part || part.startsWith('var(')) continue;
+        if (ZERO.test(part)) continue; // square corner, not a design value
+        if (!LENGTH.test(part)) continue; // inherit/initial/unset and friends
+        const token = radiusToken.get(part);
+        radiusErrors.push(
+          token
+            ? `${at}: "${prop}: ${raw}" hardcodes ${SOURCE} ${token} — write var(${token})`
+            : `${at}: "${prop}: ${raw}" uses ${part}, which matches no radius token — ${SOURCE} offers ${radiusList}`
+        );
+      }
+    }
+  });
+}
+
+if (radiusErrors.length) {
+  for (const e of radiusErrors) console.error(`FAIL  ${e}`);
+  console.error(`\n${radiusErrors.length} hardcoded corner radi${radiusErrors.length === 1 ? 'us' : 'i'}. Replace each with the token shown; if none fits, the owner has to add a token to ${SOURCE} first — inventing one here would widen the design language by stealth.`);
+  process.exit(1);
+}
+
+console.log(`no radius literals: ${scanTargets.length} stylesheet(s) scanned, every border-radius reads a --r-* token`);
