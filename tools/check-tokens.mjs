@@ -220,3 +220,50 @@ if (literalErrors.length) {
 }
 
 console.log(`no derived-colour literals: ${scanTargets.length} stylesheet(s) scanned, none re-hardcode a tokenised colour`);
+
+// --- font weights that actually exist -------------------------------------
+//
+// Self-hosting the typeface turned "which weights exist" from an open question
+// into a closed set: whatever design-system/src/fonts/*.woff2 ships, and nothing
+// else. A rule asking for a weight outside that set does not error — CSS font
+// matching quietly substitutes the nearest available face, and for a *lighter*
+// request it will not even synthesize one. So `font-weight:300` renders as 400
+// and looks fine, which is why it survived six rounds of CSS work unnoticed.
+//
+// fonts.css is the inventory for both sides: the byte check above already proves
+// index.html embeds exactly the weights fonts.css declares, so one list is enough.
+//
+// Scanned here: numeric weights plus the two keywords that resolve to numbers.
+// Not scanned: @font-face blocks (those *declare* the inventory rather than draw
+// on it) and the `ctx.font` strings in the canvas code, which are JavaScript and
+// out of scope. Neither stylesheet uses the `font:` shorthand today; if one ever
+// does, its weight will slip past this check.
+
+const KEYWORD_WEIGHT = { normal: '400', bold: '700' };
+const availableWeights = new Set(sourceFaces.map((f) => f.weight));
+const weightList = [...availableWeights].sort().join(', ');
+const weightErrors = [];
+
+for (const { label, text, lineOffset } of scanTargets) {
+  const scrubbed = blankOut(blankOut(text, /\/\*[\s\S]*?\*\//g), /@font-face\s*\{[^}]*\}/g);
+  scrubbed.split('\n').forEach((line, i) => {
+    for (const m of line.matchAll(/font-weight\s*:\s*([A-Za-z0-9]+)/g)) {
+      const asked = m[1].toLowerCase();
+      const weight = KEYWORD_WEIGHT[asked] ?? (/^\d+$/.test(asked) ? asked : null);
+      if (weight === null) continue; // bolder/lighter/inherit — relative, nothing to check
+      if (!availableWeights.has(weight)) {
+        weightErrors.push(
+          `${label}:${lineOffset + i + 1}: "${m[0]}" asks for a weight with no @font-face — ${FONT_SOURCE} ships ${weightList}`
+        );
+      }
+    }
+  });
+}
+
+if (weightErrors.length) {
+  for (const e of weightErrors) console.error(`FAIL  ${e}`);
+  console.error(`\n${weightErrors.length} font-weight(s) with no font file behind them. Either use one of the embedded weights (${weightList}), or add the missing .woff2 to design-system/src/fonts/ and fonts.css and re-embed it in ${TARGET}.`);
+  process.exit(1);
+}
+
+console.log(`font weights available: ${scanTargets.length} stylesheet(s) scanned, every font-weight is one of ${weightList}`);
