@@ -186,11 +186,43 @@ if (!styleMatch) throw new Error(`${TARGET}: no <style> block found`);
 // Count the lines above the block and add them back when reporting.
 const styleLineOffset = html.slice(0, styleMatch.index + styleMatch[1].length).split('\n').length - 1;
 
+/**
+ * The CSS that lives in `style="…"` attributes, as a string the same length as
+ * `text` with everything else blanked — so line numbers still point at the file.
+ *
+ * The <style> block is not the only CSS in index.html. Every style attribute in
+ * the body is a declaration list too, and until this target existed no check
+ * could see one: the export button on line 616 spells border-radius, background,
+ * colour and font-weight, and was correct only because an earlier round fixed it
+ * by hand. Nothing stopped `style="border-radius:3px"` being typed back in.
+ *
+ * <script> is blanked before the attributes are located, and that is load-bearing
+ * rather than tidy. index.html builds markup from template strings, and two of
+ * those strings hold colours that DO have tokens — `#111` in the shimmer
+ * gradient and `#FA4616` in the self-test banner — so scanning the whole file
+ * would fail the colour check on JavaScript that is doing nothing wrong.
+ */
+function styleAttrSource(text) {
+  const markup = blankOut(
+    blankOut(text, /<style[^>]*>[\s\S]*?<\/style>/gi),
+    /<script[^>]*>[\s\S]*?<\/script>/gi
+  );
+  // Start from an all-blank copy and splice each attribute's contents back in at
+  // its own offset; blankOut is length-preserving, so those offsets still hold.
+  const out = markup.replace(/[^\n]/g, ' ').split('');
+  for (const m of markup.matchAll(/\sstyle\s*=\s*"([^"]*)"/gi)) {
+    const start = m.index + m[0].indexOf('"') + 1;
+    for (let k = 0; k < m[1].length; k++) out[start + k] = m[1][k];
+  }
+  return out.join('');
+}
+
 const scanTargets = [
   ...cssFilesUnder(CSS_ROOT)
     .filter((f) => f !== SOURCE)
     .map((f) => ({ label: f, text: readFileSync(f, 'utf8'), lineOffset: 0 })),
   { label: TARGET, text: styleMatch[2], lineOffset: styleLineOffset },
+  { label: TARGET, text: styleAttrSource(html), lineOffset: 0 },
 ];
 
 const literalErrors = [];
@@ -219,7 +251,7 @@ if (literalErrors.length) {
   process.exit(1);
 }
 
-console.log(`no derived-colour literals: ${scanTargets.length} stylesheet(s) scanned, none re-hardcode a tokenised colour`);
+console.log(`no derived-colour literals: ${scanTargets.length} CSS source(s) scanned, none re-hardcode a tokenised colour`);
 
 // --- font weights that actually exist -------------------------------------
 //
@@ -266,7 +298,7 @@ if (weightErrors.length) {
   process.exit(1);
 }
 
-console.log(`font weights available: ${scanTargets.length} stylesheet(s) scanned, every font-weight is one of ${weightList}`);
+console.log(`font weights available: ${scanTargets.length} CSS source(s) scanned, every font-weight is one of ${weightList}`);
 
 // --- corner radii that already have a token --------------------------------
 //
@@ -282,12 +314,8 @@ console.log(`font weights available: ${scanTargets.length} stylesheet(s) scanned
 // font-size, and spacing is NOT tokenised on purpose (the scale is a continuum,
 // not a ladder — see AUTOPILOT.md), so a file-wide \d+px sweep would produce
 // hundreds of false positives. The canvas code's roundRect()/arc() radii are out
-// of reach for the same reason as everything else here: scanTargets only ever
-// hands over the <style> block, never the <script>.
-//
-// Not covered: `style="border-radius:…"` attributes in the body. index.html has
-// one (the export button), and it uses var(--r-md) today, but no check enforces
-// that — scanTargets is <style>-only for all four scans.
+// of reach for the same reason as everything else here: scanTargets hands over
+// stylesheets and style attributes, never the <script>.
 
 const radiusToken = new Map();
 for (const [name, value] of source) {
@@ -340,4 +368,4 @@ if (radiusErrors.length) {
   process.exit(1);
 }
 
-console.log(`no radius literals: ${scanTargets.length} stylesheet(s) scanned, every border-radius reads a --r-* token`);
+console.log(`no radius literals: ${scanTargets.length} CSS source(s) scanned, every border-radius reads a --r-* token`);
