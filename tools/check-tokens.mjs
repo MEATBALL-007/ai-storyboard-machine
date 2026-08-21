@@ -369,3 +369,59 @@ if (radiusErrors.length) {
 }
 
 console.log(`no radius literals: ${scanTargets.length} CSS source(s) scanned, every border-radius reads a --r-* token`);
+
+// --- the typeface is named in exactly one place ----------------------------
+//
+// --mono was the last token in tokens.css with nothing enforcing it. Every
+// font-family in both stylesheets already reads var(--mono); this check is a
+// regression guard, not a fix, exactly as the radius check was when it landed.
+//
+// It matters more than it looks. A stray `font-family:'JetBrains Mono', ui-
+// monospace, monospace` renders identically today, so nothing would surface it —
+// until the owner swaps the typeface, at which point that one rule keeps the old
+// face and the mismatch shows up as a single wrong-looking element rather than
+// as an obvious global failure. The check demands `var(--mono)` and nothing else,
+// including no fallback list: the fallbacks belong in the token, where every
+// consumer inherits them at once.
+//
+// Blanked first: @font-face blocks, which *name* the family rather than use it
+// (8 of them — 4 in fonts.css, 4 embedded in index.html). Not seen at all: the
+// `ctx.font` strings in the canvas code and the one `font:` shorthand at
+// index.html:3008, both of which live in <script>, which scanTargets never
+// hands over. That last one is worth knowing: this check reads the longhand
+// only, so a `font:` shorthand written in a real stylesheet would slip past it —
+// same blind spot the font-weight check documents above.
+
+const FAMILY_TOKEN = '--mono';
+if (!source.has(FAMILY_TOKEN)) {
+  console.error(`FAIL  ${SOURCE} defines no ${FAMILY_TOKEN} token; this check has nothing to enforce`);
+  process.exit(1);
+}
+
+// (?<![-\w]) for the same reason RADIUS_DECL has it: a custom property called
+// --font-family would be a declaration, not a use.
+const FAMILY_DECL = /(?<![-\w])font-family\s*:\s*([^;}\n]*)/gi;
+const EXPECTED_FAMILY = `var(${FAMILY_TOKEN})`;
+const familyErrors = [];
+
+for (const { label, text, lineOffset } of scanTargets) {
+  const scrubbed = blankOut(blankOut(text, /\/\*[\s\S]*?\*\//g), /@font-face\s*\{[^}]*\}/g);
+  scrubbed.split('\n').forEach((line, i) => {
+    for (const m of line.matchAll(FAMILY_DECL)) {
+      const raw = m[1].trim();
+      if (!raw) continue;
+      if (raw.replace(/\s+/g, '').toLowerCase() === EXPECTED_FAMILY) continue;
+      familyErrors.push(
+        `${label}:${lineOffset + i + 1}: "font-family: ${raw}" names a typeface directly — write ${EXPECTED_FAMILY}`
+      );
+    }
+  });
+}
+
+if (familyErrors.length) {
+  for (const e of familyErrors) console.error(`FAIL  ${e}`);
+  console.error(`\n${familyErrors.length} font-family declaration(s) not reading ${EXPECTED_FAMILY}. ${SOURCE} owns the typeface and its fallback list; naming a family anywhere else strands that rule when the owner swaps it.`);
+  process.exit(1);
+}
+
+console.log(`typeface from one source: ${scanTargets.length} CSS source(s) scanned, every font-family reads ${EXPECTED_FAMILY}`);
