@@ -127,15 +127,17 @@ of freezing the old hue into a literal. This holds on **both** sides — the app
 and the library's component CSS — because a token the library ignores re-tints half the
 system and strands the other half.
 
-`check-tokens.mjs` enforces that: it scans every stylesheet under `design-system/src` plus
-the `<style>` block of `index.html`, and fails on any `rgb()`/`rgba()` triple or hex that
-matches a token's value, naming the token you should have used. `tokens.css` and the
-`:root{ … }` block of `index.html` are exempt — they *are* the palette, and the check above
-already proves the two agree.
+`check-tokens.mjs` enforces that: it scans every stylesheet under `design-system/src`, the
+`<style>` block of `index.html`, **and every `style="…"` attribute in its body**, and fails on
+any `rgb()`/`rgba()` triple or hex that matches a token's value, naming the token you should
+have used. `tokens.css` and the `:root{ … }` block of `index.html` are exempt — they *are* the
+palette, and the check above already proves the two agree.
 
-**Exception:** the `rgba()` / hex literals inside the canvas-drawing JavaScript are
-deliberate — `ctx.fillStyle` does not resolve CSS custom properties and would silently paint
-black. The scan only reads the `<style>` block, so it never sees them.
+**Exception:** the `rgba()` / hex literals inside the JavaScript are deliberate. In the
+canvas-drawing code `ctx.fillStyle` does not resolve CSS custom properties and would silently
+paint black; in the markup-generating template strings a couple of literals (`#111` in the
+shimmer gradient, `#FA4616` in the self-test banner) *do* match tokens but are code, not a
+stylesheet. `<script>` is blanked out before the attribute scan runs, so none of them is read.
 
 Literals with no token behind them (`rgba(0,0,0,…)`, `rgba(255,255,255,…)`, `#7ac87a`,
 `#ffb4a0`, `#0a0a0a`) are left alone on purpose. Giving those a token would widen the design
@@ -168,10 +170,8 @@ is an everyday idiom), keywords like `inherit`, and `calc()`. Nothing outside a
 `font-size`, and **spacing is deliberately not tokenised** (measured across both files it is a
 continuum from 1–12px, not a ladder, so naming it would take a design decision first).
 
-**Gap worth knowing:** like the colour and `font-weight` scans, this one only sees the
-`<style>` element. A `style="…"` attribute in the body is invisible to it — `index.html` has
-one radius written that way, on the export button, and it reads `var(--r-md)` today by hand
-rather than by enforcement.
+Like the colour and `font-weight` scans, this one also reads the `style="…"` attributes in the
+body, so the radius on the export button is enforced rather than merely correct.
 
 > This ramp steps 1px at a time, which is finer than a radius scale usually needs — `--r-xs`
 > through `--r-2xl` are near-indistinguishable in isolation. It is recorded as-is because
@@ -198,8 +198,8 @@ That CDN link is gone: the app now renders in its real typeface with no network 
    byte-for-byte with the file on disk, so a forgotten re-embed fails loudly.
 
 **Those four weights are the whole inventory**, and `check-tokens.mjs` holds the stylesheets to
-it: every `font-weight` in `index.html`'s `<style>` and in `design-system/src/**/*.css` must have
-an `@font-face` in `fonts.css` behind it (`normal` and `bold` count as 400 and 700; `bolder` /
+it: every `font-weight` in `index.html`'s `<style>` and `style="…"` attributes, and in
+`design-system/src/**/*.css`, must have an `@font-face` in `fonts.css` behind it (`normal` and `bold` count as 400 and 700; `bolder` /
 `lighter` are relative and are skipped, as are the `@font-face` blocks themselves, which declare
 the inventory rather than draw on it). Asking for a weight that does not exist is not an error in
 CSS — the browser substitutes the nearest available face and, for a request *lighter* than

@@ -100,9 +100,25 @@
         `var(--r-lg) var(--r-lg) 0 0` + `--border-radius:3px` + `border-top-left-radius:inherit`→pass,
         `border-top-left-radius:2px` + `-webkit-border-radius:50%` ใน `Badge.css`→exit 1 ทั้งคู่,
         literal ใน `/* comment */`→pass
-        ⚠️ **ช่องที่ยังเปิดอยู่ (ทั้ง 4 เช็ค ไม่ใช่แค่ radius): `style="…"` attribute ใน body**
-        `scanTargets` ดึงมาแค่ `<style>` → `index.html` มี 24 บรรทัด (markup 11 / JS 13) และบรรทัด 616 (ปุ่ม export)
-        มี `border-radius` + `color:#000` + `font-weight:700` ที่ไม่มีใครเช็ค — ตอนนี้บังเอิญถูกหมด)
+        (2026-08-22 รอบ 0036: **ปิดช่อง `style="…"` attribute แล้ว** — เพิ่ม scan target ตัวที่ 3
+        เข้า `scanTargets` (ไม่แตะ logic ของเช็คไหนเลย) → ทั้ง 4 เช็คได้ coverage พร้อมกันหมด
+        สร้าง text ด้วยการ blank ทุกอย่างเป็น space แล้ว splice *เฉพาะเนื้อใน* attribute กลับที่ offset เดิม
+        → เลขบรรทัดตรงกับไฟล์จริง (`lineOffset:0`) เหมือนเช็คอื่น
+        **blank `<script>` ก่อนหา attribute — จำเป็นจริง ไม่ใช่ความสะอาด**: JS สร้าง markup จาก
+        template string และมี `#111` (=`--surface`) กับ `#FA4616` (=`--secondary`) อยู่ในนั้น
+        ถ้าสแกนทั้งไฟล์ เช็คสีจะ fail ใส่โค้ด JS ที่ไม่ได้ผิดอะไร
+        นับ scan target 14 → 15, ข้อความรายงานเปลี่ยน "stylesheet(s)" → "CSS source(s)"
+        ทดสอบ negative จริง 5 กรณี: `border-radius:3px` ใน attr→exit 1 พร้อม `--r-md` ที่ `index.html:635`,
+        `#FFC72C` + `rgba(250,70,22,.4)` ใน attr→exit 1 ทั้งคู่, `font-weight:300` ใน attr→exit 1,
+        ทั้ง 3 อย่างใน `<script>`→**pass** (พิสูจน์ว่า JS ถูกตัดจริง),
+        `border-radius:3px` ที่บรรทัด 810 + `#FFC72C` ใน `title=` และใน text ของ body→exit 1 เฉพาะ radius
+        (พิสูจน์ว่าอ่านแค่เนื้อใน `style=` และ offset ตรงแม้ห่างจากจุดอื่น))
+
+      ⚠️ **token ตัวเดียวที่ยังไม่มี checker: `--mono`** (22 token = สี 11 ✅ + channel 3 ✅ + radius 7 ✅ + `--mono` ❌)
+        สำรวจแล้ว (รอบ 0036): `font-family` ทุกจุดใน stylesheet **ใช้ `var(--mono)` ครบอยู่แล้ว**
+        (`index.html` 5 จุด + DS component CSS 12 จุด) literal ที่เหลือมีแค่ใน `@font-face`
+        (ซึ่ง*คือ*ตัวประกาศชื่อ family) และใน `ctx.font` ของ canvas (เป็น JS นอกขอบเขต)
+        → ถูกอยู่แล้ว แต่**ไม่มีอะไรบังคับ** เหมือนกรณี radius ก่อนรอบ 0024 เป๊ะ
 
 ## Verify
 
@@ -153,46 +169,42 @@ generate มาจาก branch ของรอบก่อน — ไฟล์�
 
 ## Next task — do ONLY this
 
-**ให้ `tools/check-tokens.mjs` มองเห็น `style="…"` attribute ใน body ของ `index.html` ด้วย
-— ทั้ง 4 เช็คทีเดียว ไม่ใช่แค่ radius**
+**เพิ่มการเช็คที่ 6 ใน `tools/check-tokens.mjs` — `font-family` ต้องอ่านจาก `var(--mono)`
+เป็น token ตัวสุดท้ายใน `tokens.css` ที่ยังไม่มีอะไรบังคับ**
 
-การเช็คที่ 5 (radius) ปิดจบแล้วในรอบ 0024 → **แกนหลักครบทั้ง 4 แล้ว** (สี / ฟอนต์ / font-weight /
-radius) แต่ตอนทำรอบ 0024 เจอช่องที่**ทุกเช็คแชร์กันหมด**: `scanTargets` ประกอบขึ้นจาก
-`design-system/src/**/*.css` + regex `<style>…</style>` ของ `index.html` เท่านั้น
-→ CSS ที่เขียนใน attribute `style="…"` **ไม่มีเช็คไหนเห็นเลยสักตัว**
+รอบ 0036 ปิดช่อง `style="…"` attribute แล้ว → `scanTargets` ครอบคลุมครบ (DS CSS 13 ไฟล์ +
+`<style>` + `style=` attribute = 15 target) และเช็คทั้ง 5 ตัววนบนมันหมด
+เหลือช่องเดียวที่เป็น **แกนของ token** ไม่ใช่แกนของ scan target:
+`--mono` เป็น token ตัวเดียวใน 22 ตัวที่ไม่มี checker (สี 11 ✅ / channel 3 ✅ / radius 7 ✅ / `--mono` ❌)
 
-`index.html` มี `style="` อยู่ **24 บรรทัด (markup 11 / JS 13 — ดูรายละเอียดข้างล่าง)**
-และจุดที่บรรทัด 616 (ปุ่ม `#exportMenuBtn`) มีครบทั้ง
-`border-radius:var(--r-md)`, `background:var(--accent)`, `color:#000`, `font-weight:700`
-— ตอนนี้**ถูกหมดโดยบังเอิญ** เพราะรอบก่อนๆ ไล่แก้ด้วยมือ ไม่ใช่เพราะมีอะไรบังคับ
-พิมพ์ `style="border-radius:3px; background:#FFC72C"` เพิ่มพรุ่งนี้ก็ผ่านทั้ง 4 เช็ค
+**สำรวจไว้ให้แล้ว — ตอนนี้ถูกหมด ไม่ต้องแก้ CSS สักบรรทัด** เช็คนี้เป็น *regression guard* ล้วนๆ
+เหมือนตอนตั้งเช็ค radius: `font-family` ใน stylesheet ใช้ `var(--mono)` ครบ
+— `index.html` 5 จุด (บรรทัด 43, 51, 52, 123, 522) + DS component CSS 12 จุด
+literal `'JetBrains Mono'` ที่เหลือมีแค่ใน `@font-face` ของ `index.html` (บรรทัด 13/17/21/25)
+กับ `fonts.css` (2/6/10/14) และ `--mono:` เองใน `:root` — **ทั้งหมดเป็นตัว *ประกาศ* ไม่ใช่ผู้ใช้**
 
-วิธี: **เพิ่ม scan target ตัวที่ 3** เข้า array `scanTargets` — อย่าไปแก้ logic ของเช็คไหนเลย
-ทั้ง 4 เช็ควนบน `scanTargets` อยู่แล้ว เพิ่ม target แล้วมันได้ของแถมพร้อมกันหมด
-ทำโดยไล่ `html.matchAll(/\sstyle\s*=\s*"([^"]*)"/g)` **เฉพาะส่วนหลัง `</style>`**
-แล้วสร้าง text ที่ *รักษาเลขบรรทัดไว้* (เทคนิคเดิมกับ `blankOut`: แทนทุกอย่างที่ไม่ใช่ค่าใน
-attribute ด้วย space/newline) จะได้รายงาน `index.html:616` ตรงกับไฟล์จริงเหมือนเช็คอื่น
-
-⚠️ **ต้องกัน `<script>` ให้ขาด — สำรวจแล้ว ยืนยันว่าอันตรายจริง** จาก 24 บรรทัด มี **11 บรรทัดที่อยู่ใน
-markup จริง** (616, 635, 707, 713, 716, 718, 726, 730, 731, 747, 810)
-อีก **13 บรรทัดอยู่ใน template string ของ JS** (935, 2248, 2251,
-2253–2254, 2295, 2302, 2366, 2393–2395, 2710, 3008, 3257) และในนั้นมีระเบิดฝังอยู่:
-- `2251`: `linear-gradient(90deg,#111,#161616,#111)` — `#111` normalize แล้ว = `#111111` = **`--surface`**
-- `3008`: `color:${fail?'#FA4616':'#7ac87a'}` — `#FA4616` = **`--secondary`** และบรรทัดเดียวกัน
-  มี `font:14px ui-monospace` ซึ่งเป็น `font:` shorthand ตัวเดียวในโปรเจค
-ถ้าสแกนทั้งไฟล์ เช็คสีจะ fail ทันที 3 จุด ทั้งที่เป็นโค้ด JS
-→ **ตัด `<script>…</script>` ออกด้วย `blankOut` ก่อน แล้วค่อยหา attribute** และให้ต่อยอด
-เฉพาะ attribute ที่อยู่ใน markup เท่านั้น
-⚠️ `style` attribute เป็น declaration list ไม่มี `{}` ครอบ — `blankOut(…, /:root\s*\{[^}]*\}/g)`
-ของเช็คสีจึงไม่กระทบ และไม่มี `@font-face` ให้ตัด ไม่ต้องแก้อะไรตรงนั้น
-⚠️ ถ้าเพิ่ม target แล้ว**มีเช็คไหน fail ขึ้นมาจริง** อย่าเพิ่งแก้ค่าใน markup ทันที
-ให้ดูก่อนว่ามันเป็น literal ที่มี token คู่กันจริงไหม ถ้าเป็นสีที่ไม่มี token (`#000`) มันจะไม่ fail อยู่แล้ว
+วิธี: วนบน `scanTargets` เดิม (อย่าเพิ่ม target — ครบแล้ว) หา declaration `font-family`
+แล้ว fail ถ้าฝั่งค่าไม่ใช่ `var(--mono)` ล้วน
+⚠️ **ต้อง `blankOut` `@font-face{…}` ก่อน** เหมือนที่เช็ค font-weight ทำอยู่ ไม่งั้นจะ fail
+ใส่ตัวประกาศ family เอง 8 จุด (`blankOut(text, /@font-face\s*\{[^}]*\}/g)` — คัดลอกได้เลย)
+⚠️ `:root` ของ `index.html` มี `--mono:'JetBrains Mono', …` ซึ่ง**ไม่ใช่** declaration ชื่อ
+`font-family` จึงไม่โดนจับอยู่แล้ว — แต่ regex ต้องมี `(?<![-\w])` กัน custom property ชื่อ
+`--font-family` ไว้ด้วย เหมือนที่ `RADIUS_DECL` ทำ
+⚠️ **อย่าแตะ `ctx.font` ใน canvas** (บรรทัด 1616, 1674, 1722, 3134, 3491–3502) — เป็น JS
+`scanTargets` ไม่เคยส่ง `<script>` มาให้อยู่แล้ว จึงปลอดภัยโดยโครงสร้าง ไม่ต้องเขียนกันเพิ่ม
+⚠️ `font:` shorthand: มีจุดเดียวในโปรเจคคือ `index.html:3008` ซึ่งอยู่ใน template string ของ JS
+→ นอก `scanTargets` ตัดสินใจได้เลยว่า **ไม่ต้องรองรับ shorthand** แต่เขียน comment บอกไว้ว่า
+ถ้าวันหนึ่งมีคนใช้ `font:` ใน stylesheet จริง เช็คนี้จะมองไม่เห็น (เหมือนที่เช็ค font-weight บอกไว้)
 
 **ทดสอบ negative จริงก่อน commit** อย่างน้อย 4 กรณี:
-`style="border-radius:3px"` → exit 1 พร้อม `--r-md` และเลขบรรทัดตรงกับไฟล์จริง,
-`style="background:#FFC72C"` → exit 1 พร้อม `--accent`,
-`style="font-weight:300"` → exit 1,
-เพิ่มสตริง `style="border-radius:3px"` ใน `<script>` → **ต้อง pass** (พิสูจน์ว่า JS ถูกตัดจริง)
+`font-family:'JetBrains Mono', ui-monospace, …` ใน `<style>` → exit 1 พร้อมเลขบรรทัดจริง,
+`font-family:monospace` ใน `Badge.css` → exit 1,
+`style="font-family:'JetBrains Mono'"` ใน attribute → exit 1 (พิสูจน์ว่า target ใหม่ต่อยอดได้จริง),
+`@font-face{font-family:'JetBrains Mono'; …}` เดิมทั้ง 8 จุด → **ต้อง pass**
+
+หลังจบเช็คที่ 6 แล้ว **token ทุกตัวใน `tokens.css` มี checker ครบ** → รอบถัดไปควรเลิกทำ tooling
+แล้วไปเขียน *สรุปการตัดสินใจที่ค้างเจ้าของ* ไว้ที่เดียว (chip `padding` / spacing scale /
+font-size scale / vendor jsPDF) เพราะทั้ง 3 เกณฑ์ที่ยังไม่ติ๊ก **บล็อกที่เจ้าของหมดแล้ว ไม่ใช่ที่ agent**
 
 > **อย่าแตะ literal สีที่เหลือ** — `rgba(0,0,0,…)`, `rgba(255,255,255,…)`, `#000`, `#0a0a0a`,
 > `#7ac87a`, `#ffb4a0`, `rgba(120,200,120,.15)` **ไม่มี token คู่กัน** การตั้ง token ใหม่ให้มัน
@@ -214,7 +226,8 @@ markup จริง** (616, 635, 707, 713, 716, 718, 726, 730, 731, 747, 810)
 > `font-size` ไล่ทีละ 0.5px จาก 7 ถึง 13 (11 ค่า) แล้วกระโดดไป 14/15/16/18/26/40
 > map 1:1 จะได้ token ~16 ตัวที่ไม่ได้ให้ประโยชน์อะไรนอกจากตั้งชื่อ ส่วนการ snap เข้า 4px grid
 > **ขยับพิกเซล** = การตัดสินใจด้านดีไซน์ → ต้องให้เจ้าของอนุมัติสเกลก่อน ค่อยลงมือ
-> (`font-family` ตอนนี้ใช้ `var(--mono)` ครบทั้ง 4 จุดแล้ว ไม่มีอะไรเหลือ)
+> (`font-family` ใช้ `var(--mono)` ครบแล้วทุกจุด — `index.html` 5 จุด + DS component CSS 12 จุด
+> นับใหม่ในรอบ 0036; ตัวเลข "4 จุด" ที่เคยเขียนไว้นับพลาด — ไม่มีค่าให้แก้ เหลือแค่ยังไม่มี checker)
 
 ---
 
