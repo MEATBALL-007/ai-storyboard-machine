@@ -177,30 +177,37 @@ for (const [name, value] of source) {
   else if (/^#[0-9a-f]{3,8}$/.test(flat)) hexToken.set(normaliseHex(flat), name);
 }
 
-const styleBlock = readFileSync(TARGET, 'utf8').match(/<style[^>]*>([\s\S]*?)<\/style>/i)?.[1];
-if (styleBlock == null) throw new Error(`${TARGET}: no <style> block found`);
+const html = readFileSync(TARGET, 'utf8');
+const styleMatch = html.match(/(<style[^>]*>)([\s\S]*?)<\/style>/i);
+if (!styleMatch) throw new Error(`${TARGET}: no <style> block found`);
+
+// index.html is thousands of lines long, so a line number that is relative to
+// the <style> block instead of the file is worse than no line number at all.
+// Count the lines above the block and add them back when reporting.
+const styleLineOffset = html.slice(0, styleMatch.index + styleMatch[1].length).split('\n').length - 1;
 
 const scanTargets = [
   ...cssFilesUnder(CSS_ROOT)
     .filter((f) => f !== SOURCE)
-    .map((f) => ({ label: f, text: readFileSync(f, 'utf8') })),
-  { label: `${TARGET} <style>`, text: styleBlock },
+    .map((f) => ({ label: f, text: readFileSync(f, 'utf8'), lineOffset: 0 })),
+  { label: TARGET, text: styleMatch[2], lineOffset: styleLineOffset },
 ];
 
 const literalErrors = [];
-for (const { label, text } of scanTargets) {
+for (const { label, text, lineOffset } of scanTargets) {
   const scrubbed = blankOut(blankOut(text, /\/\*[\s\S]*?\*\//g), /:root\s*\{[^}]*\}/g);
   scrubbed.split('\n').forEach((line, i) => {
+    const at = `${label}:${lineOffset + i + 1}`;
     for (const m of line.matchAll(/\brgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*[,)]/g)) {
       const token = channelToken.get(`${+m[1]},${+m[2]},${+m[3]}`);
       if (token) {
-        literalErrors.push(`${label}:${i + 1}: "${m[0]}" hardcodes ${SOURCE} ${token} — write rgba(var(${token}),<alpha>)`);
+        literalErrors.push(`${at}: "${m[0]}" hardcodes ${SOURCE} ${token} — write rgba(var(${token}),<alpha>)`);
       }
     }
     for (const m of line.matchAll(/#[0-9a-fA-F]{3,8}\b/g)) {
       const token = hexToken.get(normaliseHex(m[0]));
       if (token) {
-        literalErrors.push(`${label}:${i + 1}: "${m[0]}" hardcodes ${SOURCE} ${token} — write var(${token})`);
+        literalErrors.push(`${at}: "${m[0]}" hardcodes ${SOURCE} ${token} — write var(${token})`);
       }
     }
   });
