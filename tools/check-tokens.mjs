@@ -13,9 +13,13 @@
 // design system and forget to re-embed, and the app quietly ships the old
 // outlines — so the bytes are compared here too.
 //
+// Finally it enforces that no stylesheet re-hardcodes a colour that already has
+// a token. rgba(255,199,44,.4) and var(--accent) are the same yellow today, but
+// only one of them follows when the owner changes the yellow.
+//
 // Usage: node tools/check-tokens.mjs   (exit 0 = in sync, 1 = drifted)
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 const SOURCE = 'design-system/src/tokens.css';
 const TARGET = 'index.html';
@@ -124,3 +128,88 @@ if (fontErrors.length) {
 }
 
 console.log(`fonts in sync: ${sourceFaces.length}/${sourceFaces.length} from ${FONT_SOURCE} embedded byte-identical in ${TARGET}`);
+
+// --- derived-colour literals ---------------------------------------------
+//
+// A colour that has a token must never be written out longhand again. The
+// translucent shades are the ones that tempt you, because CSS cannot add alpha
+// to a hex custom property — hence the channel tokens (--accent-rgb), which
+// exist precisely so rgba(var(--accent-rgb),.4) can replace rgba(255,199,44,.4).
+// Leave the literal in and the app follows a re-tint while the library strands
+// on the old hue, which is the "change it in one place" property inverted.
+//
+// Exempt: tokens.css and the :root{} block of index.html. Those two *are* the
+// declaration of the palette, and the checks above already prove they agree.
+// Untouched on purpose: literals with no token behind them — rgba(0,0,0,…),
+// rgba(255,255,255,…), #7ac87a, #ffb4a0, #0a0a0a. Giving those a token would
+// widen the design language, which is the owner's call, not this script's.
+
+const CSS_ROOT = 'design-system/src';
+
+/** Every .css file under `dir`, recursively. */
+function cssFilesUnder(dir, out = []) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = `${dir}/${entry.name}`;
+    if (entry.isDirectory()) cssFilesUnder(full, out);
+    else if (entry.name.endsWith('.css')) out.push(full);
+  }
+  return out;
+}
+
+/** '#abc' -> '#aabbcc'. Other lengths are only lowercased. */
+function normaliseHex(hex) {
+  const h = hex.toLowerCase();
+  return h.length === 4 ? `#${h[1]}${h[1]}${h[2]}${h[2]}${h[3]}${h[3]}` : h;
+}
+
+/** Replace every match with spaces, so line and column numbers still line up. */
+function blankOut(text, re) {
+  return text.replace(re, (m) => m.replace(/[^\n]/g, ' '));
+}
+
+// Split the palette into the two shapes a stylesheet can spell it: channel
+// triples (for rgba()) and hex (for everything else).
+const channelToken = new Map();
+const hexToken = new Map();
+for (const [name, value] of source) {
+  const flat = value.replace(/\s+/g, '');
+  if (/^\d{1,3},\d{1,3},\d{1,3}$/.test(flat)) channelToken.set(flat, name);
+  else if (/^#[0-9a-f]{3,8}$/.test(flat)) hexToken.set(normaliseHex(flat), name);
+}
+
+const styleBlock = readFileSync(TARGET, 'utf8').match(/<style[^>]*>([\s\S]*?)<\/style>/i)?.[1];
+if (styleBlock == null) throw new Error(`${TARGET}: no <style> block found`);
+
+const scanTargets = [
+  ...cssFilesUnder(CSS_ROOT)
+    .filter((f) => f !== SOURCE)
+    .map((f) => ({ label: f, text: readFileSync(f, 'utf8') })),
+  { label: `${TARGET} <style>`, text: styleBlock },
+];
+
+const literalErrors = [];
+for (const { label, text } of scanTargets) {
+  const scrubbed = blankOut(blankOut(text, /\/\*[\s\S]*?\*\//g), /:root\s*\{[^}]*\}/g);
+  scrubbed.split('\n').forEach((line, i) => {
+    for (const m of line.matchAll(/\brgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*[,)]/g)) {
+      const token = channelToken.get(`${+m[1]},${+m[2]},${+m[3]}`);
+      if (token) {
+        literalErrors.push(`${label}:${i + 1}: "${m[0]}" hardcodes ${SOURCE} ${token} — write rgba(var(${token}),<alpha>)`);
+      }
+    }
+    for (const m of line.matchAll(/#[0-9a-fA-F]{3,8}\b/g)) {
+      const token = hexToken.get(normaliseHex(m[0]));
+      if (token) {
+        literalErrors.push(`${label}:${i + 1}: "${m[0]}" hardcodes ${SOURCE} ${token} — write var(${token})`);
+      }
+    }
+  });
+}
+
+if (literalErrors.length) {
+  for (const e of literalErrors) console.error(`FAIL  ${e}`);
+  console.error(`\n${literalErrors.length} hardcoded colour(s) that already have a token. Replace each with the token shown, so re-tinting ${SOURCE} moves the whole system at once.`);
+  process.exit(1);
+}
+
+console.log(`no derived-colour literals: ${scanTargets.length} stylesheet(s) scanned, none re-hardcode a tokenised colour`);
