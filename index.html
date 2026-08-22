@@ -354,6 +354,10 @@
   }
   #toast.on{opacity:1; transform:translateX(-50%) translateY(0)}
   #toast.err{border-left-color:var(--secondary); color:#ffb4a0}
+  /* Mirrors .pui-toast__action (design-system/src/components/Toast/Toast.css) except
+     margin-left: the DS spaces the action with margin-left:8px, this toast separates it
+     with a literal " · " in the text instead. Adding the margin would move pixels. */
+  .toast-act{color:var(--accent); cursor:pointer; text-decoration:underline}
 
   .kbd-hint{font-size:8.5px; color:var(--dim); padding:8px 12px; line-height:1.7; border-top:1px solid var(--line)}
   .kbd-hint kbd{background:var(--surface2); border:1px solid var(--dim); border-radius:var(--r-sm); padding:0 4px; color:var(--muted); font-size:8px}
@@ -932,7 +936,7 @@ const showError = m => toast(m, true);
 
 function toastUndo(msg){
   const t = $('#toast');
-  t.innerHTML = escapeHtml(msg) + ' · <span id="toastUndo" style="color:var(--accent);cursor:pointer;text-decoration:underline">Undo</span>';
+  t.innerHTML = escapeHtml(msg) + ' · <span id="toastUndo" class="toast-act">Undo</span>';
   t.classList.remove('err'); t.classList.add('on');
   clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('on'), 5000);
   const u = $('#toastUndo'); if(u) u.onclick = () => { doUndo(); t.classList.remove('on'); };

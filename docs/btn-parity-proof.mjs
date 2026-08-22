@@ -100,9 +100,23 @@ const SEGMENTED = [
   segBtn('ovl-toggle', '#ovlToggle button.on', ['on']),
 ];
 
+/* The toast-action refactor (2026-08-23) moves declarations the other way round from the two
+ * above: the span is built by a JS template string and carried its three declarations in an
+ * inline `style=`, which is why `tools/check-tokens.mjs` never saw them (it blanks `<script>`
+ * before scanning `style=` attributes). They now live in `.toast-act`, mirroring
+ * `.pui-toast__action`. Hence the per-version inline: `beforeInline` -> no inline at all. */
+
+const TOAST = [
+  { name: '#toastUndo', type: 'span', id: 'toastUndo', ancestors: ['body', '#toast.on'],
+    before: [], after: ['toast-act'],
+    beforeInline: 'color:var(--accent);cursor:pointer;text-decoration:underline',
+    afterInline: null },
+];
+
 const REFACTORS = {
   buttons: BUTTONS,
   segmented: SEGMENTED,
+  toast: TOAST,
 };
 
 const STATES = ['', ':hover', ':disabled', ':disabled:hover', ':focus'];
@@ -303,6 +317,14 @@ for (const t of [...oldTokens].sort()) {
   const n = sources.after.split(t).length - 1;
   if (n) { markupErrors++; console.log(`✗ old class token "${t}" still appears ${n}x in the after source`); }
 }
+/* An element that gives up its inline style must really have given it up: with the class added
+ * but the `style=` left in place the cascade diff below still reads 0, because the harness takes
+ * the inline text from this table rather than from the file. */
+for (const el of ELEMENTS) {
+  if (!el.beforeInline || el.afterInline) continue;
+  const n = sources.after.split(el.beforeInline).length - 1;
+  if (n) { markupErrors++; console.log(`✗ ${el.name} still carries its old inline style ${n}x in the after source`); }
+}
 const wanted = new Map();
 for (const el of ELEMENTS) {
   if (el.before.join(' ') === el.after.join(' ')) continue;
@@ -323,8 +345,10 @@ const mediaHits = new Set();
 
 for (const el of ELEMENTS) {
   for (const state of STATES) {
-    const b = computed(versions.before, { ...el, classes: el.before, ancestors: el.beforeAncestors ?? el.ancestors }, state);
-    const a = computed(versions.after, { ...el, classes: el.after, ancestors: el.afterAncestors ?? el.ancestors }, state);
+    const b = computed(versions.before, { ...el, classes: el.before, ancestors: el.beforeAncestors ?? el.ancestors,
+      inline: 'beforeInline' in el ? el.beforeInline : el.inline }, state);
+    const a = computed(versions.after, { ...el, classes: el.after, ancestors: el.afterAncestors ?? el.ancestors,
+      inline: 'afterInline' in el ? el.afterInline : el.inline }, state);
     compared++;
     for (const rule of [...b.hits, ...a.hits]) if (rule.media) mediaHits.add(`${rule.media} { ${rule.selector} }`);
 
