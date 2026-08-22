@@ -4,6 +4,11 @@
 
 Generate complete shot breakdowns from a scene description, see each panel rendered as an evocative storyboard thumbnail on `<canvas>`, then export a production-ready PDF. No build tools, no npm, no backend — it's one `index.html` you can open straight in a browser.
 
+> **⚠️ Maintainers — four decisions are blocking the Phantom UI integration.** They are
+> investigated and written up in [Open decisions](#open-decisions); each one needs an answer
+> from the project owner, not more analysis. Until they're answered the remaining work on that
+> effort cannot move.
+
 ---
 
 ## Quick start
@@ -241,16 +246,64 @@ means the `<style>` block in `index.html` and the matching file under
 | App selector | Phantom UI | Status |
 |---|---|---|
 | `.btn-primary`, `.btn-ghost`, `.icon-btn`, `.tab-btn` | `Button.css` | ✅ every value matches |
-| `.chip` | `Chip.css` | ⚠️ matches except `padding` — see below |
-| `.badge`, `.modal`, empty state | `Badge.css`, `Modal.css`, `EmptyState.css` | not yet compared |
+| `.chip` | `Chip.css` | ⚠️ matches except `padding` — see [decision 2](#2-chip-horizontal-padding--which-pixels-move) |
+| `.pc-badge` | `Badge.css` | ✅ every value matches |
+| `.modal-bg`, `.modal` | `Modal.css` | ✅ every value matches |
+| `.empty-state` | `EmptyState.css` | ✅ every value matches |
+
+Badge, modal, and empty state differ from their Phantom UI files only by `font-family:var(--mono)`
+(and `color:var(--text)` on the modal), both of which `body` already sets with nothing overriding
+them — so they render identically. The remaining difference is the class *name*
+(`.pc-badge` vs `.pui-badge--accent`), which is not a visual one.
 
 `index.html` has no base `.btn` class; it styles modal buttons through the descendant selector
 `.modal-actions button`. The declarations are equivalent, so this is a structural difference
 rather than a visual one.
 
-### Open decision: chip horizontal padding
+---
 
-`.pui-chip` uses `padding:6px 10px`; the app's `.chip` still uses `6px 2px`. **The DS value does
+## Open decisions
+
+Four questions block nearly all remaining Phantom UI integration work. Every one has already
+been investigated to the end — what is missing is a **decision**, not more analysis. Each moves
+pixels or adds a file to the repo, so none is an automated agent's call to make.
+
+Three of the seven acceptance criteria in `AUTOPILOT.md` stay unticked until these are answered.
+Each entry below is self-contained: what is blocked, the options, what each costs, and what
+happens next once you pick.
+
+### 1. jsPDF — vendor it into the repo?
+
+**Blocks:** *"opens from `file://` with no build and no server."*
+
+Line 7 of `index.html` loads `jspdf.umd.min.js` from `cdnjs.cloudflare.com`. It is the **last**
+external reference in the file — the three Google Fonts links are gone since the typeface was
+inlined as base64. Open the app offline today and PDF export fails.
+
+There is a second problem regardless of offline use: the tag has no
+`integrity` / `crossorigin` attributes, so if the CDN ever served modified code the app would
+execute it without complaint.
+
+An automated round cannot fix this alone. There is no copy of jsPDF anywhere on the build
+machine (`C:/PHANTOM-AUTOPILOT` and the npm global root were both searched) and network access
+is blocked, so the file has to be brought in from outside.
+
+| Option | Cost |
+|---|---|
+| **Vendor** `jspdf.umd.min.js` into the repo, then inline it | `index.html` grows again — it already went 188 KB → 297 KB when the fonts were inlined. Ticks the criterion permanently. |
+| **Keep the CDN**, add `integrity="sha384-…" crossorigin="anonymous"` | Cheap, closes the tampering hole, but PDF export stays broken offline and the criterion can never be ticked. |
+| **Keep the CDN as-is** | Nothing to do; accept both the offline gap and the supply-chain exposure. |
+
+**If you answer:** drop the file at the repo root (or say "CDN + integrity" and supply the
+hash — the hash cannot be computed here without the file either). A later round inlines it into
+`<style>`/`<script>` the same way the fonts were done and ticks the criterion.
+
+### 2. Chip horizontal padding — which pixels move?
+
+**Blocks:** *"basic elements match the component of the same name in the design system."*
+This is the **only** remaining parity gap; the other four element groups all match.
+
+`.pui-chip` uses `padding:6px 10px`; the app's `.chip` still uses `6px 2px`. The DS value **does
 not fit the current sidebar**, so it was deliberately not adopted:
 
 | Step | Width |
@@ -266,10 +319,62 @@ available. Because `1fr` resolves to `minmax(auto, 1fr)`, the track cannot shrin
 min-content width — the grid would instead grow to 196px and push a horizontal scrollbar into
 the sidebar.
 
-**Max horizontal padding that always fits is 7px.** 10px only fits if the sidebar has no
-vertical scrollbar, which it does in normal use. Closing this gap properly means picking one:
-widen `#left`, drop the chip font-size, switch `.radio-grid` to two columns, or set the DS chip
-to a smaller padding. All four move pixels, so the choice belongs to the owner.
+**The widest horizontal padding that always fits is 7px.** 10px fits only when the sidebar has
+no vertical scrollbar, which it does have in normal use.
+
+| Option | Cost |
+|---|---|
+| Widen `#left` past 212px | Steals width from the board area on small screens. |
+| Drop the chip `font-size` below 10px | Sidebar labels get harder to read. |
+| Switch `.radio-grid` to two columns | Taller sidebar; changes the control's shape. |
+| Lower the DS chip padding to `6px 7px` | Changes Phantom UI for every consumer, not just this app. |
+
+**If you answer:** a round applies the one change and the element-parity criterion ticks.
+
+### 3. Spacing and font-size — approve a scale?
+
+**Blocks:** *"`index.html` reads colour/spacing from `tokens.css` instead of hard-coded values."*
+Colour, corner radius, and typeface are done; spacing and font-size are the remainder.
+
+The survey found these are a **continuum, not a scale**:
+
+- `padding` uses nearly every value from 1–12px, plus 16/20/24/80
+- `gap` uses 3, 4, 5, 6, 7, 8, 12, 14, 24
+- `font-size` steps by 0.5px from 7 to 13 (11 distinct values), then jumps to 14/15/16/18/26/40
+
+Mapping that 1:1 would produce ~16 tokens that only rename the numbers — no single source of
+truth, no leverage when a value changes. Snapping to a real scale (a 4px grid, say) is what
+makes tokens worth having, but it **moves pixels across the whole app**, which is a design
+change rather than a refactor.
+
+| Option | Cost |
+|---|---|
+| **Approve a 4px spacing grid + a font-size ramp** | Real tokens, real leverage. Every panel, sidebar, and control shifts slightly; needs a visual pass afterwards (see decision 4). |
+| **Map 1:1, no snapping** | Zero visual change, but ~16 vanity tokens that add naming without adding a system. |
+| **Leave spacing untokenised** | Criterion 1 stays partially unticked; the design language covers colour, radius, and type only. |
+
+**If you answer:** approving a scale lets a round rewrite the values against it, extend
+`tokens.css`, and extend `tools/check-tokens.mjs` to enforce them the way it already enforces
+colour, radius, weight, and family.
+
+### 4. Browser verification — grant the MCP permission?
+
+**Blocks:** *"opens from `file://` and still works."* Nobody has actually looked at the app in a
+browser across six rounds of CSS edits. The automated tests cover pure logic
+(`node tools/test.mjs`, 54/54) and token consistency (`tools/check-tokens.mjs`), neither of
+which can see a layout break.
+
+Both Playwright and Chrome-DevTools MCP were tried and were **blocked by permissions** — this is
+not simply "the server is headless", so retrying without a permission change wastes a round.
+
+| Option | Cost |
+|---|---|
+| Grant the MCP permission | A round can screenshot the app, confirm the sidebar has no horizontal scrollbar, and check the inlined fonts actually load. Grants a browser automation tool access to the machine. |
+| Verify manually yourself | No new permissions; costs your time, and only when you happen to look. |
+| Leave it unverified | CSS changes keep shipping without anyone seeing the result. |
+
+**If you answer:** granting it lets every future round end with a real screenshot instead of an
+assumption — which also makes decisions 2 and 3 much safer to act on.
 
 ---
 

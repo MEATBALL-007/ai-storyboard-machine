@@ -1,47 +1,54 @@
-# Round 2026-08-22_0048 — `font-family` must read `var(--mono)` (check #6)
+# Round 2026-08-23_0004
 
 ## What I did
 
-- **Restored the previous round's tip first.** The branch was cut from `3503537` again, not
-  from `529253a` (round 0036). `git checkout 529253a -- .` in its own commit (`8377f60`), so
-  this round's real diff stays readable. `git diff --stat 529253a` was empty afterwards.
-- **Added check #6 to `tools/check-tokens.mjs`:** every `font-family` declaration across the
-  existing 15 scan targets must read `var(--mono)` exactly. `--mono` was the last of the 22
-  tokens in `tokens.css` with nothing enforcing it (11 colours, 3 channels and 7 radii were
-  already guarded). **No CSS changed** — all 17 in-scope declarations already read the token.
-- **Rejected fallback lists too:** `var(--mono), monospace` fails, not just a bare family name.
-  The fallbacks belong inside the token, where every consumer inherits them at once.
-- **Documented it in `README.md`** under *Typeface*, next to the `font-weight` inventory check.
-- **Updated `AUTOPILOT.md`:** the `⚠️ --mono has no checker` note became a ✅ record of check #6,
-  and `## Next task` now points at a documentation round.
+- **Restored the previous round's work first** (commit `450f2a6`). The branch was again cut from
+  `3503537` instead of the previous tip, so the tree arrived with no `tools/check-tokens.mjs` and
+  none of the token/radius/font work the contract describes. Restored from
+  `auto/deep_dive_AI_Storyboard_Machine/2026-08-22_0048` via `git checkout <tip> -- .`;
+  `git diff --stat <tip>` came back empty, so the restore is total. Kept as its own commit so this
+  round's real diff stays readable. **Ninth round in a row that has had to do this.**
+- **Moved the four owner decisions out of `AUTOPILOT.md` into `README.md` as `## Open decisions`**
+  — the round's actual task. Each entry is now self-contained: what it blocks, why an agent can't
+  resolve it, an options table with the cost of each, and what a future round does once answered.
+- **Rewrote each item to be decidable cold.** The originals were one-line reminders that only made
+  sense next to the acceptance criteria. They now carry their own evidence — the sidebar width
+  arithmetic for the chip, the spacing/font-size value inventory, the "no local jsPDF copy +
+  network blocked" finding, the "Playwright and Chrome-DevTools MCP were *permission*-blocked,
+  not merely headless" finding.
+- **Added a pointer under the README title** so a maintainer opening the repo front page lands on
+  the section without scrolling, and reduced the `🔴` heading in `AUTOPILOT.md` to a link plus an
+  instruction not to write the questions back into a runner-owned file.
+- **Folded the pre-existing `### Open decision: chip horizontal padding` subsection into the new
+  section** rather than leaving two copies, and repaired the two cross-references that my own move
+  would otherwise have left dangling (the parity table's "see below", and `AUTOPILOT.md`'s pointer
+  to the README heading that no longer holds the calculation).
 
 ## Why
 
-Two non-obvious choices:
+The three unticked acceptance criteria are blocked on the owner, not on the agent, and the
+token-side tooling is finished (checks 1–6 cover all 22 tokens). But the questions were sitting in
+`AUTOPILOT.md`, which the runner **overwrites every round** and which the owner has no reason to
+open. `README.md` is the repo's front door. This is not duplication — it is moving the question to
+where the person who answers it actually looks.
 
-**`@font-face` blocks are blanked before scanning.** Eight declarations name `'JetBrains Mono'`
-literally — 4 in `fonts.css`, 4 in `index.html`'s embedded faces — and they are the *declaration*
-of the family, not a use of it. This is the same declarer-vs-consumer split the `font-weight`
-check already makes, so it reuses the same `blankOut(text, /@font-face\s*\{[^}]*\}/g)` idiom.
-Skipping this would have failed the clean tree with 8 errors.
+I wrote the new section in English to match the rest of `README.md`, and left `AUTOPILOT.md` in
+Thai to match its own voice.
 
-**Exact match, no fallback list allowed.** This is stricter than it needs to be for correctness
-today, and that is the point: `font-family:'JetBrains Mono', ui-monospace, monospace` renders
-identically to `var(--mono)` right now, so nothing on screen would ever surface it. The day the
-owner swaps the typeface, that one rule keeps the old face and shows up as a single odd-looking
-element rather than an obvious global break — which is the failure mode this whole script exists
-to prevent.
-
-**`font:` shorthand is deliberately not supported.** The only `font:` in the project is at
-`index.html:3008`, inside a JS template string, which `scanTargets` never sees. Supporting the
-shorthand would mean parsing its grammar for zero current benefit; the blind spot is written
-into the code comment and the README instead, the same way the `font-weight` check records its.
+**One judgment call worth flagging:** I also corrected the element-parity table, which still said
+badge / modal / empty state were "not yet compared". The contract's acceptance criterion 2 records
+that all five were compared on 2026-08-21 and all three match. I fixed it because I was
+restructuring that exact table (the chip subsection nested inside it moved out), and because
+leaving a known-false status row directly above a section I had just told the owner to trust for
+decisions would defeat the point of the round. It is sourced from the prior round's record, not
+from a fresh survey.
 
 ## Verification
 
-`node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test` — all green:
+Ran the contract's Verify command in full:
 
 ```
+$ node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test
 54 passed, 0 failed
 tokens in sync: 22/22 from design-system/src/tokens.css present and identical in index.html
 fonts in sync: 4/4 from design-system/src/fonts.css embedded byte-identical in index.html
@@ -49,51 +56,43 @@ no derived-colour literals: 15 CSS source(s) scanned, none re-hardcode a tokenis
 font weights available: 15 CSS source(s) scanned, every font-weight is one of 400, 500, 700, 800
 no radius literals: 15 CSS source(s) scanned, every border-radius reads a --r-* token
 typeface from one source: 15 CSS source(s) scanned, every font-family reads var(--mono)
- Test Files  12 passed (12)
-      Tests  31 passed (31)
+Test Files  12 passed (12)
+     Tests  31 passed (31)
 ```
 
-A check that only ever prints "pass" proves nothing, so the failure path was exercised on real
-edits, each reverted with `git checkout --` afterwards:
-
-| Injected | Result |
-|---|---|
-| `font-family:'JetBrains Mono', ui-monospace, monospace` in `index.html`'s `<style>` | exit 1, `FAIL index.html:522` |
-| `font-family:monospace` in `Badge.css` | exit 1, `FAIL design-system/src/components/Badge/Badge.css:3` |
-| `style="…font-family:'JetBrains Mono'"` on `#sceneChips` | exit 1, `FAIL index.html:635` |
-| `--font-family:'Nope'` on that same `Badge.css` line | **not flagged** — exactly 2 errors reported, so the `(?<![-\w])` lookbehind holds |
-| `font-family:'JetBrains Mono'` inside a `<script>` template string (`index.html:3008`) | **passes** — confirms `scanTargets` really never sees JS |
-
-The clean run is itself the fifth negative test the plan asked for: the 8 `@font-face`
-declarations pass, which they could not do if the blanking were missing.
-
-All reported line numbers are real file lines, matching the `lineOffset` convention of the
-other checks. Exit code confirmed non-zero on failure.
+All green. `git diff --stat` for the task commit is `AUTOPILOT.md` + `README.md` only — no line of
+`index.html`, no CSS, no `tools/`, as the task required. Both `#open-decisions` and
+`#2-chip-horizontal-padding--which-pixels-move` follow GitHub's heading-slug rules and match the
+headings I wrote.
 
 ## What I did NOT do
 
-- **Changed no CSS.** This round is a regression guard, exactly as planned — `git diff 529253a`
-  touches only `tools/check-tokens.mjs`, `README.md`, `AUTOPILOT.md`, `SUMMARY.md`.
-- **Did not touch `ctx.font`** in the canvas code (lines 1616, 1674, 1722, 3134, 3491–3502) or
-  the `font:` shorthand at 3008. All are JavaScript and out of scope by construction.
-- **Did not answer any of the four owner decisions** (jsPDF vendoring, chip `padding`, spacing /
-  font-size scale, browser-verification permissions). Each moves pixels or adds a file to the
-  repo. Still blocked on the owner; that is what next round's task is about surfacing.
-- **Did not verify in a real browser.** Playwright and Chrome-DevTools MCP are permission-blocked
-  in this environment — confirmed in an earlier round, not re-attempted.
+- **Did not answer any of the four questions.** Every one moves pixels or adds a file to the repo.
+  That is the owner's call, and answering them myself is exactly the failure this round exists to
+  prevent.
+- **Did not touch `index.html`, any CSS, or `tools/`** — explicitly forbidden by the task.
+- **Did not add a seventh token check.** All 22 tokens are covered; there is nothing left to enforce.
+- **Did not fix the stale file-size numbers I found while working** (README says 297 KB; the file is
+  actually 307,820 bytes, and `AUTOPILOT.md`'s Portfolio block still says 187 KB, a pre-font-inline
+  figure that feeds `registry.csv`). Both are real and both are outside this round's one task, so I
+  wrote them into `## Next task` with the exact command that measures the truth instead.
+- **Did not add the base `.btn` class** noted as optional in the contract. It requires editing
+  `class=` in both markup and JS template strings in a 3,756-line file that **nobody can look at in
+  a browser** (decision 4). A refactor that cannot be visually verified is the wrong thing to do
+  while blocked on visual verification.
 
 ## Risk
 
-- **Low, and confined to tooling.** No shipped file changed, so nothing a user sees can have
-  moved. Worst realistic case is a future false positive: a legitimate `font-family:inherit`
-  would now fail. That is intentional (the token already covers the whole document, so `inherit`
-  buys nothing), but a reviewer who disagrees should say so — it is a one-line relaxation.
-- **The strict "no fallback list" rule is a judgement call.** If the owner ever wants a
-  per-component fallback that differs from `--mono`'s, this check blocks it and would need
-  loosening. I read that as the intended trade: one typeface, one place.
-- **The `font:` shorthand blind spot is real but currently empty.** Nothing in either stylesheet
-  uses it; if someone writes `font:12px/1.4 'Some Face'` in CSS later, both this check and the
-  `font-weight` check will miss it. Documented in the code and the README rather than guessed at.
-- **Branch-base bug is still not fixed upstream.** This is the sixth consecutive round that had
-  to restore the previous tip by hand. 30+ `auto/*` branches now stack in parallel and nothing
-  has merged to `main`. That is a runner problem, not a repo problem, but it grows every round.
+- **The parity-table edit is the one substantive claim I changed, and I did not re-verify it.** It
+  is transcribed from the prior round's recorded survey, not from reading the CSS this round. If a
+  reviewer wants one thing checked, check that `.pc-badge`, `.modal-bg`/`.modal`, and `.empty-state`
+  really do match their Phantom UI files.
+- **Documentation-only round: it ticks no acceptance criterion.** All three remaining criteria are
+  still owner-blocked, by design. If the owner does not read the new section, the next several
+  rounds will keep producing small cleanups and nothing else.
+- **Everything here is still unmerged.** `main` has never received any of it, and every `auto/*`
+  branch stacks in parallel from `3503537`. Each round now begins by restoring the last one. The
+  restore has worked nine times, but it is a runner bug that keeps costing part of every round, and
+  a single bad restore would silently discard weeks of work.
+- Markdown anchors are the one thing here that can rot silently — if a future round renames a
+  heading under `## Open decisions`, the parity table's link breaks with no test to catch it.
