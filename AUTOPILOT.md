@@ -32,8 +32,9 @@
         บันทึกไว้ตามของเดิมเพราะการยุบเหลือ 3 ขั้นคือการ**เปลี่ยนดีไซน์** เจ้าของต้องเลือกเอง
       → **ยังเหลือ: spacing / typography** — `tokens.css` มี 22 token (สี 11 + channel 3 + radius 7 + `--mono`)
 - [ ] element พื้นฐานในแอป (ปุ่ม, chip, badge, modal, empty state) หน้าตาตรงกับ component ที่มีชื่อเดียวกันใน design system
-      → **สำรวจแล้ว 7 จาก 11 component (2026-08-21 → 2026-08-23) — เหลือ delta จริง 2 จุด
-        (chip padding / segmented padding) ทั้งคู่รอเจ้าของ; ยังไม่เทียบ Toast/Field/Swatch/Toggle**
+      → **สำรวจครบ 11 จาก 11 component แล้ว (2026-08-21 → 2026-08-23 รอบ 0103)
+        เหลือ delta จริง 3 จุด (chip padding / segmented padding / input size) ทั้งหมดรอเจ้าของ
+        decision 2 / 5 / 6 ตามลำดับ — ไม่มี component ไหนเหลือให้สำรวจอีกแล้ว**
         | app | DS | ผล |
         |---|---|---|
         | `.btn` + `.btn--primary/--ghost/--icon/--tab` | `Button.css` | ✅ ตรงทุกค่า **และโครงสร้างตรงแล้ว** (2026-08-23) |
@@ -43,6 +44,31 @@
         | `.empty-state` (บรรทัด ~224) | `EmptyState.css` | ✅ ตรงทุกค่า |
         | `.menu-pop` / `.menu-pop button` / `.mh` (บรรทัด ~404) | `Menu.css` | ✅ ตรงทุกค่า (2026-08-23 รอบ 0047) |
         | `.seg` + `.dn-toggle`/`.col-toggle`/`.ovl-toggle` (บรรทัด ~182) | `SegmentedToggle.css` | ⚠️ base ตรง แต่ 2 กลุ่ม override `padding` — **บล็อกอยู่ รอเจ้าของ (decision 5)** |
+        | `#toast` / `.on` / `.err` / `.toast-act` (บรรทัด ~349) | `Toast.css` | ✅ ตรงทุกค่า (2026-08-23 รอบ 0103) |
+        | `.sw` / `.sw .lab` (บรรทัด ~158) | `Swatch.css` | ✅ ตรงทุกค่า — declaration ชุดเดียว ไม่มีอะไรให้ยุบ |
+        | `.toggle-row` / `.toggle-row input` (บรรทัด ~473) | `Toggle.css` | ✅ ตรงทุกค่า (+ `margin-top:6px` ที่ DS ปล่อยให้ consumer จัด) |
+        | `.fld` / `.fld label` / `input.ti`,`select.ti` (บรรทัด ~106) | `Field.css` | ⚠️ `.ti` ตรงเป๊ะ แต่แอปมี input **4 ขนาด** — **บล็อกอยู่ รอเจ้าของ (decision 6)** |
+        (2026-08-23 รอบ 0103: **สำรวจ 4 ตัวสุดท้ายจบ — ปิดตารางที่ 11/11**
+         Toast/Swatch/Toggle ตรงทุกค่าอยู่แล้ว ต่างแค่ `font-family:var(--mono)` ที่ `body` set ให้
+         → **ไม่มีอะไรให้ยุบ** ทั้งสามตัวมี declaration ชุดเดียวอยู่แล้วเหมือน `.menu-pop`
+         สิ่งเดียวที่ยุบได้จริงคือ `.pui-toast__action` ซึ่งแอปเขียนเป็น **inline `style=` ใน
+         template string ของ JS** → ย้ายมาเป็น `.toast-act` ใน `<style>` แล้ว
+         **สำคัญ: จุดนั้นเป็น token reference จุดเดียวในทั้ง repo ที่ไม่มี checker เห็น**
+         เพราะ `check-tokens.mjs` blank `<script>` ทิ้งก่อนสแกน `style=` attribute
+         ไม่รับ `margin-left:8px` ของ DS เพราะแอปใช้ `" · "` คั่นแทน → รับมาแล้วขยับพิกเซล
+         พิสูจน์ด้วย `docs/btn-parity-proof.mjs toast`: 1 element × 5 state ต่างกัน 0 จุด
+         harness เพิ่ม `beforeInline`/`afterInline` + phase ใหม่ที่ fail ถ้า inline style ไม่หายจริง
+         negative test 3 กรณี: สีเพี้ยน → FAIL 5 decl, ลบ class ออก → markup FAIL,
+         ทิ้ง inline ไว้ทั้งที่ใส่ class แล้ว → markup FAIL
+         ⚠️ **2 กรณีหลัง cascade diff รายงาน 0 จุด** — phase markup เป็นด่านเดียวที่จับได้
+         รัน `buttons` + `segmented` ซ้ำหลังแก้ harness → PASS ทั้งคู่
+         `Field.css` มี `.pui-field__hint` ที่ **แอปไม่มีของคู่** (`.kbd-hint`/`.pd-edit-hint`/
+         `.apikey-note` คนละขนาดคนละที่) → บันทึกว่าไม่มี ไม่สร้าง element ใหม่ในแอป
+         🐛 **เจอบั๊กจริงจากการเทียบ: ปุ่ม Undo ใน toast กดไม่ได้** — `#toast` ตั้ง
+         `pointer-events:none` ซึ่ง**เป็น property ที่ inherit** ลงไปถึง span ข้างใน และ
+         `.toast-act` ไม่ได้ตั้ง `pointer-events:auto` กลับ → `onclick` ใน `toastUndo()` ไม่เคยยิง
+         (ยัง undo ได้ด้วย `Cmd/Ctrl+Z` ซึ่งเป็นคนละ path) **ไม่ได้แก้ในรอบนี้** เพราะเป็น
+         behaviour change และรอบนี้อ้างว่า "ไม่ขยับอะไรเลย" → ทำเป็น Next task)
         badge / modal / empty-state ต่างจาก DS แค่ `font-family:var(--mono)` (+ `color:var(--text)` ใน modal)
         ซึ่ง **`body` set ให้อยู่แล้วและไม่มีอะไรมา override** → render เหมือนกันเป๊ะ ไม่ต้องแก้
         ต่างแค่**ชื่อ class** (`.pc-badge` vs `.pui-badge--accent`) ซึ่งไม่ใช่เรื่องหน้าตา
@@ -202,28 +228,41 @@ generate มาจาก branch ของรอบก่อน — ไฟล์�
 
 **ย้ายไปอยู่ที่ [`README.md` → `## Open decisions`](README.md#open-decisions) แล้ว** (รอบ 2026-08-23_0004)
 
-ทั้ง 5 ข้อ (jsPDF / chip padding / spacing + font-size scale / browser verification /
-segmented padding — ข้อ 5 เพิ่มรอบ 2026-08-23_0047) เขียนไว้ที่นั่น
-พร้อมทางเลือกและสิ่งที่แลกของแต่ละทาง — **อย่าเขียนกลับมาที่ไฟล์นี้** เพราะ runner เขียนทับทุกรอบ
+ทั้ง 6 ข้อ (jsPDF / chip padding / spacing + font-size scale / browser verification /
+segmented padding — ข้อ 5 เพิ่มรอบ 2026-08-23_0047 / input size — ข้อ 6 เพิ่มรอบ 2026-08-23_0103)
+เขียนไว้ที่นั่นพร้อมทางเลือกและสิ่งที่แลกของแต่ละทาง — **อย่าเขียนกลับมาที่ไฟล์นี้**
+เพราะ runner เขียนทับทุกรอบ
 คำถามที่วางไว้ในไฟล์ที่เจ้าของไม่ได้เปิดอ่านคือคำถามที่ไม่มีวันได้คำตอบ
 
-เกณฑ์ข้อ 1 / 2 / 3 ที่ยังไม่ติ๊ก บล็อกอยู่ที่ 5 ข้อนั้นทั้งหมด
+เกณฑ์ข้อ 1 / 2 / 3 ที่ยังไม่ติ๊ก บล็อกอยู่ที่ 6 ข้อนั้นทั้งหมด
+**เกณฑ์ข้อ 2 บล็อกอยู่ที่ decision 2 + 5 + 6 เท่านั้น — งานสำรวจปิดครบ 11/11 แล้ว
+ไม่ต้องสำรวจ component เพิ่มอีก**
 
 ## Next task — do ONLY this
 
 **ก่อนอื่น เปิด `README.md` หัวข้อ `## Open decisions` ดูว่าเจ้าของตอบข้อไหนมาแล้วหรือยัง
 ถ้าตอบมาแล้วแม้ข้อเดียว → ทำตามคำตอบนั้นแทนงานข้างล่าง (สำคัญกว่า และปลดล็อกเกณฑ์ได้จริง)**
 
-ถ้ายังไม่มีคำตอบ ให้ทำงานนี้: **สำรวจ DS component ที่เหลืออีก 4 ตัวเทียบกับของคู่กันในแอป
-แล้วยุบเฉพาะจุดที่พิสูจน์ได้ว่าไม่ขยับพิกเซล** — ตอนนี้ตารางเกณฑ์ข้อ 2 ครอบคลุม 7 จาก 11 component
-เหลือ **`Toast.css` / `Field.css` / `Swatch.css` / `Toggle.css`** ที่ยังไม่เคยเทียบเลยสักรอบ
-ของคู่กันในแอปน่าจะเป็น `#toast` (บรรทัด ~353), input/select/textarea ใน `#left`,
-swatch ใน view COLOR BIBLE, และ switch/checkbox — **ต้องหาให้เจอก่อนว่ามีของคู่กันจริงไหม
-ถ้าไม่มี ให้บันทึกว่าไม่มี** อย่าสร้าง element ใหม่ในแอปเพื่อให้มีของคู่
+ถ้ายังไม่มีคำตอบ ให้ทำงานนี้: **แก้บั๊กปุ่ม Undo ใน toast ที่กดไม่ได้** — รอบ 0103 เจอตอนเทียบ
+`Toast.css`: `#toast` (บรรทัด ~353) ตั้ง `pointer-events:none` ซึ่ง **inherit ลงไปถึงลูกทุกตัว**
+รวมทั้ง `<span id="toastUndo" class="toast-act">` ที่ `toastUndo()` (บรรทัด ~935) ผูก `onclick` ไว้
+descendant จะกลับมาเป็น hit target ได้ต้องตั้ง `pointer-events:auto` เอง ซึ่ง `.toast-act` ไม่ได้ตั้ง
+→ **คลิก Undo แล้วไม่เกิดอะไรขึ้น และ `cursor:pointer` ก็ไม่ขึ้นด้วยซ้ำ**
+(ลบ panel แล้วยังกู้ได้ด้วย `Cmd/Ctrl+Z` ซึ่งเป็นคนละ path — บั๊กนี้จึงไม่ทำข้อมูลหาย)
 
-**สิ่งที่รอบ 0047 ทำไปแล้ว อย่าทำซ้ำ:** `Menu.css` เทียบจบแล้ว (ตรงทุกค่า ไม่มีอะไรให้ยุบ —
-`.menu-pop` มี declaration ชุดเดียวอยู่แล้ว) และ `SegmentedToggle.css` เทียบจบแล้ว
-(3 กลุ่มยุบมาอยู่บน `.seg` แล้ว เหลือ `padding` เป็น decision 5)
+แก้ที่ `.toast-act` (บรรทัด ~357) เติม `pointer-events:auto` **จุดเดียว อย่าถอด
+`pointer-events:none` ออกจาก `#toast`** เพราะ toast กินพื้นที่กลางจอ ถ้าถอดออกมันจะบัง
+คลิกทุกอย่างที่อยู่ใต้มัน 5 วินาที (นั่นคือช่องโหว่ที่ `.pui-toast` มีอยู่ ไม่ใช่สิ่งที่ควรลอกมา)
+
+⚠️ **รอบนี้ต่างจากรอบก่อนๆ: มัน *ตั้งใจ* เปลี่ยนพฤติกรรม** `pointer-events` ไม่ใช่ property
+ที่วาดพิกเซล ดังนั้น "หน้าตาไม่เปลี่ยน" ยังจริงอยู่ แต่ `docs/btn-parity-proof.mjs toast`
+**จะรายงาน diff 1 จุด (`pointer-events` เพิ่มขึ้นมา) และนั่นคือผลที่ถูกต้อง**
+อย่าไปแก้ harness หรือแก้ CSS ให้มัน PASS — ให้รันแล้ว**เอา output ที่ diff 1 จุดนั้นใส่ SUMMARY.md**
+เป็นหลักฐานว่าเปลี่ยนแค่ property เดียวจริงๆ (แบบเดียวกับที่ decision 5 เขียนไว้ว่า
+"the point of that run is to show exactly which declarations moved, not to pass")
+
+ยืนยันว่าไม่มีอะไรอื่นตั้ง `pointer-events` ทับ: ตอนนี้ทั้งไฟล์มี 3 จุด (บรรทัด ~353 `#toast`,
+~507, ~538) และไม่มี JS ตัวไหน set `style.pointerEvents` เลย (ตรวจแล้วรอบ 0103)
 
 ⚠️ **ความเสี่ยงที่ต้องรับมือ ไม่ใช่มองข้าม:** **ไม่มีเบราว์เซอร์ให้ verify**
 (decision 4 ยังไม่ได้รับอนุญาต) → ใช้วิธีเดิม: เพิ่ม refactor ใหม่เข้าไปใน `REFACTORS`

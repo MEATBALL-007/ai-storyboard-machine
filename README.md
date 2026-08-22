@@ -271,11 +271,54 @@ means the `<style>` block in `index.html` and the matching file under
 | `.empty-state` | `EmptyState.css` | ✅ every value matches |
 | `.menu-pop`, `.menu-pop button`, `.mh` | `Menu.css` | ✅ every value matches |
 | `.seg` + `.dn-toggle`/`.col-toggle`/`.ovl-toggle` | `SegmentedToggle.css` | ⚠️ base matches; two groups override `padding` — see [decision 5](#5-segmented-control-padding--one-size-or-three) |
+| `#toast`, `#toast.on`, `#toast.err`, `.toast-act` | `Toast.css` | ✅ every value matches |
+| `.sw`, `.sw .lab` | `Swatch.css` | ✅ every value matches |
+| `.toggle-row`, `.toggle-row input` | `Toggle.css` | ✅ every value matches |
+| `.fld`, `.fld label`, `input.ti`/`select.ti` | `Field.css` | ⚠️ `.ti` matches; three other input sizes do not — see [decision 6](#6-text-inputs--one-size-or-four) |
 
-Badge, modal, and empty state differ from their Phantom UI files only by `font-family:var(--mono)`
-(and `color:var(--text)` on the modal), both of which `body` already sets with nothing overriding
-them — so they render identically. The remaining difference is the class *name*
+All eleven Phantom UI components have now been compared. Badge, modal, and empty state differ from
+their Phantom UI files only by `font-family:var(--mono)` (and `color:var(--text)` on the modal),
+both of which `body` already sets with nothing overriding them — so they render identically. The
+same is true of toast, swatch, and toggle. The remaining difference is the class *name*
 (`.pc-badge` vs `.pui-badge--accent`), which is not a visual one.
+
+Two differences run the other way, where the app declares something Phantom UI does not. Neither is
+changed here, because editing the library changes it for every consumer:
+
+- `#toast` sets `pointer-events:none`; `.pui-toast` does not, so a Phantom UI toast intercepts
+  clicks on whatever sits under it for as long as it is on screen.
+- `.menu-pop button:disabled:hover` and `.menu-pop button.danger:hover` have no equivalent in
+  `Menu.css`, so a disabled item in a Phantom UI menu still lights up on hover.
+
+> **Bug found by this comparison, not yet fixed:** that same `pointer-events:none` is inherited by
+> everything inside the toast, including the undo span. `pointer-events` is an inherited property
+> and a descendant only becomes hit-testable again by setting `pointer-events:auto`, which
+> `.toast-act` does not. So the **"Undo" link in the delete toast cannot be clicked** — the
+> `onclick` assigned in `toastUndo()` never fires, and the `cursor:pointer` never even shows,
+> because hit testing stops at the toast. Deleting a panel is still recoverable with `Cmd/Ctrl+Z`,
+> which is a separate code path. The fix is one declaration (`pointer-events:auto` on
+> `.toast-act`) and changes no rendered pixel, but it *is* a behaviour change and no round so far
+> has been able to open a browser (decision 4), so it was left for its own round rather than
+> folded into a refactor whose whole claim was that it changed nothing.
+
+`Field.css` also declares `.pui-field__hint`; the app has **no counterpart** — `.kbd-hint`,
+`.pd-edit-hint`, and `.apikey-note` are each their own thing at their own size. Nothing was added
+to the app to create one.
+
+### Toast: the undo action
+
+`.pui-toast__action` was the one place where a Phantom UI rule was duplicated in the app as an
+inline `style=` — and worse, inside a JS template string, where `tools/check-tokens.mjs` cannot
+reach it (it blanks `<script>` before scanning `style=` attributes, so that `color:var(--accent)`
+was the only token reference in either codebase under no enforcement). Since 2026-08-23 the span
+reads `class="toast-act"` and the declarations live in `<style>`.
+
+`margin-left:8px` from the DS rule was **not** adopted: this toast separates the action from the
+message with a literal `" · "` in the text, so the margin would have moved pixels.
+
+```
+node docs/btn-parity-proof.mjs toast <rev>:index.html index.html
+```
 
 ### Buttons: a base class the app did not have
 
@@ -302,9 +345,17 @@ element's winning declaration set from the cascade (specificity, source order, t
 node docs/btn-parity-proof.mjs buttons 2488f2d:index.html index.html
 ```
 
-It holds one entry per refactor that has used it (`buttons`, `segmented`), named by the first
-argument. It is not part of the Verify command, and nothing keeps it in sync with future edits to
-the CSS — it re-runs one past argument, it does not guard the present.
+It holds one entry per refactor that has used it (`buttons`, `segmented`, `toast`), named by the
+first argument. It is not part of the Verify command, and nothing keeps it in sync with future
+edits to the CSS — it re-runs one past argument, it does not guard the present.
+
+Its markup phase exists because the cascade diff trusts this table rather than the file: it reads
+each element's class list and inline style from the entry, so a refactor that edits the CSS but
+forgets the markup still diffs to zero. The phase therefore checks the file directly — every
+dropped class token gone, every new `class="…"` present the expected number of times, and every
+inline style an element was supposed to surrender actually surrendered. Both failure modes were
+re-tested against deliberately broken copies when the `toast` entry was added, and in both the
+cascade diff did report `0 declaration(s) differ` while the markup phase caught the problem.
 
 ### Segmented controls: three copies of one control
 
@@ -328,7 +379,7 @@ node docs/btn-parity-proof.mjs segmented 021b966:index.html index.html
 
 ## Open decisions
 
-Five questions block nearly all remaining Phantom UI integration work. Every one has already
+Six questions block nearly all remaining Phantom UI integration work. Every one has already
 been investigated to the end — what is missing is a **decision**, not more analysis. Each moves
 pixels or adds a file to the repo, so none is an automated agent's call to make.
 
@@ -365,7 +416,9 @@ hash — the hash cannot be computed here without the file either). A later roun
 ### 2. Chip horizontal padding — which pixels move?
 
 **Blocks:** *"basic elements match the component of the same name in the design system."*
-This is the **only** remaining parity gap; the other four element groups all match.
+One of three gaps against that criterion — the others are decisions 5 and 6. All eleven Phantom UI
+components have now been compared against their counterpart in the app; every group not named in
+those three decisions matches value for value.
 
 `.pui-chip` uses `padding:6px 10px`; the app's `.chip` still uses `6px 2px`. The DS value **does
 not fit the current sidebar**, so it was deliberately not adopted:
@@ -474,6 +527,44 @@ three are meant to be the same control.
 **If you answer:** a round applies the one padding change and re-runs
 `node docs/btn-parity-proof.mjs segmented …`, which will then *correctly* report a diff — the
 point of that run is to show exactly which declarations moved, not to pass.
+
+### 6. Text inputs — one size or four?
+
+**Blocks:** *"basic elements match the component of the same name in the design system."*
+(the last third of it; decisions 2 and 5 are the other two)
+
+`.pui-input` / `.pui-select` / `.pui-textarea` are one component at one size. The app draws the
+same control at four, each rule repeating the same four chrome declarations
+(`background:var(--surface)`, `border:1px solid var(--line)`, `border-radius:var(--r-md)`, plus a
+width) and differing only in padding and font-size:
+
+| Rule | Where | Elements | Padding | Font size |
+|---|---|---|---|---|
+| `input.ti, select.ti` | sidebar form fields | 5 | `6px 8px` | `11px` |
+| `.pd-row input/textarea/select` | panel detail editor | 11 | `5px 7px` | `10.5px` |
+| `.cmt-add input` | panel comment box | 1 | `5px 7px` | `10px` |
+| `.field-mini input` | image-model config | 3 | `5px 7px` | `10px` |
+
+**`input.ti` already matches Phantom UI exactly**; the other three do not. As with decision 5 this
+is an inconsistency *inside the app* — four instances of one control at four sizes — not a
+disagreement between the app and the design system. Sizes shrink with nesting depth, so the likely
+cause is each context being tuned to the space it had.
+
+The textareas differ separately: `.pui-textarea` sets `min-height:60px; line-height:1.5`, while
+`textarea#script` is a fixed `height:140px` with `padding:8px` (not `6px 8px`) and `.pd-row
+textarea` is `min-height:46px; line-height:1.4`.
+
+| Option | Cost |
+|---|---|
+| **Unify on the DS value** (`6px 8px` / `11px`) | One control, matches Phantom UI, criterion ticks. Every field in the panel-detail editor and the two nested boxes grows ~2px taller and ~1px wider per side; the right rail and the sidebar both get slightly longer. |
+| **Unify on the common value** (`5px 7px` / `10px`) | Three of four groups already sit there, so the least movement — but then the DS value has to come down to match instead. |
+| **Leave all four** | Nothing moves; the app keeps drawing one control at four sizes, and the four chrome declarations stay duplicated four times. |
+
+Nothing here is a rendering bug — every field is legible and usable today.
+
+**If you answer:** a round applies the padding/font-size change, collapses the four rules onto one
+shared base with per-context overrides (the way `.btn` and `.seg` were collapsed), and re-runs the
+proof harness with a new `inputs` entry.
 
 ---
 

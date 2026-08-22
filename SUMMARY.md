@@ -1,119 +1,128 @@
-# Round summary — 2026-08-23_0047
+# Round 2026-08-23_0103 — Toast / Field / Swatch / Toggle parity (the last four)
 
 ## What I did
 
-- **Restored the previous round's work first.** The branch was cut from `3503537` (the original
-  contract commit), not from the tip of `auto/…/2026-08-23_0027`, so ~1,550 lines of prior work
-  (`tools/check-tokens.mjs`, `docs/btn-parity-proof.mjs`, the whole token migration in
-  `index.html`, the `.btn` refactor, the README rewrite) were missing from my tree. Commit
-  `cfe9efd` puts the tree back to `021b966` exactly (`git diff` against it is empty).
-- **Collapsed the app's three segmented controls onto a shared `.seg` base**
-  (`index.html`, `<style>` ~line 182 + three `<div>`s in the grid header). `.dn-toggle`,
-  `.col-toggle` and `.ovl-toggle` each declared their own wrapper rule and their own `.on` rule;
-  all three were byte-identical. They now read `class="seg dn-toggle"` etc., with the group class
-  holding only its own delta — the same base-plus-modifier shape as `.pui-segmented` /
-  `.pui-segmented__btn` / `.is-active` in the design system. Net: 9 rules → 6, one of them shared.
-- **Surveyed `.menu-pop` against `Menu.css` — and changed nothing**, because there is nothing to
-  collapse: the app already declares that menu once, and every value matches.
-- **Generalised `docs/btn-parity-proof.mjs`** so a second refactor could use it: a keyed
-  `REFACTORS` table selected by a new first CLI argument, non-`button` subjects via `type`,
-  per-version ancestor chains via `beforeAncestors`/`afterAncestors`, and a markup-coverage rule
-  that requires a token to disappear only if the refactor actually drops it (which also removed a
-  hardcoded `c !== 'active'` special case).
-- **Wrote up what only the owner can decide** as `## Open decisions` item 5 in `README.md`
-  (segmented-control padding), and recorded the Menu and SegmentedToggle findings in the
-  criterion-2 table in both `README.md` and `AUTOPILOT.md`.
+- **Restored the previous round's tip first.** The runner cut this branch from `3503537` again
+  (thirteenth round in a row), so `tools/check-tokens.mjs`, `docs/btn-parity-proof.mjs` and every
+  token/radius/font edit were missing from the tree and the Verify command would have crashed on a
+  missing file. `git checkout bb10dd9 -- .` restored them; `git diff --stat bb10dd9 -- .` came back
+  empty, and the diff has no deletions, so path-checkout is tree-equivalent to a fast-forward here.
+  Kept as its own commit (`de07ea8`) so this round's real diff stays readable.
+- **Compared the last four Phantom UI components against the app — the parity table is now 11/11.**
+  `#toast`/`.on`/`.err` ↔ `Toast.css`, `.sw`/`.sw .lab` ↔ `Swatch.css`, `.toggle-row` ↔
+  `Toggle.css` all match value for value already; each has a single declaration set, so — like
+  `.menu-pop` last round — **there was nothing to collapse**. `Field.css` does not match: the app
+  draws one text input at four sizes.
+- **Collapsed the one thing that was genuinely duplicated: `.pui-toast__action`.** The app built
+  that span in a JS template string with an inline `style=` carrying the same three declarations.
+  It now reads `class="toast-act"` and the rule lives in `<style>`.
+- **Wrote up what only the owner can decide as README decision 6** (text inputs — one size or
+  four?), with the four rules, where each is used, how many elements each covers, and what each
+  option costs. Fixed a claim in decision 2 that my own survey had just made stale ("the only
+  remaining parity gap" — it is now one of three).
+- **Found a real bug while doing it and did not fix it:** the "Undo" link in the delete toast
+  cannot be clicked. Written up in README and set as the next task.
 
 ## Why
 
-**Why the three groups were not made identical.** `.dn-toggle` uses `4px 10px` / `9.5px`, which
-matches `.pui-segmented__btn` exactly. `.col-toggle` uses `4px 9px` and `.ovl-toggle` uses
-`4px 7px` / `9px`. Making them match the design system widens the overlay group by ~24px inside
-`#gridHeader`, which has `flex-wrap:wrap` — so on a narrow window the header row could start
-wrapping where it did not before. That is a design change, not a refactor, so it went to
-`## Open decisions` as instructed rather than into the CSS.
+**Why the toast action was worth moving and the other three were not.** The measure of a
+worthwhile collapse here is whether declarations are duplicated, not whether class names differ.
+Toast, swatch and toggle each already have exactly one declaration set that happens to equal the
+DS one — renaming `.sw` to `.pui-swatch` would move zero declarations and break every JS template
+string that writes `class="sw"`. The toast action was different: three declarations existed in two
+places conceptually and, more importantly, in the *wrong* place.
 
-**Why `display:flex` was left as-is.** Phantom UI's wrapper uses `inline-flex`. All three toggles
-are direct children of `#gridHeader`, which is `display:flex`, so they are flex items and their
-`display` is blockified — `inline-flex` and `flex` produce the same used value here. Changing the
-declaration to match the DS text would have bought nothing and would have shown up as a diff in
-the parity proof, weakening the very evidence this round rests on.
+**That inline style was the single unenforced token reference in the repo.** `check-tokens.mjs`
+blanks `<script>` before it scans `style=` attributes — deliberately, because the JS builds markup
+from template strings containing canvas colours that must stay literal. The consequence nobody had
+noticed is that a `style=` attribute *inside* a template string is invisible to all six checks. So
+`color:var(--accent)` there was the one token reference in either codebase that no checker could
+see. Moving it into `<style>` puts it under all six.
 
-**Why the proof harness grew instead of being copied.** The old `ELEMENTS` table encodes the
-*button* refactor's before-state, which no longer exists in `index.html`; running it against
-today's file with a second table appended would compare `.icon-btn` against CSS that no longer
-declares it. A keyed table keeps both rounds' arguments runnable.
+**Why `margin-left:8px` was not adopted.** `.pui-toast__action` has it; this toast separates the
+action from the message with a literal `" · "` in the text instead. Taking the margin would have
+moved pixels, which is the one thing this round claimed not to do.
+
+**Why decision 6 is a decision and not a refactor.** All four input rules repeat the same four
+chrome declarations and differ only in padding and font-size. Collapsing them onto a shared base is
+mechanical — but the base has to have *a* padding, and picking one changes the size of every field
+in three of the four contexts. That is the same shape as decision 5, and the same answer: the
+owner picks the size, then a round does the collapse in one step.
 
 ## Verification
 
-Verify command, run at the final tree — all green:
+Verify command, all three parts, on the final tree:
 
 ```
-node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test
-```
-```
-54 passed, 0 failed
-tokens in sync: 22/22 ...            fonts in sync: 4/4 ...
-no derived-colour literals: 15 CSS source(s) ...   font weights available: 15 ...
-no radius literals: 15 ...           typeface from one source: 15 ...
-Test Files  12 passed (12)           Tests  31 passed (31)
+node tools/test.mjs            -> 54 passed, 0 failed
+node tools/check-tokens.mjs    -> tokens 22/22 · fonts 4/4 · no derived-colour literals ·
+                                  font weights available · no radius literals ·
+                                  typeface from one source   (15 CSS sources scanned)
+npm --prefix design-system test -> 31 passed (see below)
 ```
 
-Pixel-neutrality proof (not part of Verify, by design):
+Pixel-parity proof for the one CSS change:
 
 ```
-node docs/btn-parity-proof.mjs segmented 021b966:index.html index.html
-  markup coverage OK — 0 old class tokens gone, 3 new class attributes at the expected counts
-  compared 45 (element, state) pairs across 9 "segmented" elements
+node docs/btn-parity-proof.mjs toast HEAD:index.html index.html
+  markup coverage OK — 0 old class tokens gone, 1 new class attributes at the expected counts
+  compared 5 (element, state) pairs across 1 "toast" elements
   PASS — every element computes an identical declaration set before and after.
-
-node docs/btn-parity-proof.mjs buttons 2488f2d:index.html index.html
-  markup coverage OK — 7 old class tokens gone, 5 new class attributes at the expected counts
-  compared 85 (element, state) pairs across 17 "buttons" elements
-  PASS
 ```
 
-The second run is the regression check: last round's button argument still holds against the file
-as I leave it.
-
-Two negative tests, each applied then reverted:
+Three negative tests against deliberately broken copies, all of which failed as they should:
 
 | Injected fault | Result |
 |---|---|
-| `.ovl-toggle button` padding `4px 7px` → `4px 8px` | `FAIL — 10 declaration(s) differ` (both overlay buttons × 5 states), exit 1 |
-| `class="seg dn-toggle"` → `class="dn-toggle"` on one wrapper | `✗ expected 1x class="seg dn-toggle" …, found 0`, exit 1 |
+| `.toast-act` colour changed to `var(--muted)` | FAIL — 5 declaration(s) differ (one per state) |
+| `class="toast-act"` deleted from the JS template | markup coverage FAILED — **cascade diff still reported 0** |
+| inline `style=` left in place *and* the class added | markup coverage FAILED — **cascade diff still reported 0** |
+
+The third fault is why I added a phase to the harness: the cascade diff reads each element's inline
+style from the table in the script, not from the file, so a half-finished move (class added, style
+left behind) diffs to zero. It now fails outright. I also extended the harness with per-version
+inline styles (`beforeInline` / `afterInline`), mirroring the existing `beforeAncestors` /
+`afterAncestors`, since this refactor changes the inline style rather than the ancestor chain.
+
+Because I edited the harness, I re-ran both refactors it already certifies — `buttons`
+(`2488f2d` → `9fab5c9`) and `segmented` (`021b966` → working tree). Both still PASS.
 
 ## What I did NOT do
 
-- **Did not answer any open decision.** README `## Open decisions` still has zero owner answers;
-  I checked before starting, and item 5 is a new question, not an answer to an old one.
-- **Did not equalise the three toggles' padding** — decision 5, see above.
-- **Did not rename `.on` to `.is-active`** to match the DS class name. `.on` is the app-wide
-  convention (13 rules use it) and is written by JS in four places; renaming buys a name and risks
-  a live control.
-- **Did not touch `tools/`** or add a seventh token check, as the contract instructs.
-- **Did not add the missing `:disabled:hover` / `.danger:hover` rules to `Menu.css`.** The app has
-  them and the design system does not, so a disabled Phantom UI menu item still changes colour on
-  hover. That is a gap on the *library* side; fixing it changes rendering for every consumer of
-  the component, so it is the owner's call. Recorded in `AUTOPILOT.md`, not acted on.
-- **Did not open the app in a browser** — still blocked by permissions (decision 4), unchanged.
+- **Did not fix the toast Undo bug.** `#toast` sets `pointer-events:none`; that property is
+  inherited, and `.toast-act` does not set `pointer-events:auto` to become hit-testable again, so
+  the `onclick` bound in `toastUndo()` never fires. It is one declaration, but it is a deliberate
+  *behaviour* change, and folding it into a commit whose entire claim is "this moved nothing" would
+  have made both harder to review. It is the next task, written up with the trap spelled out
+  (fix `.toast-act`, do **not** remove `pointer-events:none` from `#toast` — that would let a
+  centre-screen toast swallow every click under it for five seconds).
+- **Did not collapse the four input rules** onto a shared base. Pixel-neutral only if the base
+  keeps each context's own padding, which defeats the point; picking one size is decision 6.
+- **Did not add `pointer-events:none` to `.pui-toast`** or the disabled-hover rules to `Menu.css`,
+  though both are gaps on the library side. Editing Phantom UI changes it for every consumer.
+- **Did not invent an app counterpart for `.pui-field__hint`.** There is none — `.kbd-hint`,
+  `.pd-edit-hint` and `.apikey-note` are three different things at three sizes. Recorded as absent
+  rather than manufactured.
+- **Did not touch `tools/`** or add a seventh token check; all 22 tokens already have one.
+- **Did not answer any open decision.** Six now, all still the owner's.
 
 ## Risk
 
-- **Nobody has seen this render.** The proof is a static cascade model, not a browser. Its known
-  limits are listed at the top of the file (no `>`/`+`/`~`, no structural pseudo-classes,
-  shorthands compared by property name, `@media` blocks applied unconditionally and reported). It
-  reported one media match, `@media(prefers-reduced-motion:reduce) { * }`, in both runs.
-- **The cascade diff trusts the `ELEMENTS` table for class membership; it does not read the
-  markup.** Negative test 2 demonstrates this directly: with the `seg` class stripped from a
-  wrapper, the cascade diff still reported 0 differences and only the markup-coverage phase caught
-  it. That phase is therefore load-bearing, and it only checks elements whose class list changed.
-  I have flagged this in the Next task.
-- **Source order, not specificity, is what makes this safe.** `.seg button` and
-  `.col-toggle button` are both (0,1,1), so the group overrides work only because they sit after
-  the base. Anyone inserting a segmented rule earlier in the `<style>` block will silently change
-  the padding. The comment above `.seg` says the modifiers hold the deltas, but nothing enforces
-  the ordering.
-- The three wrappers' ancestor chain is hardcoded in the proof as
-  `#center > #gridView > #gridHeader`. If that markup moves, the proof would need updating, and it
-  is not in Verify so nothing will tell you.
+- **The toast Undo bug is real and predates this round** — `git log -S 'pointer-events:none'` was
+  not run to date it, but nothing in this round's diff introduced it; the declaration is untouched
+  on line 353. I reasoned it out from the CSS rather than clicking it, because no round has ever
+  had a browser (decision 4). If you can open the app, that click is the single highest-value
+  thing to check: my whole claim rests on `pointer-events` being an inherited property and nothing
+  re-enabling it (I checked — three `pointer-events` declarations in the file, none on
+  `.toast-act`, and no JS anywhere sets `style.pointerEvents`).
+- **The parity proof is not a regression test.** It is not in the Verify command and nothing keeps
+  it in sync with later CSS edits. It re-runs one past argument; it does not guard the present.
+  Its `toast` entry hard-codes the before-inline text, so it only proves the specific move made
+  here.
+- **`npm --prefix design-system test` reports 31 passed but the DS CSS is not covered by it** —
+  those are React component tests, and the four files I read this round (`Toast.css`, `Field.css`,
+  `Swatch.css`, `Toggle.css`) are only checked by `check-tokens.mjs`, i.e. for tokens, not for
+  layout. "The DS is green" says nothing about whether the app matches it; that is what the table
+  in the README is for, and the table is hand-verified.
+- **Still no browser has ever seen this app** across fourteen rounds of CSS work. Unchanged from
+  last round, and the reason decision 4 exists.
