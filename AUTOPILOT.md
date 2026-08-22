@@ -32,7 +32,8 @@
         บันทึกไว้ตามของเดิมเพราะการยุบเหลือ 3 ขั้นคือการ**เปลี่ยนดีไซน์** เจ้าของต้องเลือกเอง
       → **ยังเหลือ: spacing / typography** — `tokens.css` มี 22 token (สี 11 + channel 3 + radius 7 + `--mono`)
 - [ ] element พื้นฐานในแอป (ปุ่ม, chip, badge, modal, empty state) หน้าตาตรงกับ component ที่มีชื่อเดียวกันใน design system
-      → **สำรวจครบทั้ง 5 ตัวแล้ว (2026-08-21) — เหลือ delta จริงแค่ 1 จุดเดียว**
+      → **สำรวจแล้ว 7 จาก 11 component (2026-08-21 → 2026-08-23) — เหลือ delta จริง 2 จุด
+        (chip padding / segmented padding) ทั้งคู่รอเจ้าของ; ยังไม่เทียบ Toast/Field/Swatch/Toggle**
         | app | DS | ผล |
         |---|---|---|
         | `.btn` + `.btn--primary/--ghost/--icon/--tab` | `Button.css` | ✅ ตรงทุกค่า **และโครงสร้างตรงแล้ว** (2026-08-23) |
@@ -40,6 +41,8 @@
         | `.pc-badge` (บรรทัด ~189) | `.pui-badge` + `--accent` | ✅ ตรงทุกค่า |
         | `.modal-bg` / `.modal` (บรรทัด ~304) | `Modal.css` | ✅ ตรงทุกค่า |
         | `.empty-state` (บรรทัด ~224) | `EmptyState.css` | ✅ ตรงทุกค่า |
+        | `.menu-pop` / `.menu-pop button` / `.mh` (บรรทัด ~404) | `Menu.css` | ✅ ตรงทุกค่า (2026-08-23 รอบ 0047) |
+        | `.seg` + `.dn-toggle`/`.col-toggle`/`.ovl-toggle` (บรรทัด ~182) | `SegmentedToggle.css` | ⚠️ base ตรง แต่ 2 กลุ่ม override `padding` — **บล็อกอยู่ รอเจ้าของ (decision 5)** |
         badge / modal / empty-state ต่างจาก DS แค่ `font-family:var(--mono)` (+ `color:var(--text)` ใน modal)
         ซึ่ง **`body` set ให้อยู่แล้วและไม่มีอะไรมา override** → render เหมือนกันเป๊ะ ไม่ต้องแก้
         ต่างแค่**ชื่อ class** (`.pc-badge` vs `.pui-badge--accent`) ซึ่งไม่ใช่เรื่องหน้าตา
@@ -61,6 +64,27 @@
         และ `1fr` = `minmax(auto,1fr)` หดต่ำกว่า min-content ไม่ได้ → grid จะดันจนเกิด scrollbar แนวนอน
         **padding-x สูงสุดที่ปลอดภัยคือ 7px** ทางเลือกคือ ขยาย `#left` / ลด font-size / ใช้ 2 คอลัมน์ /
         ลดค่าใน DS — ทุกทาง**ขยับพิกเซล** จึงเป็นการตัดสินใจของเจ้าของ ไม่ใช่ของ agent
+        (2026-08-23 รอบ 0047: **segmented toggle 3 กลุ่มยุบมาอยู่บน base `.seg` แล้ว** เหมือน
+         `.pui-segmented` / `__btn` / `.is-active` — rule ของ wrapper และของ `.on` เคยซ้ำกัน
+         **เป๊ะทั้ง 3 ชุด** เหลือ `padding` (+ `font-size` ของ ovl) เป็น delta ประจำกลุ่ม
+         `.dn-toggle` ตรงกับ DS อยู่แล้วเป๊ะ (`4px 10px` / `9.5px`) อีก 2 กลุ่มไม่ตรง
+         **ไม่แก้ให้ตรงเอง** เพราะเป็นความไม่สม่ำเสมอของแอปเอง → เขียนเป็น decision 5 ใน README
+         ⚠️ DS ใช้ `display:inline-flex` แอปใช้ `display:flex` — ทั้ง 3 ตัวเป็นลูกตรงของ
+         `#gridHeader` ที่เป็น `display:flex` → เป็น flex item → display ถูก blockify
+         `inline-flex` กับ `flex` ได้ used value เท่ากัน **ไม่ต้องแก้** (แก้แล้ว proof จะขึ้น diff)
+         พิสูจน์ด้วย `docs/btn-parity-proof.mjs segmented`: 9 element × 5 state = 45 คู่ ต่างกัน 0 จุด
+         negative test 2 กรณี: ขยับ padding 1px → FAIL 10 จุด, ถอด class `seg` ออก 1 ตัว →
+         markup coverage FAIL ⚠️ **แต่ cascade diff รายงาน 0 จุดในกรณีหลัง** เพราะตาราง `ELEMENTS`
+         *ประกาศ* class ไม่ได้อ่านจาก markup — phase markup coverage คือด่านเดียวที่จับเรื่องนี้ได้
+         และรอบนี้มันจับได้จริงเพราะ `.seg` ต้องปรากฏครบ 3 จุด)
+        `.menu-pop` ตรงกับ `Menu.css` ทุกค่า **ไม่มีอะไรให้ยุบ** — มี declaration ชุดเดียวอยู่แล้ว
+        (ที่ต่างคือ `.menu-pop` มี `display:none; position:absolute; right:0; top:30px; z-index:60`
+         เพิ่มมา ซึ่ง DS ปล่อยให้ผู้ใช้จัดวางเอง และ DS ประกาศ `background:none; border:none;
+         cursor:pointer; font-family:var(--mono)` ตรงๆ ส่วนแอปได้จาก `button{}` reset บรรทัด 51
+         → computed เท่ากัน) ⚠️ **ช่องว่างอยู่ฝั่ง DS ไม่ใช่ฝั่งแอป**: แอปมี
+         `.menu-pop button:disabled:hover{background:none; color:var(--text)}` และ
+         `.menu-pop button.danger:hover{...}` แต่ `Menu.css` ไม่มี → ปุ่ม disabled ใน DS ยังเปลี่ยนสี
+         ตอน hover การเติมให้ DS = แก้หน้าตาของ library ที่ consumer อื่นใช้อยู่ → เจ้าของตัดสิน
 - [ ] เปิด `index.html` ด้วย `file://` (ดับเบิลคลิก) แล้วยังใช้งานได้ครบ — ไม่ต้อง build ไม่ต้อง serve
       → **ฟอนต์เสร็จแล้ว** (2026-08-21) — JetBrains Mono 4 น้ำหนัก (400/500/700/800) ฝังเป็น
         `data:font/woff2;base64` ใน `<style>` แล้ว, `fonts.googleapis`/`fonts.gstatic` เหลือ 0 จุด
@@ -178,41 +202,39 @@ generate มาจาก branch ของรอบก่อน — ไฟล์�
 
 **ย้ายไปอยู่ที่ [`README.md` → `## Open decisions`](README.md#open-decisions) แล้ว** (รอบ 2026-08-23_0004)
 
-ทั้ง 4 ข้อ (jsPDF / chip padding / spacing + font-size scale / browser verification) เขียนไว้ที่นั่น
+ทั้ง 5 ข้อ (jsPDF / chip padding / spacing + font-size scale / browser verification /
+segmented padding — ข้อ 5 เพิ่มรอบ 2026-08-23_0047) เขียนไว้ที่นั่น
 พร้อมทางเลือกและสิ่งที่แลกของแต่ละทาง — **อย่าเขียนกลับมาที่ไฟล์นี้** เพราะ runner เขียนทับทุกรอบ
 คำถามที่วางไว้ในไฟล์ที่เจ้าของไม่ได้เปิดอ่านคือคำถามที่ไม่มีวันได้คำตอบ
 
-เกณฑ์ข้อ 1 / 2 / 3 ที่ยังไม่ติ๊ก บล็อกอยู่ที่ 4 ข้อนั้นทั้งหมด
+เกณฑ์ข้อ 1 / 2 / 3 ที่ยังไม่ติ๊ก บล็อกอยู่ที่ 5 ข้อนั้นทั้งหมด
 
 ## Next task — do ONLY this
 
 **ก่อนอื่น เปิด `README.md` หัวข้อ `## Open decisions` ดูว่าเจ้าของตอบข้อไหนมาแล้วหรือยัง
 ถ้าตอบมาแล้วแม้ข้อเดียว → ทำตามคำตอบนั้นแทนงานข้างล่าง (สำคัญกว่า และปลดล็อกเกณฑ์ได้จริง)**
 
-ถ้ายังไม่มีคำตอบ ให้ทำงานนี้: **สำรวจ `.menu-pop` เทียบ `Menu.css` และ `.dn-toggle` /
-`.col-toggle` / `.ovl-toggle` เทียบ `SegmentedToggle.css` แล้วยุบเฉพาะจุดที่พิสูจน์ได้ว่า
-ไม่ขยับพิกเซล** — เป็นการต่อยอดงานรอบ 0027 ไปยัง DS component ที่เหลือซึ่งแอปมีของคู่กันจริง
-(`Button.css` จบไปแล้ว; `Chip`/`Badge`/`Modal`/`EmptyState` สำรวจครบแล้วตามตารางเกณฑ์ข้อ 2)
+ถ้ายังไม่มีคำตอบ ให้ทำงานนี้: **สำรวจ DS component ที่เหลืออีก 4 ตัวเทียบกับของคู่กันในแอป
+แล้วยุบเฉพาะจุดที่พิสูจน์ได้ว่าไม่ขยับพิกเซล** — ตอนนี้ตารางเกณฑ์ข้อ 2 ครอบคลุม 7 จาก 11 component
+เหลือ **`Toast.css` / `Field.css` / `Swatch.css` / `Toggle.css`** ที่ยังไม่เคยเทียบเลยสักรอบ
+ของคู่กันในแอปน่าจะเป็น `#toast` (บรรทัด ~353), input/select/textarea ใน `#left`,
+swatch ใน view COLOR BIBLE, และ switch/checkbox — **ต้องหาให้เจอก่อนว่ามีของคู่กันจริงไหม
+ถ้าไม่มี ให้บันทึกว่าไม่มี** อย่าสร้าง element ใหม่ในแอปเพื่อให้มีของคู่
 
-**ผลชิมลางที่ทำไว้ให้แล้ว (รอบ 0027 อ่าน 2 ไฟล์นี้จบแล้ว — อย่าอ่านซ้ำเพื่อสรุปเรื่องเดิม):**
-- `.menu-pop .mh` ตรงกับ `.pui-menu__header` ทุกค่า, `.menu-pop button:disabled{opacity:.35}`
-  และ `.menu-pop button.danger{color:var(--secondary)}` ตรงกับ `--danger` / `:disabled` ของ DS
-  → **น่าจะยุบได้ทั้งชุด** แต่ต้องไล่ `.menu-pop button` (บรรทัด ~403) ทีละ declaration ก่อน
-- `.dn-toggle button{padding:4px 10px; font-size:9.5px}` = `.pui-segmented__btn` **เป๊ะ**
-- ⚠️ แต่ `.col-toggle button` ใช้ `padding:4px 9px` และ `.ovl-toggle button` ใช้
-  `padding:4px 7px; font-size:9px` — **ไม่ตรง DS** → 2 ตัวนี้ยุบไม่ได้ถ้าไม่ขยับพิกเซล
-  **ห้ามแก้ให้ตรงเอง** ให้เขียนเป็นข้อใหม่ใน `README.md` → `## Open decisions` แทน
-  (สามกลุ่มนี้เป็น segmented control หน้าตาเดียวกันแต่ padding ไม่เท่ากัน — นั่นคือความไม่สม่ำเสมอ
-   ของตัวแอปเอง ไม่ใช่ความต่างระหว่างแอปกับ DS เจ้าของต้องเลือกว่าจะให้เท่ากันที่ค่าไหน)
+**สิ่งที่รอบ 0047 ทำไปแล้ว อย่าทำซ้ำ:** `Menu.css` เทียบจบแล้ว (ตรงทุกค่า ไม่มีอะไรให้ยุบ —
+`.menu-pop` มี declaration ชุดเดียวอยู่แล้ว) และ `SegmentedToggle.css` เทียบจบแล้ว
+(3 กลุ่มยุบมาอยู่บน `.seg` แล้ว เหลือ `padding` เป็น decision 5)
 
-⚠️ **ความเสี่ยงที่ต้องรับมือ ไม่ใช่มองข้าม:** `.menu-pop button` ถูก generate จาก JS ด้วย
-template string (บรรทัด ~3857–3863) และเลือกด้วย `e.target.closest('button[data-act]')`
-กับ `$$('#exportMenu button')` → ถ้าเปลี่ยน selector ต้องไล่ให้ครบ
-และ **ไม่มีเบราว์เซอร์ให้ verify** (decision 4 ยังไม่ได้รับอนุญาต) → ใช้วิธีเดิมของรอบ 0027:
-เพิ่ม element ที่จะแก้เข้าไปในตาราง `ELEMENTS` ของ `docs/btn-parity-proof.mjs`
-(ระบุ class ก่อน/หลัง + ancestor chain) แล้วรัน `node docs/btn-parity-proof.mjs <sha>:index.html index.html`
+⚠️ **ความเสี่ยงที่ต้องรับมือ ไม่ใช่มองข้าม:** **ไม่มีเบราว์เซอร์ให้ verify**
+(decision 4 ยังไม่ได้รับอนุญาต) → ใช้วิธีเดิม: เพิ่ม refactor ใหม่เข้าไปใน `REFACTORS`
+ของ `docs/btn-parity-proof.mjs` (ระบุ class ก่อน/หลัง + ancestor chain; ใส่ `type` ถ้า subject
+ไม่ใช่ `button`; ใช้ `beforeAncestors`/`afterAncestors` ถ้า ancestor เปลี่ยนคนละแบบกับ subject)
+แล้วรัน `node docs/btn-parity-proof.mjs <key> <sha>:index.html index.html`
 ต้องได้ **PASS ทั้ง markup coverage และ cascade diff** ถ้า diff ไม่เท่า = แก้ผิด ให้ย้อนกลับ ไม่ใช่ปรับ CSS ตาม
 ทดสอบ negative อย่างน้อย 1 กรณีทุกครั้ง (เช่น ขยับ padding 1px) เพื่อพิสูจน์ว่า harness ยังจับได้จริง
+⚠️ **cascade diff เชื่อว่า element มี class ตามตาราง — มันไม่ได้อ่านจาก markup**
+ถ้าลืมใส่ class ในไฟล์จริง cascade diff จะยังขึ้น PASS *เฉพาะ phase markup coverage เท่านั้น*
+ที่จับได้ → ทุก element ที่ class เปลี่ยน **ต้องมีรายการใน `wanted`** (มีอัตโนมัติถ้า before≠after)
 ถ้าพิสูจน์แบบนี้ไม่ได้ **ให้ยกเลิกงานนี้แล้วบันทึกเหตุผลใน SUMMARY.md** — UI พังเงียบๆ
 โดยไม่มีใครเห็น แย่กว่าการไม่ยุบ class
 

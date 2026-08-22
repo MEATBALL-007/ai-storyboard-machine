@@ -269,6 +269,8 @@ means the `<style>` block in `index.html` and the matching file under
 | `.pc-badge` | `Badge.css` | ✅ every value matches |
 | `.modal-bg`, `.modal` | `Modal.css` | ✅ every value matches |
 | `.empty-state` | `EmptyState.css` | ✅ every value matches |
+| `.menu-pop`, `.menu-pop button`, `.mh` | `Menu.css` | ✅ every value matches |
+| `.seg` + `.dn-toggle`/`.col-toggle`/`.ovl-toggle` | `SegmentedToggle.css` | ⚠️ base matches; two groups override `padding` — see [decision 5](#5-segmented-control-padding--one-size-or-three) |
 
 Badge, modal, and empty state differ from their Phantom UI files only by `font-family:var(--mono)`
 (and `color:var(--text)` on the modal), both of which `body` already sets with nothing overriding
@@ -293,21 +295,40 @@ Adopting the remaining five is a *design* change, not a refactor, and belongs wi
 [open decisions](#open-decisions).
 
 `docs/btn-parity-proof.mjs` is the evidence that the refactor moved nothing. It rebuilds each
-button's winning declaration set from the cascade (specificity, source order, then the inline
+element's winning declaration set from the cascade (specificity, source order, then the inline
 `style=`) in five interaction states, for a before and an after copy of the file, and diffs them:
 
 ```
-node docs/btn-parity-proof.mjs 9fab5c9~1:index.html index.html
+node docs/btn-parity-proof.mjs buttons 2488f2d:index.html index.html
 ```
 
-It is a one-off proof, not part of the Verify command, and nothing keeps it in sync with future
-edits to the button CSS.
+It holds one entry per refactor that has used it (`buttons`, `segmented`), named by the first
+argument. It is not part of the Verify command, and nothing keeps it in sync with future edits to
+the CSS — it re-runs one past argument, it does not guard the present.
+
+### Segmented controls: three copies of one control
+
+The column count, day/night, and framing-guide toggles were three near-identical blocks of CSS.
+The wrapper rule and the `.on` rule were byte-identical in all three; only the button `padding`
+differed (and `font-size` on the overlay group). Since 2026-08-23 they share a `.seg` base —
+`class="seg col-toggle"` and so on — with each group class holding just its own delta, the same
+base-plus-modifier shape as `.pui-segmented` / `.pui-segmented__btn`.
+
+Phantom UI's wrapper uses `display:inline-flex` where `.seg` uses `display:flex`. All three
+toggles are direct children of `#gridHeader`, which is itself `display:flex`, so they are flex
+items and their `display` is blockified — `inline-flex` and `flex` compute to the same used value
+here. The declaration was left alone rather than "fixed" so that the parity proof stays a strict
+before/after diff.
+
+```
+node docs/btn-parity-proof.mjs segmented 021b966:index.html index.html
+```
 
 ---
 
 ## Open decisions
 
-Four questions block nearly all remaining Phantom UI integration work. Every one has already
+Five questions block nearly all remaining Phantom UI integration work. Every one has already
 been investigated to the end — what is missing is a **decision**, not more analysis. Each moves
 pixels or adds a file to the repo, so none is an automated agent's call to make.
 
@@ -420,6 +441,39 @@ not simply "the server is headless", so retrying without a permission change was
 
 **If you answer:** granting it lets every future round end with a real screenshot instead of an
 assumption — which also makes decisions 2 and 3 much safer to act on.
+
+### 5. Segmented control padding — one size or three?
+
+**Blocks:** *"basic elements match the component of the same name in the design system."*
+(the second half of it; the first half is decision 2)
+
+The app has three segmented controls in the grid header. They now share a `.seg` base, but each
+still sets its own button padding:
+
+| Group | Buttons | Padding | Font size |
+|---|---|---|---|
+| `.dn-toggle` — day / night | 2 | `4px 10px` | `9.5px` |
+| `.col-toggle` — 2 / 3 / 4 columns | 3 | `4px 9px` | `9.5px` |
+| `.ovl-toggle` — framing guides | 4 | `4px 7px` | `9px` |
+
+`.pui-segmented__btn` uses `4px 10px` at `9.5px`, so **the day/night group already matches the
+design system exactly** and the other two do not. This is an inconsistency *inside the app* — three
+instances of one control drawn at three sizes — not a disagreement between the app and Phantom UI.
+The likely cause is that each group was squeezed to fit the header as it was added: the overlay
+group is the widest at four buttons and got the tightest padding.
+
+| Option | Cost |
+|---|---|
+| **Unify on the DS value** (`4px 10px` / `9.5px`) | One consistent control, matches Phantom UI, criterion ticks. The header grows: the overlay group widens by ~24px and the column group by ~6px. `#gridHeader` has `flex-wrap:wrap`, so on a narrow window the row may wrap where it previously did not. |
+| **Unify on the tightest value** (`4px 7px` / `9px`) | Consistent and narrower, but then all three differ from Phantom UI and the DS value would need to move instead. |
+| **Leave all three** | Nothing moves; the app keeps drawing one control at three sizes. |
+
+Nothing here is a rendering bug — each group is legible today. It is a question of whether the
+three are meant to be the same control.
+
+**If you answer:** a round applies the one padding change and re-runs
+`node docs/btn-parity-proof.mjs segmented …`, which will then *correctly* report a diff — the
+point of that run is to show exactly which declarations moved, not to pass.
 
 ---
 
