@@ -64,6 +64,8 @@ Landscape A4, 3×3 panels per page, dark production header (director · date · 
 |-----|--------|
 | `Cmd/Ctrl+Z` | Undo |
 | `Shift+Cmd/Ctrl+Z` or `Ctrl+Y` | Redo |
+| `Cmd/Ctrl+D` | Duplicate selected panel |
+| `?` | Open the shortcuts overlay |
 | `G` | Generate storyboard |
 | `E` | Export PDF |
 | `R` | Regenerate selected panel |
@@ -144,9 +146,14 @@ paint black; in the markup-generating template strings a couple of literals (`#1
 shimmer gradient, `#FA4616` in the self-test banner) *do* match tokens but are code, not a
 stylesheet. `<script>` is blanked out before the attribute scan runs, so none of them is read.
 
-Literals with no token behind them (`rgba(0,0,0,…)`, `rgba(255,255,255,…)`, `#7ac87a`,
-`#ffb4a0`, `#0a0a0a`) are left alone on purpose. Giving those a token would widen the design
-language, which is a decision for the owner rather than something a checker should force.
+Literals with no token behind them are left alone on purpose. That is the complete remaining
+set, not a sample — outside the `:root{}` block, `index.html`'s `<style>` holds ten distinct
+hex values (`#000`, `#0a0a0a`, `#151515`, `#161616`, `#222`, `#333`, `#7ac87a`, `#bbb`,
+`#fff`, `#ffb4a0`) plus black and white overlay `rgba()`s and four greens
+(`rgba(80,180,90,.85)`, `rgba(120,200,120,.15)`, `rgba(122,200,122,.4)`,
+`rgba(122,200,122,.65)`). The component CSS draws on the same families and adds none of its
+own. Giving those a token would widen the design language, which is a decision for the owner
+rather than something a checker should force.
 
 ### Corner radius
 
@@ -186,7 +193,7 @@ body, so the radius on the export button is enforced rather than merely correct.
 ### Typeface
 
 The four JetBrains Mono latin subsets in [`design-system/src/fonts/`](design-system/src/fonts/)
-(weights 400 / 500 / 700 / 800, 86 KB total) are authoritative.
+(weights 400 / 500 / 700 / 800, 86,144 bytes total) are authoritative.
 [`design-system/src/fonts.css`](design-system/src/fonts.css) loads them by relative URL for the
 React library; `index.html` embeds the same bytes as `data:font/woff2;base64,…` inside its
 `@font-face` rules, for the same reason it inlines the tokens — a `file://` page cannot fetch a
@@ -217,14 +224,24 @@ the family and its fallback list, and every `font-family` across the same three 
 must read `var(--mono)` and nothing else — not even `var(--mono), monospace`, since the
 fallbacks belong in the token where every consumer inherits them at once. The `@font-face`
 blocks are skipped, as with `font-weight`: they *name* the family rather than draw on it.
-This one is a pure regression guard — all 17 declarations in scope already read the token —
+This one is a pure regression guard — all 18 declarations in scope already read the token
+(13 in the component CSS, 5 in `index.html`'s `<style>`; no `style="…"` attribute sets a family) —
 and it matters precisely because a stray `font-family:'JetBrains Mono', ui-monospace` renders
 identically today. The day the owner swaps the typeface, that one rule keeps the old face and
 surfaces as a single odd-looking element rather than an obvious break. Only the longhand is
 read; a `font:` shorthand in a stylesheet would slip past it (there are none today — the one
 `font:` in the project is inside `<script>`, which no check ever sees).
 
-The cost is size: `index.html` is 297 KB instead of 188 KB, because base64 adds about a third.
+The cost is size: inlining the fonts took `index.html` from **188,288 bytes to 303,787 bytes**
+(+61%), because base64 adds about a third.
+
+> **Byte counts here are stated in bytes on purpose.** Those two are what git stores, with LF
+> line endings — reproduce them with `git cat-file -s HEAD:index.html`. This repo has no
+> `.gitattributes`, so a Windows checkout under `core.autocrlf=true` writes CRLF and the same
+> file measures **307,820 bytes** on disk (`node -e "console.log(require('fs').statSync('index.html').size)"`)
+> — 4,033 bytes larger, one per line. Earlier revisions of this README said "297 KB", which was
+> 303,787 ÷ 1024 — KiB wearing a KB label. Prefer bytes, or say which KB you mean.
+
 That is the price of the headline promise, and it buys back a real one — the app no longer
 degrades to a fallback font when you are offline, which matters here because the sidebar's
 column widths have well under a pixel of slack (see *Element parity* below).
@@ -290,7 +307,7 @@ is blocked, so the file has to be brought in from outside.
 
 | Option | Cost |
 |---|---|
-| **Vendor** `jspdf.umd.min.js` into the repo, then inline it | `index.html` grows again — it already went 188 KB → 297 KB when the fonts were inlined. Ticks the criterion permanently. |
+| **Vendor** `jspdf.umd.min.js` into the repo, then inline it | `index.html` grows again — it already went 188,288 → 303,787 bytes when the fonts were inlined. Ticks the criterion permanently. |
 | **Keep the CDN**, add `integrity="sha384-…" crossorigin="anonymous"` | Cheap, closes the tampering hole, but PDF export stays broken offline and the criterion can never be ticked. |
 | **Keep the CDN as-is** | Nothing to do; accept both the offline gap and the supply-chain exposure. |
 
@@ -360,7 +377,9 @@ colour, radius, weight, and family.
 ### 4. Browser verification — grant the MCP permission?
 
 **Blocks:** *"opens from `file://` and still works."* Nobody has actually looked at the app in a
-browser across six rounds of CSS edits. The automated tests cover pure logic
+browser during any of the ten rounds of Phantom UI work so far (branches
+`auto/…/2026-08-21_0002` through `auto/…/2026-08-23_0004`), several of which edited CSS or
+replaced the typeface outright. The automated tests cover pure logic
 (`node tools/test.mjs`, 54/54) and token consistency (`tools/check-tokens.mjs`), neither of
 which can see a layout break.
 
@@ -420,7 +439,7 @@ assumption — which also makes decisions 2 and 3 much safer to act on.
 The app is a single `index.html` with no build tools — it runs instantly in any browser. For development and testing:
 
 ```bash
-node tools/test.mjs      # headless logic tests (42 assertions)
+node tools/test.mjs      # headless logic tests (54 assertions)
 open "index.html?test"   # in-browser test panel (dev-only)
 ```
 
