@@ -1,20 +1,21 @@
 /*
- * btn-parity-proof.mjs — ONE-OFF proof for the `.btn` base-class refactor (2026-08-23).
+ * btn-parity-proof.mjs — proof harness for base-class refactors of `index.html`'s CSS.
  *
  * NOT part of the Verify command and NOT a checker to keep green. It exists so a
- * reviewer without a browser can re-run the argument this round rests on:
- * "collapsing the app's buttons onto a `.btn` base + `btn--*` modifiers does not
- * move a single pixel."
+ * reviewer without a browser can re-run the argument a given round rests on:
+ * "collapsing these elements onto a base class + modifiers does not move a single pixel."
  *
- * It builds, for every button touched by the refactor, the exact set of winning CSS
+ * It builds, for every element touched by a refactor, the exact set of winning CSS
  * declarations (cascade: specificity, then source order, then the inline style=)
  * in each interaction state, from BEFORE and AFTER copies of index.html, and diffs them.
  *
- *   node docs/btn-parity-proof.mjs <before> <after>
+ *   node docs/btn-parity-proof.mjs <refactor> <before> <after>
  *
- * Each argument is either a file path or a git revision of the form `<rev>:<path>`,
- * which is read with `git show`. The run recorded in SUMMARY.md was:
- *   node docs/btn-parity-proof.mjs 2488f2d:index.html index.html
+ * <refactor> is a key of REFACTORS below — one entry per round that used this harness.
+ * <before>/<after> are each either a file path or a git revision of the form
+ * `<rev>:<path>`, read with `git show`. The runs recorded in SUMMARY.md were:
+ *   node docs/btn-parity-proof.mjs buttons   2488f2d:index.html 9fab5c9:index.html
+ *   node docs/btn-parity-proof.mjs segmented 021b966:index.html index.html
  *
  * Scope of the model (deliberately small, and honest about it):
  *   - descendant combinators only; `>` `+` `~` are reported as unsupported, not silently ignored
@@ -37,13 +38,15 @@ function readSource(ref) {
   return execFileSync('git', ['show', ref], { encoding: 'utf8', maxBuffer: 1 << 28 });
 }
 
-/* ── the elements the refactor touches: class list before -> after ───────────── */
+/* ── the elements each refactor touches: class list before -> after ──────────────
+ * `type` defaults to 'button'; give it explicitly for any subject that is not one
+ * (the three segmented-control wrappers are divs). */
 
 const TOPBAR = ['#topbar'];
 const MODAL = ['.modal-bg', '.modal', '.modal-actions'];
 const TOUR = ['#tourOverlay', '.tour-pop', '.tour-foot', '.tour-btns'];
 
-const ELEMENTS = [
+const BUTTONS = [
   { name: '#undoBtn',        id: 'undoBtn',       ancestors: TOPBAR, before: ['icon-btn'],  after: ['btn', 'btn--icon'] },
   { name: '#redoBtn',        id: 'redoBtn',       ancestors: TOPBAR, before: ['icon-btn'],  after: ['btn', 'btn--icon'] },
   { name: 'tab SHOT LIST',   id: null,            ancestors: TOPBAR, before: ['tab-btn', 'active'], after: ['btn', 'btn--tab', 'active'] },
@@ -66,6 +69,41 @@ const ELEMENTS = [
   { name: '#tourBack',       id: 'tourBack',      ancestors: TOUR, before: ['tour-back'], after: ['btn', 'btn--ghost'] },
   { name: '#tourNext',       id: 'tourNext',      ancestors: TOUR, before: ['tour-next', 'btn-primary'], after: ['btn', 'btn--primary'] },
 ];
+
+/* The segmented-control refactor (2026-08-23) is the mirror image of the button one: the
+ * three toggle groups keep their own class and GAIN a shared `.seg` base, so nothing is
+ * renamed and the buttons' own class attributes never change — only their ancestor's do.
+ * That is why these entries carry per-version ancestor chains. */
+
+const GRID_HEADER = ['#center', '#gridView.view.on', '#gridHeader'];
+
+/* A button inside one of the groups: its own classes are untouched, its parent gains `.seg`. */
+const segBtn = (group, name, classes) => ({
+  name, id: null, before: classes, after: classes,
+  beforeAncestors: [...GRID_HEADER, `.${group}`],
+  afterAncestors: [...GRID_HEADER, `.seg.${group}`],
+});
+
+const SEGMENTED = [
+  { name: '#colToggle', type: 'div', id: 'colToggle', ancestors: GRID_HEADER,
+    before: ['col-toggle'], after: ['seg', 'col-toggle'] },
+  { name: '#dnToggle',  type: 'div', id: 'dnToggle',  ancestors: GRID_HEADER,
+    before: ['dn-toggle'],  after: ['seg', 'dn-toggle'] },
+  { name: '#ovlToggle', type: 'div', id: 'ovlToggle', ancestors: GRID_HEADER,
+    before: ['ovl-toggle'], after: ['seg', 'ovl-toggle'] },
+
+  segBtn('col-toggle', '#colToggle button',    []),
+  segBtn('col-toggle', '#colToggle button.on', ['on']),
+  segBtn('dn-toggle',  '#dnToggle button',     []),
+  segBtn('dn-toggle',  '#dnToggle button.on',  ['on']),
+  segBtn('ovl-toggle', '#ovlToggle button',    []),
+  segBtn('ovl-toggle', '#ovlToggle button.on', ['on']),
+];
+
+const REFACTORS = {
+  buttons: BUTTONS,
+  segmented: SEGMENTED,
+};
 
 const STATES = ['', ':hover', ':disabled', ':disabled:hover', ':focus'];
 
@@ -148,7 +186,7 @@ function parseCompound(text) {
 
 function compoundMatchesElement(c, el, stateSet) {
   if (c.pseudoElement || c.unsupported) return false;
-  if (c.type && c.type !== '*' && c.type !== 'button') return false;
+  if (c.type && c.type !== '*' && c.type !== (el.type ?? 'button')) return false;
   if (c.id && c.id !== el.id) return false;
   if (!c.classes.every((k) => el.classes.includes(k))) return false;
   if (!c.pseudos.every((p) => stateSet.has(p))) return false;
@@ -227,9 +265,15 @@ function computed(rules, el, state) {
 
 /* ── run ─────────────────────────────────────────────────────────────────────── */
 
-const [beforeRef, afterRef] = process.argv.slice(2);
-if (!beforeRef || !afterRef) {
-  console.error('usage: node docs/btn-parity-proof.mjs <before> <after>   (path or <rev>:<path>)');
+const [refactor, beforeRef, afterRef] = process.argv.slice(2);
+if (!refactor || !beforeRef || !afterRef) {
+  console.error('usage: node docs/btn-parity-proof.mjs <refactor> <before> <after>   (path or <rev>:<path>)');
+  console.error(`       <refactor> is one of: ${Object.keys(REFACTORS).join(', ')}`);
+  process.exit(2);
+}
+const ELEMENTS = REFACTORS[refactor];
+if (!ELEMENTS) {
+  console.error(`unknown refactor "${refactor}" — expected one of: ${Object.keys(REFACTORS).join(', ')}`);
   process.exit(2);
 }
 
@@ -244,19 +288,24 @@ for (const key of ['before', 'after']) {
 /* ── phase 1: markup coverage ────────────────────────────────────────────────
  * The cascade diff below assumes each button really carries its `after` classes.
  * That assumption is only worth anything if the markup was actually rewritten, so
- * check it first: every old class token gone from the whole file (markup AND the JS
+ * check it first: every DROPPED class token gone from the whole file (markup AND the JS
  * that builds markup from template strings), and every new class attribute present
- * exactly as many times as there are buttons that should carry it. */
+ * exactly as many times as there are elements that should carry it.
+ *
+ * "Dropped" means present in `before` and absent from `after` — a token kept by the
+ * refactor (`active`; every class in the segmented refactor) is not expected to vanish.
+ * Elements whose class list is unchanged are skipped: there is no rewrite to verify. */
 
 let markupErrors = 0;
 const oldTokens = new Set();
-for (const el of ELEMENTS) for (const c of el.before) if (c !== 'active') oldTokens.add(c);
+for (const el of ELEMENTS) for (const c of el.before) if (!el.after.includes(c)) oldTokens.add(c);
 for (const t of [...oldTokens].sort()) {
   const n = sources.after.split(t).length - 1;
   if (n) { markupErrors++; console.log(`✗ old class token "${t}" still appears ${n}x in the after source`); }
 }
 const wanted = new Map();
 for (const el of ELEMENTS) {
+  if (el.before.join(' ') === el.after.join(' ')) continue;
   const attr = `class="${el.after.join(' ')}"`;
   wanted.set(attr, (wanted.get(attr) ?? 0) + 1);
 }
@@ -274,8 +323,8 @@ const mediaHits = new Set();
 
 for (const el of ELEMENTS) {
   for (const state of STATES) {
-    const b = computed(versions.before, { ...el, classes: el.before }, state);
-    const a = computed(versions.after, { ...el, classes: el.after }, state);
+    const b = computed(versions.before, { ...el, classes: el.before, ancestors: el.beforeAncestors ?? el.ancestors }, state);
+    const a = computed(versions.after, { ...el, classes: el.after, ancestors: el.afterAncestors ?? el.ancestors }, state);
     compared++;
     for (const rule of [...b.hits, ...a.hits]) if (rule.media) mediaHits.add(`${rule.media} { ${rule.selector} }`);
 
@@ -293,7 +342,7 @@ for (const el of ELEMENTS) {
   }
 }
 
-console.log(`\ncompared ${compared} (element, state) pairs across ${ELEMENTS.length} buttons`);
+console.log(`\ncompared ${compared} (element, state) pairs across ${ELEMENTS.length} "${refactor}" elements`);
 if (mediaHits.size) {
   console.log('media-conditional rules that matched a test element:');
   for (const m of mediaHits) console.log('  ' + m);
@@ -305,4 +354,4 @@ if (mismatches || markupErrors) {
   console.log(`\nFAIL — ${mismatches} declaration(s) differ, ${markupErrors} markup problem(s). The refactor moves pixels; revert it.`);
   process.exit(1);
 }
-console.log('\nPASS — every button computes an identical declaration set before and after.');
+console.log('\nPASS — every element computes an identical declaration set before and after.');

@@ -179,14 +179,16 @@
   #gridHeader .title{font-size:14px; font-weight:700; color:var(--text)}
   #gridHeader .stat{font-size:10px; color:var(--muted)}
   #gridHeader .stat b{color:var(--accent); font-weight:700}
-  .dn-toggle{
-    margin-left:auto; display:flex; gap:0; border:1px solid var(--line); border-radius:var(--r-md); overflow:hidden;
-  }
-  .dn-toggle button{padding:4px 10px; font-size:9.5px; color:var(--muted)}
-  .dn-toggle button.on{background:var(--surface2); color:var(--accent)}
-  .col-toggle{display:flex; gap:0; border:1px solid var(--line); border-radius:var(--r-md); overflow:hidden}
-  .col-toggle button{padding:4px 9px; font-size:9.5px; color:var(--muted)}
-  .col-toggle button.on{background:var(--surface2); color:var(--accent)}
+  /* segmented controls — same shape as .pui-segmented / __btn / .is-active in the design system.
+     `.seg` holds everything the three groups share; each group class holds only its own delta.
+     The day/night group is the one that matches the DS button metrics exactly; the other two
+     carry a tighter padding of the app's own — see "Open decisions" 5 in README.md. */
+  .seg{display:flex; gap:0; border:1px solid var(--line); border-radius:var(--r-md); overflow:hidden}
+  .seg button{padding:4px 10px; font-size:9.5px; color:var(--muted)}
+  .seg button.on{background:var(--surface2); color:var(--accent)}
+  .dn-toggle{margin-left:auto}
+  .col-toggle button{padding:4px 9px}
+  .ovl-toggle button{padding:4px 7px; font-size:9px}
 
   #grid{
     display:grid; gap:12px; padding:16px;
@@ -392,10 +394,7 @@
   #sceneBar .runtime{margin-left:auto; font-size:9px; color:var(--muted); white-space:nowrap}
   #sceneBar .runtime b{color:var(--accent)}
 
-  /* overlay toggles in grid header */
-  .ovl-toggle{display:flex; gap:0; border:1px solid var(--line); border-radius:var(--r-md); overflow:hidden}
-  .ovl-toggle button{padding:4px 7px; font-size:9px; color:var(--muted)}
-  .ovl-toggle button.on{background:var(--surface2); color:var(--accent)}
+  /* overlay toggles in grid header: see `.seg` above */
 
   /* export dropdown */
   .menu-wrap{position:relative}
@@ -759,16 +758,16 @@
         <span class="title" id="gh-title">—</span>
         <span class="stat" id="gh-panels"></span>
         <span class="stat" id="gh-dur"></span>
-        <div class="col-toggle" id="colToggle">
+        <div class="seg col-toggle" id="colToggle">
           <button data-c="2">2</button>
           <button data-c="3" class="on">3</button>
           <button data-c="4">4</button>
         </div>
-        <div class="dn-toggle" id="dnToggle">
+        <div class="seg dn-toggle" id="dnToggle">
           <button data-dn="day" class="on">☀ DAY</button>
           <button data-dn="night">☾ NIGHT</button>
         </div>
-        <div class="ovl-toggle" id="ovlToggle" title="Framing guides">
+        <div class="seg ovl-toggle" id="ovlToggle" title="Framing guides">
           <button data-ovl="thirds" aria-label="Toggle rule of thirds overlay">⊞ 3RDS</button>
           <button data-ovl="center" aria-label="Toggle center crosshair overlay">✛ CTR</button>
           <button data-ovl="safe" aria-label="Toggle safe-area overlay">▭ SAFE</button>
