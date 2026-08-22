@@ -1,55 +1,56 @@
-# Round 2026-08-23_0014 — README accuracy audit
+# Round summary — 2026-08-23_0027
 
 ## What I did
 
-- **Restored the branch first.** This branch was cut from stale base `3503537` again (15th+
-  occurrence). `git merge --ff-only` was blocked by permissions, so I used
-  `git checkout origin/auto/…/2026-08-23_0004 -- .` and committed it as `73c8bb1`. Verified
-  tree-equivalence with `git diff --stat` against that tip (empty) — the diff contained no
-  deletions, which is what makes path-checkout equivalent to a fast-forward here.
-- **Audited every factual claim in `README.md` and fixed the five that were wrong**, each
-  against a measurement rather than a guess:
-  | Claim | Was | Now |
-  |---|---|---|
-  | `index.html` size | "297 KB instead of 188 KB" | 188,288 → 303,787 bytes (+61%), with the units explained |
-  | jsPDF decision table | "188 KB → 297 KB" | same byte figures |
-  | font-family declarations in scope | "17" | **18** (13 component CSS + 5 in `<style>`) |
-  | dev test count | "42 assertions" | **54** |
-  | browser verification gap | "six rounds of CSS edits" | ten named round branches |
-  | untokenised colour literals | 5 examples, read as exhaustive | the complete measured set |
-- **Added a units note** so the size number cannot rot the same way twice: the two byte counts
-  are what git stores (LF), reproducible with `git cat-file -s HEAD:index.html`; a Windows
-  checkout under `core.autocrlf=true` writes CRLF and the file measures 307,820 bytes on disk.
-- **Added two verified-but-undocumented keyboard shortcuts** to the shortcut table: `Cmd/Ctrl+D`
-  (duplicate panel, `index.html:2875`) and `?` (shortcuts overlay, `index.html:2864`).
-- **Fixed three numbers in `AUTOPILOT.md`**: Portfolio outcome `187 KB` → `304 KB
-  (303,787 bytes)`, Goal `3,756 บรรทัด` → `4,034`, Goal `12 components` → `11`.
+- **Restored the previous round's work first.** The branch was cut from stale base `3503537`
+  again (5th round running). `tools/check-tokens.mjs` and every token/font change were missing,
+  so the contract's own Verify command could not have run. Restored the tip of
+  `auto/…/2026-08-23_0014` (`e9cfbd1`) with `git checkout <sha> -- .` as its own commit
+  (`2488f2d`) before starting the real task.
+- **Collapsed the app's buttons onto a `.btn` base plus `.btn--primary/--ghost/--icon/--tab`
+  modifiers** (`9fab5c9`), mirroring `.pui-btn` + `--primary/--ghost/--icon/--tab` in
+  `design-system/src/components/Button/Button.css`. The `.modal-actions button` descendant
+  selector is gone; `padding` and `font-size` now sit on the modifiers, exactly as in the design
+  system. 17 buttons across markup and one JS template string were rewritten, plus two
+  `$$('.tab-btn')` call sites.
+- **Folded the three tour buttons into the same vocabulary.** `.tour-skip` and `.tour-back` were
+  a third copy of the ghost button's declarations and `.tour-next` was styled by `.btn-primary`
+  already; all three are now `.btn--ghost` / `.btn--primary`, and the three redundant rules were
+  deleted. `.tour-back:disabled` became `#tourBack:disabled` (the class no longer exists).
+- **Wrote `docs/btn-parity-proof.mjs`** — the mechanical proof the contract demanded in place of
+  a browser. It reads a before and an after copy of `index.html` (either as paths or as
+  `<rev>:<path>`, via `git show`), parses the `<style>` block, and for each of the 17 buttons in
+  5 interaction states rebuilds the winning declaration set from the cascade — specificity, then
+  source order, then the inline `style=` — and diffs before against after.
+- **Updated `README.md` and `AUTOPILOT.md`** to describe the new structure, why the base is
+  deliberately thinner than `.pui-btn`, and what the next round should do.
 
 ## Why
 
-The task named two known-bad numbers and asked me to sweep the rest. Two judgement calls:
+**The base is thinner than `.pui-btn`, on purpose.** Phantom UI's base also sets
+`display:inline-flex`, `gap:6px`, `letter-spacing:.4px`, `transition:.12s` and
+`border:1px solid transparent`. `index.html` has a `button{}` element reset that the React
+components have no counterpart to — buttons here start as `inline-block` with `border:none` —
+so copying those five declarations would have grown every modal button by 2px in each dimension
+and switched its layout mode. That is a design change, not a refactor, so `.btn` holds only what
+was already true of every variant (`font-family`, `cursor`, `border-radius`) and everything else
+stayed on the modifiers. This is recorded in README under "Buttons: a base class the app did
+not have" so the gap is visible rather than forgotten.
 
-**The size number needed a unit, not just a correction.** `297 KB` was `303,787 ÷ 1024` — KiB
-labelled KB — while the `188 KB` it was compared to was `188,288 ÷ 1000`. Two divisors in one
-sentence. And the on-disk size the task quoted (307,820) is a *third* number, produced by CRLF
-on this Windows checkout; the repo has no `.gitattributes`, so both 303,787 and 307,820 are
-real depending on where you measure. Writing "304 KB" would have set up the identical failure
-next round, so the README now states bytes and shows the command for each.
+**The tour buttons keep their pixels through specificity, not luck.** `.tour-btns button` is
+(0,1,1) and beats any `.btn--*` modifier at (0,1,0), so moving `padding:7px 16px` and
+`font-size:11px` onto `.btn--primary` cannot reach `#tourNext` — it still measures 6px 13px /
+10.5px. The proof harness checks this rather than asserting it.
 
-**`12 components` was not a typo, it was a stale estimate.** The design system has 11 component
-directories and 11 exports from `index.ts`; `docs/…/2026-07-20-phantom-ui-design-system.md`
-says "~12 primitive components", which is where the number came from. That plan is a dated
-historical record, so I corrected the live count in `AUTOPILOT.md` and left the plan alone.
-
-**I did not answer any Open decision.** All four still belong to the owner. I also reordered the
-next task so a future round checks for the owner's answers *before* doing anything else.
+**The proof script is not in the Verify command, and that is deliberate.** It does not test a
+requirement; it compares two revisions of one edit. Wiring it into Verify would give a future
+round a green light it has not earned.
 
 ## Verification
 
-Full Verify command, run after all edits:
+`node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`:
 
 ```
-$ node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test
 54 passed, 0 failed
 tokens in sync: 22/22 from design-system/src/tokens.css present and identical in index.html
 fonts in sync: 4/4 from design-system/src/fonts.css embedded byte-identical in index.html
@@ -57,53 +58,71 @@ no derived-colour literals: 15 CSS source(s) scanned, none re-hardcode a tokenis
 font weights available: 15 CSS source(s) scanned, every font-weight is one of 400, 500, 700, 800
 no radius literals: 15 CSS source(s) scanned, every border-radius reads a --r-* token
 typeface from one source: 15 CSS source(s) scanned, every font-family reads var(--mono)
- Test Files  12 passed (12)
-      Tests  31 passed (31)
+
+Test Files  12 passed (12)
+     Tests  31 passed (31)
 ```
 
-Green. Nothing under `index.html`, CSS, or `tools/` was touched this round, so this is the same
-result the round started with — as it should be for a docs-only change.
+`node docs/btn-parity-proof.mjs 9fab5c9~1:index.html index.html`:
 
-Claims I re-measured and found **already correct** (so a future round does not redo them):
-`═` appears 1,576×; jsPDF is on line 7 and is the only external reference; model string is
-`claude-sonnet-4-6`; fonts total 86,144 bytes; PDF export is landscape A4, `COLS=3, ROWS=3`,
-`cv.width = aw * 4`; `#left` is 212px, scrollbar 8px, `.section` padding 12px, `.radio-grid`
-gap 4px, `.chip` is `padding:6px 2px; font-size:10px` — so the whole decision-2 arithmetic
-holds; project cap is 10; the sample storyboard is 8 panels; the responsive breakpoint is
-1100px; the API timeout is 30,000ms; `prefers-reduced-motion` is honoured; three of seven
-acceptance criteria are unticked; `.add-card .ac-plus` is `font-weight:400`; the single `font:`
-shorthand is at `index.html:3008` inside `<script>`; every shortcut in the table is bound
-(`P`/`C` live in a *second* keydown handler at line 3972, not the main one at 2860).
+```
+markup coverage OK — 7 old class tokens gone, 5 new class attributes at the expected counts
+
+compared 85 (element, state) pairs across 17 buttons
+media-conditional rules that matched a test element:
+  @media(prefers-reduced-motion:reduce) { * }
+
+PASS — every button computes an identical declaration set before and after.
+```
+
+The harness was proved sensitive before it was trusted — four runs that had to fail, and did:
+
+| Injected fault | Result |
+|---|---|
+| Run against the file before any edit (new classes not yet applied) | FAIL, 431 declarations differ |
+| `.btn--icon` padding `5px 10px` → `5px 11px` | FAIL, `padding` differs on all 6 icon buttons |
+| `border-radius` dropped from the `.btn` base | FAIL, 70 declarations differ |
+| One markup site left as `class="icon-btn"` | FAIL at the markup phase, before the cascade diff |
+
+Sizes, measured as git blobs (`git cat-file -s`), which is what README's byte counts mean:
+`index.html` 303,787 → 304,102 bytes (+315). Line count 4,034 → 4,035.
 
 ## What I did NOT do
 
-- **Did not touch `index.html`, any CSS, or `tools/`** — the task forbade it explicitly.
-- **Did not add a 7th token check** — all 22 tokens already have one.
-- **Did not answer the four Open decisions**, and did not remove or move that section.
-- **Did not rewrite `docs/superpowers/plans/*`** — those are dated historical plans; "~12
-  components" was an accurate estimate at the time it was written.
-- **Did not fix `AUTOPILOT.md:170`**, which claims the runner overwrites `AUTOPILOT.md` every
-  round. Evidence says otherwise (my restore of the file persisted, and the contract text the
-  runner injects is generated *from* the previous round's file), but I could not prove it from
-  inside a single round, so I left the warning standing rather than delete a caution on a guess.
+- **Did not touch `tools/`** and did not add a seventh token check — AUTOPILOT forbids both, and
+  all 22 tokens already have one.
+- **Did not answer any of the four `## Open decisions` in README.** None had been answered (no
+  `jspdf.umd.min.js` was dropped into the repo, no new text in that section), so I ran the
+  fallback task as instructed. Every one of them moves pixels or adds a file — the owner's call.
+- **Did not adopt `.pui-btn`'s remaining five declarations** — see Why. This is the one place
+  where app and design system still genuinely differ on buttons, and it is now written down in
+  README rather than left implicit.
+- **Did not touch the other descendant-selector button groups** (`.menu-pop button`,
+  `.pc-tools button`, `.mini-btns button`, the three toggles, `.sl-export button`,
+  `#animaticBar button`, `.cmt-add button`). They map to `Menu.css` / `SegmentedToggle.css`,
+  not `Button.css`; that is the next task.
+- **Did not verify in a browser.** Decision 4 (the MCP permission) is still unanswered, and
+  earlier rounds established that Playwright and Chrome-DevTools are permission-blocked here.
 
 ## Risk
 
-- **The `18` count is the one number a reviewer should re-check.** I derived it by replicating
-  `check-tokens.mjs`'s own scan (same `FAMILY_DECL` regex, same `@font-face`/comment blanking,
-  same target list minus `tokens.css`) and printed all 18 with file:line — but the checker
-  reports "15 CSS source(s)", never a declaration count, so nothing in CI holds this number.
-  It can rot again. Reproduce: the 18 are Badge:3, Button:2, Chip:4, EmptyState:1, Field:1,
-  Field:7, Menu:3, Menu:9, Modal:9, SegmentedToggle:4, Swatch:4, Toast:5, Toggle:1, and
-  `index.html` lines 43, 51, 52, 123, 522.
-- **"ten rounds" in decision 4 counts round *branches* (`2026-08-21_0002` … `2026-08-23_0004`),
-  not rounds that edited CSS** — some of those rounds only touched `tools/` and docs. I chose
-  the branch range because it is exactly checkable; the previous "six" was not sourced at all.
-  The claim it supports (nobody has opened a browser) is unchanged and still true.
-- **The completeness claim about untokenised literals is scoped to `<style>` outside `:root`
-  and to the component CSS.** It does not cover literals inside `<script>`, which are
-  deliberately excluded everywhere and are the ones the canvas code needs.
-- **This round changed no behaviour**, so a green Verify proves the docs edits broke nothing —
-  it does not prove the docs are now right. The table above is the audit trail for that.
-- The stale-base re-cut is now costing a commit every single round. Worth fixing upstream in
-  the runner rather than re-detecting it 36 branches in.
+- **The proof is a cascade model, not a rendering.** It reads the `<style>` block and computes
+  which declarations win. It does *not* expand shorthands to longhands (sound here only because
+  the refactor never trades a shorthand for a longhand), treats `>`/`+`/`~` and structural
+  pseudo-classes as non-matching, and cannot see anything a real layout engine would. If a
+  reviewer can open the file in a browser, the four things worth a glance are: the top bar's
+  icon buttons, the two view tabs, the two modals' footers, and the first-run tour's three
+  buttons.
+- **The 17 elements are hand-listed in the harness.** If I had missed a button entirely it would
+  not appear in the diff. Two things bound that: the markup-coverage phase fails if any old
+  class token survives anywhere in the file, and it does not (0 occurrences of `tab-btn`,
+  `icon-btn`, `btn-primary`, `btn-ghost`, `tour-skip`, `tour-back`, `tour-next`). The
+  substitution itself asserted an exact expected count per pattern before writing.
+- **`#collapseRight` and `#retryGen` are modelled with assumed ancestors** (`#right`, and
+  `#grid` › `.empty-state`). Both are correct as of this revision, but they are typed into the
+  harness rather than parsed from the document.
+- **`.tour-skip` / `.tour-back` / `.tour-next` class names are gone.** Nothing referenced them —
+  the JS reaches those buttons by id — but any future CSS or bookmarklet targeting them breaks.
+- **The branch is still cut from a stale base.** This round's restore commit is the fifth. Until
+  the runner branches from the previous round or the PRs land on `main`, every round pays this
+  tax and risks a round that restores nothing because the agent did not notice.

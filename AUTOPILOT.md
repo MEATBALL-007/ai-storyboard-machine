@@ -35,7 +35,7 @@
       → **สำรวจครบทั้ง 5 ตัวแล้ว (2026-08-21) — เหลือ delta จริงแค่ 1 จุดเดียว**
         | app | DS | ผล |
         |---|---|---|
-        | `.btn-primary` / `.btn-ghost` / `.icon-btn` / `.tab-btn` | `Button.css` | ✅ ตรงทุกค่า |
+        | `.btn` + `.btn--primary/--ghost/--icon/--tab` | `Button.css` | ✅ ตรงทุกค่า **และโครงสร้างตรงแล้ว** (2026-08-23) |
         | `.chip` (บรรทัด ~100) | `Chip.css` | ⚠️ เหลือ `padding` — **บล็อกอยู่ รอเจ้าของตัดสิน** |
         | `.pc-badge` (บรรทัด ~189) | `.pui-badge` + `--accent` | ✅ ตรงทุกค่า |
         | `.modal-bg` / `.modal` (บรรทัด ~304) | `Modal.css` | ✅ ตรงทุกค่า |
@@ -44,6 +44,18 @@
         ซึ่ง **`body` set ให้อยู่แล้วและไม่มีอะไรมา override** → render เหมือนกันเป๊ะ ไม่ต้องแก้
         ต่างแค่**ชื่อ class** (`.pc-badge` vs `.pui-badge--accent`) ซึ่งไม่ใช่เรื่องหน้าตา
         `.chip` รับ `cursor:pointer` + `font-family:var(--mono)` ไปแล้ว เหลือ `padding` อย่างเดียว
+        (2026-08-23 รอบ 0027: **ปุ่มยุบมาอยู่บน base `.btn` + modifier `.btn--*` แล้ว** เหมือน
+         `.pui-btn` + `--primary/--ghost/--icon/--tab` — `.modal-actions button` descendant selector
+         หายไป, `padding`/`font-size` ย้ายมาอยู่บน modifier เหมือนฝั่ง DS, และ `.tour-skip`/`.tour-back`/
+         `.tour-next` ที่เคยประกาศสไตล์ ghost/primary ซ้ำอีกชุด กลายเป็น `.btn--ghost`/`.btn--primary`
+         ⚠️ **base ของแอปบางกว่า `.pui-btn` โดยตั้งใจ** — DS ตั้ง `display:inline-flex; gap:6px;
+         letter-spacing:.4px; transition:.12s; border:1px solid transparent` ด้วย แต่แอปมี
+         `button{}` element reset ที่ DS ไม่มี (`border:none`, display เป็น `inline-block`)
+         → ลอกมาทั้งชุด = ปุ่มใน modal โตขึ้น 2px ทุกด้านและเปลี่ยน layout mode = **ขยับพิกเซล**
+         การรับ 5 บรรทัดนั้นเป็น**การตัดสินใจด้านดีไซน์ของเจ้าของ** ไม่ใช่ refactor
+         พิสูจน์ว่าไม่ขยับพิกเซลด้วย `docs/btn-parity-proof.mjs` — สร้าง declaration set ที่ชนะ
+         cascade ของปุ่มแต่ละตัวจาก before/after แล้ว diff: 17 ปุ่ม × 5 state = 85 คู่ ต่างกัน 0 จุด
+         **ไม่ได้อยู่ใน Verify** และไม่มีอะไรบังคับให้มันตามโค้ดทัน — เป็นหลักฐานของรอบนั้นเท่านั้น)
         ⚠️ **`padding:6px 10px` ของ DS ใส่ไม่ได้ — sidebar แคบเกิน** (คำนวณละเอียดใน README
         หัวข้อ "Open decisions" ข้อ 2): track กว้าง ~41.75px แต่ `16:9` ต้องการ 46px
         และ `1fr` = `minmax(auto,1fr)` หดต่ำกว่า min-content ไม่ได้ → grid จะดันจนเกิด scrollbar แนวนอน
@@ -177,20 +189,31 @@ generate มาจาก branch ของรอบก่อน — ไฟล์�
 **ก่อนอื่น เปิด `README.md` หัวข้อ `## Open decisions` ดูว่าเจ้าของตอบข้อไหนมาแล้วหรือยัง
 ถ้าตอบมาแล้วแม้ข้อเดียว → ทำตามคำตอบนั้นแทนงานข้างล่าง (สำคัญกว่า และปลดล็อกเกณฑ์ได้จริง)**
 
-ถ้ายังไม่มีคำตอบ ให้ทำงานนี้: **ยุบปุ่มใน `index.html` ให้มี base class `.btn` เหมือน
-`Button.css` ของ Phantom UI** — เป็นงาน**เดียว**ที่เหลือซึ่งไม่ต้องรอเจ้าของ
+ถ้ายังไม่มีคำตอบ ให้ทำงานนี้: **สำรวจ `.menu-pop` เทียบ `Menu.css` และ `.dn-toggle` /
+`.col-toggle` / `.ovl-toggle` เทียบ `SegmentedToggle.css` แล้วยุบเฉพาะจุดที่พิสูจน์ได้ว่า
+ไม่ขยับพิกเซล** — เป็นการต่อยอดงานรอบ 0027 ไปยัง DS component ที่เหลือซึ่งแอปมีของคู่กันจริง
+(`Button.css` จบไปแล้ว; `Chip`/`Badge`/`Modal`/`EmptyState` สำรวจครบแล้วตามตารางเกณฑ์ข้อ 2)
 
-รายละเอียด: วันนี้แอปสไตล์ปุ่มใน modal ผ่าน descendant selector `.modal-actions button`
-ส่วน DS มี `.pui-btn` เป็น base แล้วมี `--primary` / `--ghost` ต่อยอด ค่าทุกตัว**ตรงกันอยู่แล้ว**
-(สำรวจแล้วรอบ 08-21) ต่างแค่**โครงสร้าง selector** → การยุบเป็น `.btn` + modifier
-**ไม่ขยับพิกเซลแม้แต่จุดเดียว** แต่ทำให้ทั้งสองฝั่งอ่านเป็นภาษาเดียวกันจริงๆ
+**ผลชิมลางที่ทำไว้ให้แล้ว (รอบ 0027 อ่าน 2 ไฟล์นี้จบแล้ว — อย่าอ่านซ้ำเพื่อสรุปเรื่องเดิม):**
+- `.menu-pop .mh` ตรงกับ `.pui-menu__header` ทุกค่า, `.menu-pop button:disabled{opacity:.35}`
+  และ `.menu-pop button.danger{color:var(--secondary)}` ตรงกับ `--danger` / `:disabled` ของ DS
+  → **น่าจะยุบได้ทั้งชุด** แต่ต้องไล่ `.menu-pop button` (บรรทัด ~403) ทีละ declaration ก่อน
+- `.dn-toggle button{padding:4px 10px; font-size:9.5px}` = `.pui-segmented__btn` **เป๊ะ**
+- ⚠️ แต่ `.col-toggle button` ใช้ `padding:4px 9px` และ `.ovl-toggle button` ใช้
+  `padding:4px 7px; font-size:9px` — **ไม่ตรง DS** → 2 ตัวนี้ยุบไม่ได้ถ้าไม่ขยับพิกเซล
+  **ห้ามแก้ให้ตรงเอง** ให้เขียนเป็นข้อใหม่ใน `README.md` → `## Open decisions` แทน
+  (สามกลุ่มนี้เป็น segmented control หน้าตาเดียวกันแต่ padding ไม่เท่ากัน — นั่นคือความไม่สม่ำเสมอ
+   ของตัวแอปเอง ไม่ใช่ความต่างระหว่างแอปกับ DS เจ้าของต้องเลือกว่าจะให้เท่ากันที่ค่าไหน)
 
-⚠️ **ความเสี่ยงที่ต้องรับมือ ไม่ใช่มองข้าม:** ต้องแก้ `class=` ทั้งใน markup และใน JS ที่
-generate HTML ด้วย template string (grep `<button` ในช่วง `<script>` ให้ครบก่อนเริ่ม)
-และ **ไม่มีเบราว์เซอร์ให้ verify** (decision 4 ยังไม่ได้รับอนุญาต) → พิสูจน์ด้วยวิธี mechanical:
-เขียน list ของ declaration ที่ปุ่มแต่ละตัวได้รับ **ก่อน** แก้ แล้ว diff กับ **หลัง** แก้
-ต้องเท่ากันเป๊ะทุกปุ่ม ถ้า diff ไม่เท่า = แก้ผิด ให้ย้อนกลับ ไม่ใช่ปรับ CSS ตาม
-ถ้าพิสูจน์แบบนี้ไม่ได้ **ให้ยกเลิกงานนี้แล้วบันทึกเหตุผลใน SUMMARY.md** — ปุ่มพังเงียบๆ
+⚠️ **ความเสี่ยงที่ต้องรับมือ ไม่ใช่มองข้าม:** `.menu-pop button` ถูก generate จาก JS ด้วย
+template string (บรรทัด ~3857–3863) และเลือกด้วย `e.target.closest('button[data-act]')`
+กับ `$$('#exportMenu button')` → ถ้าเปลี่ยน selector ต้องไล่ให้ครบ
+และ **ไม่มีเบราว์เซอร์ให้ verify** (decision 4 ยังไม่ได้รับอนุญาต) → ใช้วิธีเดิมของรอบ 0027:
+เพิ่ม element ที่จะแก้เข้าไปในตาราง `ELEMENTS` ของ `docs/btn-parity-proof.mjs`
+(ระบุ class ก่อน/หลัง + ancestor chain) แล้วรัน `node docs/btn-parity-proof.mjs <sha>:index.html index.html`
+ต้องได้ **PASS ทั้ง markup coverage และ cascade diff** ถ้า diff ไม่เท่า = แก้ผิด ให้ย้อนกลับ ไม่ใช่ปรับ CSS ตาม
+ทดสอบ negative อย่างน้อย 1 กรณีทุกครั้ง (เช่น ขยับ padding 1px) เพื่อพิสูจน์ว่า harness ยังจับได้จริง
+ถ้าพิสูจน์แบบนี้ไม่ได้ **ให้ยกเลิกงานนี้แล้วบันทึกเหตุผลใน SUMMARY.md** — UI พังเงียบๆ
 โดยไม่มีใครเห็น แย่กว่าการไม่ยุบ class
 
 ⚠️ **ห้ามแตะ `tools/` และอย่าเพิ่มเช็คที่ 7** — token ครบทั้ง 22 ตัวแล้ว ไม่เหลืออะไรให้บังคับ
@@ -207,9 +230,10 @@ generate HTML ด้วย template string (grep `<button` ในช่วง `<
 
 > **ผลสำรวจที่ทำไว้แล้ว อย่าเสียเวลาทำซ้ำ:**
 > - element parity สำรวจครบ 5 ตัวแล้ว (ตารางในเกณฑ์ข้อ 2) — เหลือ chip `padding` ที่บล็อกรอเจ้าของ
-> - `index.html` ไม่มี base class `.btn` (ใช้ selector `.modal-actions button` แทน) แต่**ค่าตรงกันหมด**
->   การเพิ่ม `.btn` ต้องแก้ `class=` ทั้งใน markup และ JS ที่ generate HTML → **แยกเป็นรอบของตัวเอง**
->   และเป็นเรื่อง**โครงสร้าง ไม่ใช่หน้าตา** (ไม่ขยับพิกเซลเลย) จะทำหรือไม่ทำก็ได้
+> - ~~`index.html` ไม่มี base class `.btn`~~ **ทำเสร็จแล้วรอบ 0027** — มี `.btn` + `.btn--*` แล้ว
+>   และมี `docs/btn-parity-proof.mjs` เป็นเครื่องมือพิสูจน์ว่า refactor ไม่ขยับพิกเซล
+>   (เครื่องมือนี้ **ไม่อยู่ใน Verify** ตั้งใจแบบนั้น — มันไม่ได้ทดสอบ requirement อะไร
+>    มันเทียบ before/after ของการแก้ครั้งหนึ่งๆ รอบหลังใช้ต่อได้โดยเติมตาราง `ELEMENTS`)
 > - ฟอนต์ self-host เสร็จแล้ว (รอบ 0043) — `fonts.googleapis` เหลือ 0 จุด อย่าไปหาอีก
 > - `font-weight` สำรวจครบแล้ว (รอบ 0015) — `<style>` ใช้ 400×1 / 500×4 / 700×24 / 800×3
 >   DS component CSS ใช้ 500×1 / 700×3 ทั้งหมดมีไฟล์ฟอนต์รองรับ และมี checker บังคับแล้ว

@@ -238,9 +238,11 @@ The cost is size: inlining the fonts took `index.html` from **188,288 bytes to 3
 > **Byte counts here are stated in bytes on purpose.** Those two are what git stores, with LF
 > line endings — reproduce them with `git cat-file -s HEAD:index.html`. This repo has no
 > `.gitattributes`, so a Windows checkout under `core.autocrlf=true` writes CRLF and the same
-> file measures **307,820 bytes** on disk (`node -e "console.log(require('fs').statSync('index.html').size)"`)
-> — 4,033 bytes larger, one per line. Earlier revisions of this README said "297 KB", which was
-> 303,787 ÷ 1024 — KiB wearing a KB label. Prefer bytes, or say which KB you mean.
+> file measures 4,035 bytes more on disk, one per line
+> (`node -e "console.log(require('fs').statSync('index.html').size)"`). Earlier revisions of this
+> README said "297 KB", which was 303,787 ÷ 1024 — KiB wearing a KB label. Prefer bytes, or say
+> which KB you mean. The 303,787 above is the file as the fonts left it; the button refactor of
+> 2026-08-23 took it to **304,102 bytes** (+315).
 
 That is the price of the headline promise, and it buys back a real one — the app no longer
 degrades to a fallback font when you are offline, which matters here because the sidebar's
@@ -262,7 +264,7 @@ means the `<style>` block in `index.html` and the matching file under
 
 | App selector | Phantom UI | Status |
 |---|---|---|
-| `.btn-primary`, `.btn-ghost`, `.icon-btn`, `.tab-btn` | `Button.css` | ✅ every value matches |
+| `.btn` + `.btn--primary/--ghost/--icon/--tab` | `Button.css` | ✅ every value matches, same base + modifier shape |
 | `.chip` | `Chip.css` | ⚠️ matches except `padding` — see [decision 2](#2-chip-horizontal-padding--which-pixels-move) |
 | `.pc-badge` | `Badge.css` | ✅ every value matches |
 | `.modal-bg`, `.modal` | `Modal.css` | ✅ every value matches |
@@ -273,9 +275,33 @@ Badge, modal, and empty state differ from their Phantom UI files only by `font-f
 them — so they render identically. The remaining difference is the class *name*
 (`.pc-badge` vs `.pui-badge--accent`), which is not a visual one.
 
-`index.html` has no base `.btn` class; it styles modal buttons through the descendant selector
-`.modal-actions button`. The declarations are equivalent, so this is a structural difference
-rather than a visual one.
+### Buttons: a base class the app did not have
+
+Until 2026-08-23 the app had no base button class. Modal buttons were styled through the
+descendant selector `.modal-actions button`, and `.tab-btn` / `.icon-btn` repeated the shared
+declarations. They now read `class="btn btn--icon"` and so on, the same base-plus-modifier shape
+as `.pui-btn` / `.pui-btn--icon`.
+
+The base is deliberately thinner than `.pui-btn`. Phantom UI's base also sets
+`display:inline-flex`, `gap:6px`, `letter-spacing:.4px`, `transition:.12s` and
+`border:1px solid transparent`; `index.html` has a `button{}` element reset that the React
+components have no equivalent of, so a button here starts as an `inline-block` with
+`border:none`. Copying those five declarations across would have changed the box of every modal
+button by 2px and switched its layout mode. `.btn` therefore holds only what is already true of
+every variant — `font-family`, `cursor`, `border-radius` — and the rest stays on the modifiers.
+Adopting the remaining five is a *design* change, not a refactor, and belongs with the other
+[open decisions](#open-decisions).
+
+`docs/btn-parity-proof.mjs` is the evidence that the refactor moved nothing. It rebuilds each
+button's winning declaration set from the cascade (specificity, source order, then the inline
+`style=`) in five interaction states, for a before and an after copy of the file, and diffs them:
+
+```
+node docs/btn-parity-proof.mjs 9fab5c9~1:index.html index.html
+```
+
+It is a one-off proof, not part of the Verify command, and nothing keeps it in sync with future
+edits to the button CSS.
 
 ---
 
@@ -377,9 +403,9 @@ colour, radius, weight, and family.
 ### 4. Browser verification — grant the MCP permission?
 
 **Blocks:** *"opens from `file://` and still works."* Nobody has actually looked at the app in a
-browser during any of the ten rounds of Phantom UI work so far (branches
-`auto/…/2026-08-21_0002` through `auto/…/2026-08-23_0004`), several of which edited CSS or
-replaced the typeface outright. The automated tests cover pure logic
+browser during any of the twelve rounds of Phantom UI work so far (branches
+`auto/…/2026-08-21_0002` through `auto/…/2026-08-23_0027`), several of which edited CSS,
+restructured the button classes, or replaced the typeface outright. The automated tests cover pure logic
 (`node tools/test.mjs`, 54/54) and token consistency (`tools/check-tokens.mjs`), neither of
 which can see a layout break.
 
