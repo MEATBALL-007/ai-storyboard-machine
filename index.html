@@ -49,6 +49,11 @@
   ::-webkit-scrollbar-thumb{background:#222; border-radius:var(--r-lg)}
   ::-webkit-scrollbar-thumb:hover{background:#333}
   button{font-family:var(--mono); cursor:pointer; border:none; background:none; color:inherit}
+  /* Button base — the counterpart of .pui-btn in design-system/src/components/Button/Button.css.
+     Only what every variant shares; the deltas live on .btn--tab / --icon / --primary / --ghost.
+     .pui-btn's display/gap/letter-spacing/transition are NOT here: the button{} reset above
+     already gives this app a different starting box, so copying them would move pixels. */
+  .btn{font-family:var(--mono); cursor:pointer; border-radius:var(--r-md)}
   input,textarea,select{font-family:var(--mono); color:var(--text)}
   input:focus,textarea:focus,select:focus{outline:1px solid var(--accent); outline-offset:-1px}
 
@@ -71,12 +76,12 @@
     color:var(--accent);
   }
   .topspacer{flex:1}
-  .tab-btn{
-    padding:5px 11px; font-size:10.5px; border-radius:var(--r-md); color:var(--muted);
+  .btn--tab{
+    padding:5px 11px; font-size:10.5px; color:var(--muted);
     border:1px solid transparent; letter-spacing:.4px; transition:.12s;
   }
-  .tab-btn:hover{color:var(--text); background:var(--surface)}
-  .tab-btn.active{color:var(--accent); border-color:var(--dim); background:var(--surface)}
+  .btn--tab:hover{color:var(--text); background:var(--surface)}
+  .btn--tab.active{color:var(--accent); border-color:var(--dim); background:var(--surface)}
   #exportPdfBtn{
     padding:5px 12px; font-size:10.5px; font-weight:700; border-radius:var(--r-md);
     background:var(--accent); color:#000; letter-spacing:.4px;
@@ -333,11 +338,10 @@
     border-radius:var(--r-md); padding:9px; font-size:11px; line-height:1.5; resize:vertical;
   }
   .modal-actions{display:flex; gap:8px; margin-top:14px; justify-content:flex-end}
-  .modal-actions button{padding:7px 16px; border-radius:var(--r-md); font-size:11px}
-  .btn-ghost{color:var(--muted); border:1px solid var(--line)}
-  .btn-ghost:hover{color:var(--text); border-color:var(--dim)}
-  .btn-primary{background:var(--accent); color:#000; font-weight:700}
-  .btn-primary:hover{box-shadow:0 0 14px rgba(var(--accent-rgb),.4)}
+  .btn--ghost{padding:7px 16px; font-size:11px; color:var(--muted); border:1px solid var(--line)}
+  .btn--ghost:hover{color:var(--text); border-color:var(--dim)}
+  .btn--primary{padding:7px 16px; font-size:11px; background:var(--accent); color:#000; font-weight:700}
+  .btn--primary:hover{box-shadow:0 0 14px rgba(var(--accent-rgb),.4)}
 
   /* ───── TOAST ───── */
   #toast{
@@ -406,8 +410,8 @@
   .menu-pop button:last-child{border-bottom:none}
   .menu-pop button:hover{background:var(--surface2); color:var(--accent)}
   .menu-pop .mh{padding:6px 12px; font-size:8.5px; color:var(--muted); letter-spacing:1px; background:#0a0a0a}
-  .icon-btn{padding:5px 10px; font-size:10.5px; border-radius:var(--r-md); color:var(--muted); border:1px solid var(--line)}
-  .icon-btn:hover{color:var(--accent); border-color:var(--dim); background:var(--surface)}
+  .btn--icon{padding:5px 10px; font-size:10.5px; color:var(--muted); border:1px solid var(--line)}
+  .btn--icon:hover{color:var(--accent); border-color:var(--dim); background:var(--surface)}
 
   /* animatic player overlay */
   #animatic{
@@ -475,8 +479,8 @@
   @media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition:none!important}}
 
   /* ───── UX quick wins ───── */
-  .icon-btn:disabled{opacity:.32; cursor:not-allowed; color:var(--dim)}
-  .icon-btn:disabled:hover{background:none; border-color:var(--line); color:var(--dim)}
+  .btn--icon:disabled{opacity:.32; cursor:not-allowed; color:var(--dim)}
+  .btn--icon:disabled:hover{background:none; border-color:var(--line); color:var(--dim)}
 
   /* AI status chip */
   .ai-chip{
@@ -540,12 +544,9 @@
   .tour-foot{display:flex; align-items:center; gap:8px}
   .tour-count{font-size:9px; color:var(--muted); letter-spacing:1px}
   .tour-btns{margin-left:auto; display:flex; gap:6px}
+  /* the three tour buttons are .btn--ghost / .btn--primary; this only tightens their box */
   .tour-btns button{padding:6px 13px; border-radius:var(--r-md); font-size:10.5px}
-  .tour-skip{color:var(--muted); border:1px solid var(--line)}
-  .tour-skip:hover{color:var(--text); border-color:var(--dim)}
-  .tour-back{color:var(--muted); border:1px solid var(--line)}
-  .tour-back:hover{color:var(--text); border-color:var(--dim)}
-  .tour-back:disabled{opacity:.3; cursor:not-allowed}
+  #tourBack:disabled{opacity:.3; cursor:not-allowed}
 
   /* panel lifecycle: add-card, lock, context menu */
   .add-card{
@@ -602,16 +603,16 @@
     <span>STORYBOARD<span class="sub"> // PHANTOM CREW OS</span></span>
   </div>
   <input id="projName" value='MV "ขอให้ผม"'>
-  <button class="icon-btn" id="undoBtn" title="Undo (Cmd/Ctrl+Z)" aria-label="Undo" disabled>↶</button>
-  <button class="icon-btn" id="redoBtn" title="Redo (Shift+Cmd/Ctrl+Z)" aria-label="Redo" disabled>↷</button>
+  <button class="btn btn--icon" id="undoBtn" title="Undo (Cmd/Ctrl+Z)" aria-label="Undo" disabled>↶</button>
+  <button class="btn btn--icon" id="redoBtn" title="Redo (Shift+Cmd/Ctrl+Z)" aria-label="Redo" disabled>↷</button>
   <div class="topspacer"></div>
   <button class="ai-chip demo" id="aiChip" aria-label="AI generation status"><span class="dot"></span><span id="aiChipLabel">DEMO MODE</span></button>
-  <button class="tab-btn active" data-view="grid">SHOT LIST</button>
-  <button class="tab-btn" data-view="cb">COLOR BIBLE</button>
-  <button class="icon-btn" id="animaticBtn" title="Play animatic (P)">▶ PLAY</button>
-  <button class="icon-btn" id="continuityBtn" title="Continuity check">✓ CHECK</button>
-  <button class="icon-btn" id="shareBtn" title="Copy share link">↗ SHARE</button>
-  <button class="icon-btn" id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts" aria-haspopup="dialog">?</button>
+  <button class="btn btn--tab active" data-view="grid">SHOT LIST</button>
+  <button class="btn btn--tab" data-view="cb">COLOR BIBLE</button>
+  <button class="btn btn--icon" id="animaticBtn" title="Play animatic (P)">▶ PLAY</button>
+  <button class="btn btn--icon" id="continuityBtn" title="Continuity check">✓ CHECK</button>
+  <button class="btn btn--icon" id="shareBtn" title="Copy share link">↗ SHARE</button>
+  <button class="btn btn--icon" id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts" aria-haspopup="dialog">?</button>
   <div class="menu-wrap">
     <button id="exportMenuBtn" aria-label="Open export menu" aria-haspopup="true" style="padding:5px 12px; font-size:10.5px; font-weight:700; border-radius:var(--r-md); background:var(--accent); color:#000; letter-spacing:.4px">⤓ EXPORT ▾</button>
     <div class="menu-pop" id="exportMenu">
@@ -807,7 +808,7 @@
 
   <!-- ════ RIGHT SIDEBAR ════ -->
   <aside id="right" role="complementary" aria-label="Shot list and panel details">
-    <button id="collapseRight" class="tab-btn" style="display:none"></button>
+    <button id="collapseRight" class="btn btn--tab" style="display:none"></button>
     <div class="right-head">
       <h3 id="rightTitle">Shot List</h3>
       <span class="sub" id="rightSub"></span>
@@ -841,8 +842,8 @@
     <p class="m-sub">Add a direction note. Claude will re-imagine only this shot while keeping the scene continuity.</p>
     <textarea id="regenNote" placeholder="e.g. 'Push in tighter, emphasize her hand reaching for the cup. More shadow.'"></textarea>
     <div class="modal-actions">
-      <button class="btn-ghost" id="regenCancel">Cancel</button>
-      <button class="btn-primary" id="regenGo">↻ Regenerate</button>
+      <button class="btn btn--ghost" id="regenCancel">Cancel</button>
+      <button class="btn btn--primary" id="regenGo">↻ Regenerate</button>
     </div>
   </div>
 </div>
@@ -863,8 +864,8 @@
       </div>
     </div>
     <div class="modal-actions">
-      <button class="btn-ghost" id="scTour">↦ Replay tour</button>
-      <button class="btn-primary" id="scClose">Got it</button>
+      <button class="btn btn--ghost" id="scTour">↦ Replay tour</button>
+      <button class="btn btn--primary" id="scClose">Got it</button>
     </div>
   </div>
 </div>
@@ -878,9 +879,9 @@
     <div class="tour-foot">
       <span class="tour-count" id="tourCount"></span>
       <div class="tour-btns">
-        <button class="tour-skip" id="tourSkip">Skip</button>
-        <button class="tour-back" id="tourBack">Back</button>
-        <button class="tour-next btn-primary" id="tourNext">Next</button>
+        <button class="btn btn--ghost" id="tourSkip">Skip</button>
+        <button class="btn btn--ghost" id="tourBack">Back</button>
+        <button class="btn btn--primary" id="tourNext">Next</button>
       </div>
     </div>
   </div>
@@ -2251,7 +2252,7 @@ function renderSkeleton(n){ $('#grid').innerHTML = Array.from({length:n}, () =>
   `<div class="panel-card"><div class="pc-canvas-wrap" style="aspect-ratio:16/9;background:linear-gradient(90deg,#111,#161616,#111);background-size:200% 100%;animation:shimmer 1.2s infinite"></div></div>`).join(''); }
 function renderErrorCard(msg, retry){ $('#grid').innerHTML =
   `<div class="empty-state" style="grid-column:1/-1"><div class="big" style="color:var(--secondary)">⚠</div>
-   <h2>Generation failed</h2><p>${escapeHtml(msg)}</p><button id="retryGen" class="tab-btn" style="margin-top:12px">↻ Retry</button></div>`;
+   <h2>Generation failed</h2><p>${escapeHtml(msg)}</p><button id="retryGen" class="btn btn--tab" style="margin-top:12px">↻ Retry</button></div>`;
   const r = $('#retryGen'); if(r && retry) r.onclick = retry; }
 
 function reorderPanels(fromId, toId) {
@@ -2742,7 +2743,7 @@ function loadProject(name){
    VIEW / TAB switching
    ════════════════════════════════════════════════════════════════ */
 function switchView(v) {
-  $$('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+  $$('.btn--tab').forEach(b => b.classList.toggle('active', b.dataset.view === v));
   $('#gridView').classList.toggle('on', v === 'grid');
   $('#cbView').classList.toggle('on', v === 'cb');
 }
@@ -2793,7 +2794,7 @@ function wire() {
   $('#sidebarToggle').onclick = () => $('#left').classList.toggle('open');
 
   // tabs
-  $$('.tab-btn').forEach(b => b.onclick = () => switchView(b.dataset.view));
+  $$('.btn--tab').forEach(b => b.onclick = () => switchView(b.dataset.view));
   const _epb = $('#exportPdfBtn'); if (_epb) _epb.onclick = exportPDF;
 
   // column toggle
