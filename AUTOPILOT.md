@@ -83,6 +83,31 @@
          ⚠️ **harness ไม่ได้ model inheritance** — `none` ของ `#toast` ไม่เคยโผล่ในตารางของลูก
          ซึ่งการ inherit *คือ*กลไกของบั๊กนี้ทั้งหมด → ส่วนนั้นพิสูจน์จาก source + spec เท่านั้น
          ⚠️ **ยังไม่ได้กดจริงในเบราว์เซอร์** (decision 4 ยังไม่ได้รับอนุญาต))
+        ✅ **บั๊กฝาแฝดฝั่ง library แก้แล้ว รอบ 2026-08-24_0023** — `Toast.css` เติม 2 declaration
+         (`.pui-toast{pointer-events:none}` + `.pui-toast__action{pointer-events:auto}`) พร้อม comment
+         อธิบายว่าทำไมสองบรรทัดนี้ต้องมาคู่กันเสมอ **ตอนนี้ทั้งสองฝั่งถูกต้องแล้วทั้งคู่**
+         pre-check ครบ 3 ข้อตามที่รอบก่อนสั่ง: (1) `Toast.tsx` มี clickable child ตัวเดียวคือ
+         `.pui-toast__action` (`<span onClick>`) ไม่มีปุ่มปิด ไม่มี `onClick` บน root
+         (2) `Toast.test.tsx` 3 tests ใช้ `fireEvent.click` ซึ่ง dispatch ลง node ตรงๆ — jsdom
+         ไม่ทำ hit testing → **เขียวทั้งก่อนและหลัง พิสูจน์บั๊กนี้ไม่ได้ ห้ามอ้างว่าพิสูจน์**
+         (3) demo gallery (`design-system/demo/main.tsx:96`) render `<Toast open …>` ค้างไว้ถาวร
+         ไม่มี action ไม่มี root onClick → **เป็นตัวอย่างของบั๊กเลย** (บังคลิกครึ่งล่างของ gallery
+         ตลอดเวลา) ไม่มีอะไรพึ่งพฤติกรรมเดิม
+         ⚠️ **ข้อควรรู้ที่ pre-check ไม่ได้ถาม: `Toast.tsx` spread `{...rest}` ลง root**
+         (มาจาก e3a355c) → consumer ใส่ `onClick` บน root ได้ และ `pointer-events:none` จะทำให้เงียบ
+         ตัดสินใจว่ารับความเสี่ยงนี้ เพราะ root เป็น `role="status"` (live region ไม่ใช่ตัวคลิก)
+         และ component ให้ `action` มาเป็นช่องทาง interaction อยู่แล้ว — เขียนไว้ใน comment แล้ว
+         **หลักฐาน:** `git diff` ของ `Toast.css` (harness อ่าน `.css` ของ DS ไม่ได้ ตามที่รอบก่อนเตือน)
+         + Verify ครบ 3 ขั้นเขียว (54/54, check-tokens 6/6, 31/31)
+         + `docs/btn-parity-proof.mjs toast-hit 3d3d5cc:index.html index.html` → `FAIL — 5
+         declaration(s) differ` **เท่าเดิมเป๊ะ** โดย `#toast` ไม่มี diff สักจุด = ฝั่งแอปไม่ถูกแตะ
+         negative test: ถอด `pointer-events:auto` ออกจาก `.toast-act` → **PASS (0 diff)**
+         พิสูจน์ว่าเลข 5 อ่านจากไฟล์จริงตอนนี้ ไม่ใช่ค่าคงที่ค้าง (ใส่กลับแล้ว ยืนยัน 5 เท่าเดิม)
+         แก้ comment ของ `.toast-act` ใน `index.html` ด้วย 1 ประโยค เพราะประโยคเดิมเขียนว่า
+         "`.pui-toast` has no pointer-events:none, so it needs no counterpart here" ซึ่ง**กลายเป็นเท็จ**
+         หลังรอบนี้ — comment ไม่ใช่ declaration ไม่ขยับพิกเซล (harness ยืนยัน: ยัง 5 เท่าเดิม)
+         ⚠️ **ยังไม่ได้เปิดเบราว์เซอร์** — เหตุผลทั้งหมดมาจาก source + CSS spec
+         (`pointer-events` เป็น inherited property; `opacity:0` ไม่หยุด hit testing)
         badge / modal / empty-state ต่างจาก DS แค่ `font-family:var(--mono)` (+ `color:var(--text)` ใน modal)
         ซึ่ง **`body` set ให้อยู่แล้วและไม่มีอะไรมา override** → render เหมือนกันเป๊ะ ไม่ต้องแก้
         ต่างแค่**ชื่อ class** (`.pc-badge` vs `.pui-badge--accent`) ซึ่งไม่ใช่เรื่องหน้าตา
@@ -257,42 +282,48 @@ segmented padding — ข้อ 5 เพิ่มรอบ 2026-08-23_0047 / inp
 **ก่อนอื่น เปิด `README.md` หัวข้อ `## Open decisions` ดูว่าเจ้าของตอบข้อไหนมาแล้วหรือยัง
 ถ้าตอบมาแล้วแม้ข้อเดียว → ทำตามคำตอบนั้นแทนงานข้างล่าง (สำคัญกว่า และปลดล็อกเกณฑ์ได้จริง)**
 
-ถ้ายังไม่มีคำตอบ ให้ทำงานนี้: **แก้บั๊กฝาแฝดฝั่ง library — `.pui-toast` กินคลิกทั้งจอ 5 วินาที**
+ถ้ายังไม่มีคำตอบ ให้ทำงานนี้: **เขียน decision 7 ใน `README.md` — ปุ่ม/เมนูที่ `disabled`
+ใน Phantom UI ยัง hover ติด ส่วนแอปกันไว้แล้ว** (งานเอกสารล้วน **ห้ามแก้ `.css` สักบรรทัด**)
 
-รอบ 0003 (2026-08-24) แก้ฝั่งแอปไปแล้ว: `.toast-act` เติม `pointer-events:auto` เพราะ
-`#toast` ตั้ง `pointer-events:none` แล้ว property นี้ inherit ลงไปทับลูก **ฝั่ง DS เป็นบั๊ก
-กลับด้านกันเป๊ะ**: `design-system/src/components/Toast/Toast.css` บรรทัด 1–6 (`.pui-toast`)
-**ไม่ได้ตั้ง `pointer-events` เลย** → toast เป็น `position:fixed` กว้างได้ถึง `max-width:80vw`
-วางอยู่ที่ `z-index:200` → ตลอด 5 วินาทีที่มันโชว์ มัน**บังคลิกทุกอย่างที่อยู่ใต้มัน**
-นี่ไม่ใช่เรื่องดีไซน์และไม่ขยับพิกเซลสักจุด — เป็น defect ล้วนๆ แบบเดียวกับที่เพิ่งแก้ฝั่งแอป
+รอบ 0023 (2026-08-24) แก้บั๊ก `.pui-toast` เสร็จแล้ว → **ตารางเทียบ 11/11 และบั๊ก
+hit-testing ทั้งสองฝั่งจบหมด** ระหว่างสำรวจเจอช่องว่างอีกกลุ่มที่**ยังไม่มีใครบันทึกไว้**
+และมันเป็นคนละชนิดกับ toast: อันนี้**เปลี่ยนสีที่คนเห็น** → เป็นสิทธิ์เจ้าของ ไม่ใช่ของ agent
 
-แก้ 2 declaration ใน `Toast.css` เท่านั้น:
-- `.pui-toast` → เติม `pointer-events:none`
-- `.pui-toast__action` → เติม `pointer-events:auto` (ไม่งั้นจะซ้ำรอยบั๊กเดิมของแอปทันที)
-เขียน comment กำกับว่าทำไมสองบรรทัดนี้ต้องมาคู่กันเสมอ (ลอกเหตุผลจาก `.toast-act` ใน `index.html`)
+แอปเขียน `:disabled:hover` reset ไว้ทุกจุด — `index.html:492` (`.btn--icon`), `:574`
+(`.pc-tools button`), `:585` (`.menu-pop button`) — ฝั่ง DS **ไม่มีสักจุด**:
 
-**ก่อนแก้ ต้องเช็ค 3 อย่างนี้ก่อน — ถ้าข้อไหนขัด ให้หยุดแล้วเขียนลง SUMMARY.md แทน:**
-1. `design-system/src/components/Toast/Toast.tsx` — มี element ลูกอื่นที่คลิกได้อีกไหม
-   (ปุ่มปิด? `onClick` บน root?) ถ้ามี **ทุกตัวต้องได้ `pointer-events:auto`** ไม่ใช่แค่ `__action`
-2. `Toast.test.tsx` (3 tests) — ถ้ามันยิง click ผ่าน testing-library จะ **ยังผ่านอยู่ดี**
-   เพราะ jsdom ไม่ทำ hit testing จริง → **เทสต์ชุดนี้พิสูจน์บั๊กนี้ไม่ได้ ห้ามอ้างว่ามันพิสูจน์**
-3. demo gallery (`design-system/src/**` ที่ import Toast) — ดูว่ามีอะไรพึ่งพฤติกรรมเดิมไหม
+| DS | มี | ขาด | ผลตอนนี้ |
+|---|---|---|---|
+| `Button.css:6` `.pui-btn:disabled` | `opacity:.5; cursor:not-allowed; box-shadow:none` | `:disabled:hover` | `.pui-btn--ghost:hover`/`--tab:hover` ยังเปลี่ยนสีตอน disabled |
+| `Button.css:16` `.pui-btn--icon:disabled` | `opacity:.32; color:var(--dim)` | `:disabled:hover` | `--icon:hover` (บรรทัด 15) ทับ `color` กลับเป็น `--accent` |
+| `Menu.css:13` `.pui-menu__item:disabled` | `opacity:.35; cursor:not-allowed` | `:disabled:hover` | รอบ 0047 บันทึกไว้แล้วแต่**อยู่ใน AUTOPILOT.md ไม่ใช่ README** เจ้าของจึงยังไม่เห็น |
 
-**หลักฐานที่ต้องแนบ:** `docs/btn-parity-proof.mjs` อ่านแค่ `<style>` ของ `index.html`
-**ใช้กับไฟล์ `.css` ของ DS ไม่ได้เลย** อย่าเสียเวลาดัดแปลงมัน — ให้แนบ `git diff` ของ
-`Toast.css` ตรงๆ (2 บรรทัด) แล้วรัน Verify ครบ 3 ขั้น
-และ **รัน `node docs/btn-parity-proof.mjs toast-hit 3d3d5cc:index.html index.html` ซ้ำ**
-เพื่อยืนยันว่าฝั่งแอปยังเหมือนเดิม (ต้องได้ `FAIL — 5 declaration(s) differ` เท่าเดิมเป๊ะ
-โดย `#toast` ไม่มี diff สักจุด — ถ้าตัวเลขไม่ใช่ 5 แปลว่ามีคนไปแตะฝั่งแอป)
+⚠️ **ข้อที่น่าสนใจที่สุด ต้องเขียนให้ชัดใน decision:** `Button.css:6` ประกาศ `box-shadow:none`
+*ตั้งใจ*ดับ glow ตอน disabled อยู่แล้ว แต่มัน**ไม่ทำงาน** — `.pui-btn:disabled` กับ
+`.pui-btn--primary:hover` (บรรทัด 9) **specificity เท่ากันเป๊ะ (0,2,0)** → ตัดสินด้วยลำดับบรรทัด
+บรรทัด 9 อยู่ทีหลังจึงชนะ **ปุ่ม primary ที่ disabled ยังเรืองแสงตอน hover**
+นี่คือ "เจตนาที่เขียนไว้ในไฟล์เองแล้วโดน cascade กลืน" — ต่างจากอีก 3 แถวตรงที่ไม่ต้องเดาใจใคร
+ว่าอยากได้อะไร แต่**ทางแก้ยังขยับสีที่คนเห็นอยู่ดี** จึงยังเป็นของเจ้าของ อย่าแก้เอง
 
-⚠️ **นี่เป็นการเปลี่ยน behaviour ของ library ที่ consumer อื่นใช้อยู่** — ต่างจากช่องว่าง
-`.menu-pop button:disabled:hover` ที่รอบ 0047 เขียนไว้ว่าเป็นสิทธิ์เจ้าของ เพราะอันนั้น
-**เปลี่ยนสีที่คนเห็น** ส่วนอันนี้เป็น hit-testing ล้วน ไม่มีพิกเซลไหนขยับ
-ถ้ารอบหน้าอ่านแล้วยังไม่เห็นด้วย → **อย่าแก้ ให้เขียนเป็น decision 7 ใน README แทน** แล้วจบรอบ
+เขียนเป็น `### 7. …` ต่อท้าย `## Open decisions` ใน `README.md` ตามรูปแบบเดิมทุกข้อ
+(what is blocked → ตาราง options + cost → "**If you answer:**") อย่างน้อยต้องมี option
+"เติม `:disabled:hover` reset ให้ครบทั้ง 3 จุด (ตามแอป)" / "แก้เฉพาะ `box-shadow` ที่เป็น
+เจตนาเดิมของไฟล์" / "ปล่อยไว้" พร้อมบอกว่าแต่ละทางกระทบ consumer อื่นของ library อย่างไร
+แล้ว**อัปเดตประโยค "Six questions"/"Three of the seven" ที่หัวข้อให้ตรงกับจำนวนจริง**
+
+**ห้ามแก้ `Button.css` / `Menu.css` ในรอบนั้น** — ถ้าทำ Verify จะยังเขียว (jsdom ไม่ทำ
+hit testing และไม่มี checker ตัวไหนดู `:hover`) แปลว่า**ไม่มีอะไรจับได้เลยว่าสีเปลี่ยน**
+ซึ่งเป็นเหตุผลเดียวกับที่ decision 2/5/6 ยังค้างอยู่
+
+**Verify:** รัน 3 ขั้นตามปกติ (ต้องเขียวเพราะไม่ได้แตะโค้ด) และรัน
+`node docs/btn-parity-proof.mjs toast-hit 3d3d5cc:index.html index.html`
+ต้องได้ `FAIL — 5 declaration(s) differ` **เท่าเดิมเป๊ะ** โดย `#toast` ไม่มี diff สักจุด
+ถ้าตัวเลขไม่ใช่ 5 แปลว่ามีคนไปแตะฝั่งแอป
 
 ⚠️ **ความเสี่ยงที่ต้องรับมือ ไม่ใช่มองข้าม:** **ไม่มีเบราว์เซอร์ให้ verify**
 (decision 4 ยังไม่ได้รับอนุญาต) — ย่อหน้าข้างล่างนี้ใช้กับงานที่**แก้ `<style>` ของ `index.html`**
-(งาน Next task รอบหน้าแก้ `.css` ของ DS ซึ่ง harness อ่านไม่ได้ ดูวิธีแนบหลักฐานในหัวข้องานเอง)
+(Next task รอบหน้าเป็นงานเอกสารล้วน ไม่แตะ CSS → ใช้แค่ท่อนยืนยันว่า `toast-hit` ยังได้ 5 เท่าเดิม
+ส่วน `.css` ของ DS นั้น harness อ่านไม่ได้เลย ถ้ารอบไหนต้องแก้จริง ให้แนบ `git diff` ตรงๆ แทน)
 → ใช้วิธีเดิม: เพิ่ม refactor ใหม่เข้าไปใน `REFACTORS`
 ของ `docs/btn-parity-proof.mjs` (ระบุ class ก่อน/หลัง + ancestor chain; ใส่ `type` ถ้า subject
 ไม่ใช่ `button`; ใช้ `beforeAncestors`/`afterAncestors` ถ้า ancestor เปลี่ยนคนละแบบกับ subject)

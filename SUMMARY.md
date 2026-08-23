@@ -1,140 +1,127 @@
-# Round 2026-08-24_0003 — the toast "Undo" link was never clickable
+# Round 2026-08-24_0023
 
 ## What I did
 
-- **Restored the previous round's tip first.** The runner cut this branch from `3503537` again
-  (fourteenth round in a row), so `tools/check-tokens.mjs`, `docs/btn-parity-proof.mjs` and every
-  token/radius/font/refactor edit since 2026-08-21 were absent and the Verify command would have
-  died on a missing file. `git checkout 3d3d5cc -- .` restored them; `git diff 3d3d5cc --stat`
-  then came back empty and `git status` showed no untracked leftovers, so the tree is exactly the
-  previous tip. Kept as its own commit (`1182f54`) so this round's real diff stays readable.
-- **Confirmed the root cause from source before touching anything.** `#toast` (`index.html:353`)
-  sets `pointer-events:none`. `pointer-events` is an **inherited** property, so the
-  `<span id="toastUndo" class="toast-act">` that `toastUndo()` builds at line 939 inherited `none`
-  and was skipped by hit testing entirely — `onclick` (line 942) never fired and `cursor:pointer`
-  never even painted, which matches the reported symptom exactly. Checked the two other
-  `pointer-events` sites (`.pc-canvas-wrap::after`, `.tour-spot`) — neither selector can match the
-  span — and confirmed no JS anywhere assigns `style.pointerEvents`.
-- **Fixed it with one declaration:** `.toast-act` now sets `pointer-events:auto`. `#toast` keeps
-  `pointer-events:none`. Extended the comment above the rule, which previously claimed
-  `margin-left` was the *only* deliberate difference from `.pui-toast__action`, so it now names
-  both differences and says why this one must not be "synced away".
-- **Added a `toast-hit` key to `docs/btn-parity-proof.mjs`** covering `#toast` *and* `#toastUndo`.
-  The container row is the point: it is what proves `pointer-events:none` was not quietly removed.
-- **Updated README** — the "not yet fixed" blockquote now records the fix, the proof, and the two
-  things the proof does not cover; the DS-side gap list now says the `.pui-toast` half is queued
-  rather than owner-blocked.
+- **Restored the previous round's tip.** The runner cut this branch from `3503537` again — the
+  round-1 base, missing ~20 commits of Phantom UI work. Restored the tree from `e245085`
+  (tip of `auto/…/2026-08-24_0003`) and verified `git diff e245085` was empty before committing.
+- **Fixed the library-side mirror of the toast hit-testing defect** (`Toast.css`, 2 declarations):
+  `.pui-toast{pointer-events:none}` + `.pui-toast__action{pointer-events:auto}`, with a comment
+  explaining why the two must always ship together. Both sides of the codebase are now correct.
+- **Ran all three pre-checks the previous round required**, plus found one thing it didn't ask about
+  (see Risk). None of them blocked the change.
+- **Corrected one sentence of the app-side comment** on `.toast-act` in `index.html`. It read
+  *".pui-toast has no pointer-events:none, so it needs no counterpart here"* — this round made that
+  false. A comment is not a declaration and moves no pixels; the parity harness confirms it.
+- **Set the next task**: write a **decision 7** in the README for a *different* gap I found while
+  checking this one (disabled controls still hover in the DS). That one changes visible colour, so
+  it is the owner's call — I deliberately did not fix it. Details below.
 
 ## Why
 
-**Why the fix went on the child and not the container.** The obvious "fix" is to delete
-`pointer-events:none` from `#toast`. That is wrong. The toast is `position:fixed`, up to
-`max-width:80vw` wide, at `z-index:200`, and stays up for 5s — the container rule is what stops it
-from eating clicks on the board underneath. Removing it trades a dead link for a dead screen
-region. `pointer-events:auto` on the one interactive descendant is the standard idiom for exactly
-this shape, and per spec a descendant with `auto` *is* hit-tested even under a `none` ancestor.
+**The defect.** `.pui-toast` is `position:fixed`, `z-index:200`, `max-width:80vw`, and it never
+set `pointer-events`. `opacity:0` does not stop hit testing, so the element sat over the page
+swallowing clicks — visibly for the ~5s it showed, and arguably at all times in a consumer that
+keeps one mounted. The demo gallery (`design-system/demo/main.tsx:96`) renders a permanently-open
+`<Toast>`, so it demonstrates the bug rather than depending on the old behaviour.
 
-**Why the design system was not used as the reference here.** `.pui-toast` sets no
-`pointer-events` at all, so its action works — and its toast swallows clicks for its whole
-lifetime. Copying Phantom UI in this one place would have imported the worse of the two bugs. This
-is the one spot in the parity work where the app is right and the library is wrong, and the code
-comment now says so, so a later "make it match the DS" round does not undo this.
+**Why two declarations, not one.** `pointer-events` is an *inherited* property. Setting `:none`
+on the container reaches every descendant, so any interactive child must opt back in with `:auto`
+or it stops being a hit target — handler never fires, cursor never changes. Adding only the first
+declaration would have reproduced, in the library, the exact bug the app fixed last round. That is
+why the comment ties them together explicitly.
 
-**Why the harness is expected to fail this round.** Every previous use of
-`btn-parity-proof.mjs` argued "this refactor moves nothing"; a `PASS` was the claim. This round
-*intends* a behaviour change, so the run's job is to show precisely which declarations moved and
-that nothing else did — the same reading README decision 5 already sets out. Making it green would
-have meant either not fixing the bug or editing the harness to look away.
+**Why this was mine to fix and decision 7 is not.** Round 0047 ruled that the `.menu-pop
+button:disabled:hover` gap is owner territory because fixing it *changes a colour people see*.
+This fix changes no pixel in any state — it is hit-testing only. That line is exactly where I
+stopped: the disabled-hover gaps I found this round do move colour, so I wrote them up instead.
 
 ## Verification
 
-**Verify command — all three stages, on the committed tree:**
+All three Verify steps, run at the final commit:
 
 ```
-$ node tools/test.mjs
-54 passed, 0 failed
-
-$ node tools/check-tokens.mjs
-tokens in sync: 22/22 from design-system/src/tokens.css present and identical in index.html
-fonts in sync: 4/4 from design-system/src/fonts.css embedded byte-identical in index.html
-no derived-colour literals: 15 CSS source(s) scanned, none re-hardcode a tokenised colour
-font weights available: 15 CSS source(s) scanned, every font-weight is one of 400, 500, 700, 800
-no radius literals: 15 CSS source(s) scanned, every border-radius reads a --r-* token
-typeface from one source: 15 CSS source(s) scanned, every font-family reads var(--mono)
-
-$ npm --prefix design-system test
-Test Files  12 passed (12)
-     Tests  31 passed (31)
+node tools/test.mjs                → 54 passed, 0 failed
+node tools/check-tokens.mjs        → all 6 checks pass (22/22 tokens, 4/4 fonts,
+                                     no derived-colour literals, font weights available,
+                                     no radius literals, typeface from one source)
+npm --prefix design-system test    → 12 files, 31 passed
 ```
 
-**The change itself —** `node docs/btn-parity-proof.mjs toast-hit 3d3d5cc:index.html index.html`
-(exit 1, as intended):
+App-side untouched, per the previous round's instruction:
 
 ```
-markup coverage OK — 0 old class tokens gone, 0 new class attributes at the expected counts
-
-✗ #toastUndo (base)
-    pointer-events
-      before: (unset)   <- -
-      after : auto   <- .toast-act
-… identical single-property diff repeated for :hover, :disabled, :disabled:hover, :focus …
-
-compared 10 (element, state) pairs across 2 "toast-hit" elements
-media-conditional rules that matched a test element:
-  @media(prefers-reduced-motion:reduce) { * }
-
-FAIL — 5 declaration(s) differ, 0 markup problem(s). The refactor moves pixels; revert it.
+node docs/btn-parity-proof.mjs toast-hit 3d3d5cc:index.html index.html
+→ FAIL — 5 declaration(s) differ, 0 markup problem(s)
 ```
 
-`#toast` produced **no diff in any of its five states** — that is the evidence that the container
-rule survived untouched. `#toastUndo` differs in exactly one property. Nothing else moved.
+That is the **expected and required** result: 5 is the count round 0003 deliberately introduced.
+All 5 are on `#toastUndo` (`pointer-events (unset)→auto`, one per state). `#toast` — the other of
+the 2 elements compared, 10 pairs total — shows **no diff in any state**, which is the evidence
+that this round did not touch the app's toast rules.
 
-**Negative tests (two), each run against a mutated copy of `index.html` in the temp dir, both
-deleted afterwards:**
+**Negative test** (to prove the 5 is read from the live file, not a stale constant): removed
+`pointer-events:auto` from `.toast-act`, re-ran → **`PASS — every element computes an identical
+declaration set`** (0 diffs). Restored it, re-ran → back to 5. So the harness is still tracking
+that exact declaration.
 
-| Mutation | Result |
-|---|---|
-| strip `pointer-events:none` off `#toast` | 5 → **10** diffs; the `#toast` rows light up `none` → `(unset)` in all five states |
-| recolour `.toast-act` to `var(--secondary)` | 5 → **10** diffs; `color` appears alongside `pointer-events` |
+**Evidence for the DS change is the diff itself** — `docs/btn-parity-proof.mjs` parses only the
+`<style>` block of `index.html` and cannot read DS `.css` files at all, as the previous round warned:
 
-The first is the one that matters: it proves the `#toast` row is genuinely live and would catch the
-specific mistake this round was warned against, rather than silently matching nothing.
+```diff
+-  opacity:0; transition:.25s; z-index:200; max-width:80vw; font-family:var(--mono);
++  opacity:0; transition:.25s; z-index:200; pointer-events:none; max-width:80vw; font-family:var(--mono);
+-.pui-toast__action{… text-decoration:underline; margin-left:8px}
++.pui-toast__action{… text-decoration:underline; margin-left:8px; pointer-events:auto}
+```
+
+**Pre-checks** (all three required by the previous round):
+
+1. `Toast.tsx` — exactly one clickable child, `.pui-toast__action` (a `<span onClick>`). No close
+   button, no `onClick` declared on the root. So `__action` is the only child needing `:auto`.
+2. `Toast.test.tsx` (3 tests) — uses `fireEvent.click`, which dispatches straight at the node.
+   jsdom does no hit testing, so these tests are **green before and after and prove nothing about
+   this bug**. I am not claiming otherwise; the previous round was right to call this out.
+3. Demo gallery — `design-system/demo/main.tsx:96` renders `<Toast open message="…" />` with no
+   action and no root handler. Nothing depends on the old behaviour; it is a victim of the bug.
 
 ## What I did NOT do
 
-- **Did not fix `.pui-toast`.** It has the mirror defect — no `pointer-events` at all, so a Phantom
-  UI toast blocks clicks under it for its whole lifetime. That is a library behaviour change and a
-  separate task; it is now the Next task, with the three pre-checks it needs.
-- **Did not check the `## Open decisions` off, answer any, or add a seventh.** All six are still
-  unanswered, so the three acceptance criteria they gate stay unticked. I re-read the section
-  first, as the contract requires; nothing had been answered.
-- **Ticked no acceptance criterion.** This bug was not one — it was found *by* the parity work, not
-  required by it.
-- **Did not touch `tools/`,** per the contract, and added no seventh token check.
-- **Did not add a design-system test for this.** `Toast.test.tsx` runs in jsdom, which does no hit
-  testing, so a `userEvent.click` on the action passes whether or not `pointer-events` is set. A
-  test that cannot fail on the bug would be worse than none.
+- **Did not fix the disabled-hover gaps I found.** The DS has no `:disabled:hover` reset anywhere,
+  while the app has three (`index.html:492`, `:574`, `:585`). Consequences today:
+  `.pui-btn--icon:hover` (line 15) overrides the disabled `color`; `--ghost`/`--tab` hover states
+  still apply when disabled. Fixing any of it changes rendered colour → owner's call, per the
+  precedent round 0047 set. Written up as the next task (a README decision 7, not a code change).
+- **Did not touch `tools/`** or add a 7th token check — the contract forbids it and all 22 tokens
+  are already covered.
+- **Did not answer any of the six open decisions.** I re-read `README.md` `## Open decisions`
+  first, as instructed; none has an owner answer yet, so the fallback task applied.
+- **Did not open a browser.** Decision 4 (MCP permission) is still unanswered, and the previous
+  rounds established that retrying without it just burns a round.
 
 ## Risk
 
-**Read this closely — the proof has a hole, and it is the important part.**
+**Read this one closely — it is a real caveat the pre-check list did not ask about.**
+`Toast.tsx` spreads `{...rest}` onto the root div (added in `e3a355c`, "forward native props on
+all components"). A consumer *can* therefore pass `onClick` to the root, and `pointer-events:none`
+will now silently swallow it. I judged this acceptable and documented it in the CSS comment,
+because the root is `role="status"` — an ARIA live region, not an interactive element — and the
+component already ships `action` as its interaction affordance. **If any consumer outside this
+repo puts a handler on the Toast root, this change breaks it, and nothing in the test suite will
+catch that.** If you disagree, the narrower fix is to scope `:none` to a wrapper rather than the
+root.
 
-1. **The harness models no inheritance.** It builds each element's declaration set only from rules
-   that match that element, so `#toast`'s `pointer-events:none` never appears in `#toastUndo`'s
-   map — the child shows `(unset)` before the fix, not `none`. Inheritance *is* the whole mechanism
-   of this bug, so the run proves the change is minimal but cannot prove the bug existed or that it
-   is gone. That rests on reading the source against the spec (`pointer-events` is `Inherited:
-   yes`, and a descendant may re-enable itself with `auto`). I did not extend the harness to model
-   inheritance — that is a real change to a shared tool for a single round's benefit.
-2. **The markup-coverage phase is vacuous this round** (`0 old class tokens gone, 0 new class
-   attributes`) because no class attribute changed. It printed OK and proved nothing. Both
-   AUTOPILOT.md and the harness comment now say so, so it is not mistaken for a second check.
-3. **Still nobody has opened the app in a browser** — no round has, decision 4 unanswered.
-   Nothing here was clicked. If some rule I did not find re-disables the span, this fix does not
-   land and the run above would look identical.
-4. **The fix is unreachable from the test suite.** `tools/test.mjs` extracts pure logic between the
-   `PURE-LOGIC` markers; CSS is outside it by design. No automated check in the Verify command can
-   regress-guard this line — only the `toast-hit` key can, and it is deliberately not in Verify.
-5. **`#toast` is now a click-through element with one clickable child.** If a future round adds a
-   second interactive element to the toast (a close button, say), it will be dead on arrival for
-   exactly the same reason. The code comment warns about this; nothing enforces it.
+Other things worth a reviewer's attention:
+
+- **Nothing executable proves the fix works.** jsdom ignores `pointer-events` (verified by reading
+  the tests, not assumed), the token checker does not model hit testing, and the parity harness
+  cannot read DS `.css`. The argument is from source plus the CSS spec — `pointer-events` inherits,
+  `opacity:0` does not suppress hit testing. Correct, but unexecuted. Decision 4 is what would
+  close this gap, for this change and for the twelve rounds of CSS work before it.
+- **This is a behaviour change to a library other consumers use.** Justified as a pure defect fix,
+  but it is not a no-op: clicks that previously landed on the toast will now pass through to
+  whatever is beneath it. That is the intent — flagging it so it is a decision, not a surprise.
+- **The parity harness reports FAIL and that is correct.** Anyone skimming for green output will
+  misread it. The 5 diffs belong to round 0003; `toast-hit` exists to show *what* moved, not to pass.
+- The restore commit (`5bb41cb`) is large by line count but is a mechanical `git checkout e245085 -- .`
+  with a verified-empty diff against that ref — not new work.
