@@ -150,6 +150,24 @@
          `.menu-pop button:disabled:hover{background:none; color:var(--text)}` และ
          `.menu-pop button.danger:hover{...}` แต่ `Menu.css` ไม่มี → ปุ่ม disabled ใน DS ยังเปลี่ยนสี
          ตอน hover การเติมให้ DS = แก้หน้าตาของ library ที่ consumer อื่นใช้อยู่ → เจ้าของตัดสิน
+        ✅ **ย้ายขึ้น README เป็น decision 7 แล้ว รอบ 2026-08-24_0036** (งานเอกสารล้วน ไม่แตะ `.css`
+         สักบรรทัด — `git status` รอบนั้นขึ้น `M README.md` ไฟล์เดียว)
+         **ตรวจซ้ำทุกข้ออ้างก่อนเขียน แล้วเจอว่า 2 ข้อของรอบก่อนผิด → แก้ให้ถูกใน README:**
+         (ก) รอบ 0023 เขียนว่า `.pui-btn--icon:hover` (บรรทัด 15) ทับ `color` กลับเป็น `--accent`
+         → **ผิด** `.pui-btn--icon:disabled` (บรรทัด 16) specificity เท่ากัน `(0,2,0)` และอยู่**ทีหลัง**
+         → `color:var(--dim)` ชนะ ของที่รั่วจริงคือ `background:var(--surface)` + `border-color:var(--dim)`
+         ซึ่ง `:disabled` ไม่ได้ประกาศไว้ (ตรงกับที่แอป reset ไว้เป๊ะที่ `index.html:492` — เป็นหลักฐานยืนยัน)
+         (ข) รอบ 0023 เขียนว่า "แอปเขียน `:disabled:hover` reset ไว้**ทุกจุด**" → **ผิด กัน 3 จาก 5**
+         `#tourBack` (`:558`) ตั้งแค่ `opacity`/`cursor` แต่มันเป็น `.btn--ghost` และ
+         `.btn--ghost:hover` (`:344`) ตั้ง `color`+`border-color` ที่ไม่มีใคร reset
+         → ปุ่ม Back ตอน tour step แรก (disabled) ยังสว่างตอน hover
+         และ `.menu-pop button.danger:hover` (`:588`) กับ `.menu-pop button:disabled:hover` (`:585`)
+         **specificity เท่ากันเป๊ะ `(0,3,1)`** → บรรทัด 588 อยู่ทีหลังจึงชนะ
+         ปุ่ม Delete ในเมนูมี `class="danger"` และ disabled เมื่อ panel locked/read-only
+         → **guard ของแอปเองโดน cascade กลืน** เป็นบั๊กชนิดเดียวกับ `Button.css:6` เป๊ะ
+         ⚠️ ทั้งสองจุดนี้ **ขยับสีที่คนเห็น** → เขียนเป็น option ใน decision 7 ไม่ได้แก้เอง
+         ⚠️ **ไม่มี checker ตัวไหนดู `:hover` และ jsdom ไม่ทำ hit testing** → ถ้ารอบไหนแอบแก้
+         Verify จะยังเขียวครบ นี่คือเหตุผลที่ต้องรอคำตอบ ไม่ใช่ "ลองดูก่อน"
 - [ ] เปิด `index.html` ด้วย `file://` (ดับเบิลคลิก) แล้วยังใช้งานได้ครบ — ไม่ต้อง build ไม่ต้อง serve
       → **ฟอนต์เสร็จแล้ว** (2026-08-21) — JetBrains Mono 4 น้ำหนัก (400/500/700/800) ฝังเป็น
         `data:font/woff2;base64` ใน `<style>` แล้ว, `fonts.googleapis`/`fonts.gstatic` เหลือ 0 จุด
@@ -273,58 +291,57 @@ segmented padding — ข้อ 5 เพิ่มรอบ 2026-08-23_0047 / inp
 เพราะ runner เขียนทับทุกรอบ
 คำถามที่วางไว้ในไฟล์ที่เจ้าของไม่ได้เปิดอ่านคือคำถามที่ไม่มีวันได้คำตอบ
 
-เกณฑ์ข้อ 1 / 2 / 3 ที่ยังไม่ติ๊ก บล็อกอยู่ที่ 6 ข้อนั้นทั้งหมด
-**เกณฑ์ข้อ 2 บล็อกอยู่ที่ decision 2 + 5 + 6 เท่านั้น — งานสำรวจปิดครบ 11/11 แล้ว
+เกณฑ์ข้อ 1 / 2 / 3 ที่ยังไม่ติ๊ก บล็อกอยู่ที่ 7 ข้อนั้นทั้งหมด
+**เกณฑ์ข้อ 2 บล็อกอยู่ที่ decision 2 + 5 + 6 + 7 เท่านั้น — งานสำรวจปิดครบ 11/11 แล้ว
 ไม่ต้องสำรวจ component เพิ่มอีก**
 
 ## Next task — do ONLY this
 
 **ก่อนอื่น เปิด `README.md` หัวข้อ `## Open decisions` ดูว่าเจ้าของตอบข้อไหนมาแล้วหรือยัง
-ถ้าตอบมาแล้วแม้ข้อเดียว → ทำตามคำตอบนั้นแทนงานข้างล่าง (สำคัญกว่า และปลดล็อกเกณฑ์ได้จริง)**
+ถ้าตอบมาแล้วแม้ข้อเดียว → ทำตามคำตอบนั้น (สำคัญกว่าทุกอย่างข้างล่าง และปลดล็อกเกณฑ์ได้จริง)**
 
-ถ้ายังไม่มีคำตอบ ให้ทำงานนี้: **เขียน decision 7 ใน `README.md` — ปุ่ม/เมนูที่ `disabled`
-ใน Phantom UI ยัง hover ติด ส่วนแอปกันไว้แล้ว** (งานเอกสารล้วน **ห้ามแก้ `.css` สักบรรทัด**)
+**ถ้ายังไม่มีคำตอบสักข้อ — งานที่ไม่ถูกบล็อกหมดแล้วจริงๆ อ่านย่อหน้านี้ให้จบก่อนลงมือ**
 
-รอบ 0023 (2026-08-24) แก้บั๊ก `.pui-toast` เสร็จแล้ว → **ตารางเทียบ 11/11 และบั๊ก
-hit-testing ทั้งสองฝั่งจบหมด** ระหว่างสำรวจเจอช่องว่างอีกกลุ่มที่**ยังไม่มีใครบันทึกไว้**
-และมันเป็นคนละชนิดกับ toast: อันนี้**เปลี่ยนสีที่คนเห็น** → เป็นสิทธิ์เจ้าของ ไม่ใช่ของ agent
+รอบ 2026-08-24_0036 เขียน decision 7 ลง README เสร็จแล้ว → **decision ครบ 7 ข้อ
+และทุกเส้นทางที่เหลือของเกณฑ์ข้อ 1 / 2 / 3 อยู่หลัง decision ทั้งหมด**:
 
-แอปเขียน `:disabled:hover` reset ไว้ทุกจุด — `index.html:492` (`.btn--icon`), `:574`
-(`.pc-tools button`), `:585` (`.menu-pop button`) — ฝั่ง DS **ไม่มีสักจุด**:
+| เกณฑ์ | บล็อกที่ |
+|---|---|
+| 1 (token) | decision 3 (spacing/typography scale) |
+| 2 (element parity) | decision 2 (chip) + 5 (segmented) + 6 (input) + 7 (disabled hover) |
+| 3 (`file://`) | decision 1 (vendor jsPDF) + 4 (browser verification) |
 
-| DS | มี | ขาด | ผลตอนนี้ |
-|---|---|---|---|
-| `Button.css:6` `.pui-btn:disabled` | `opacity:.5; cursor:not-allowed; box-shadow:none` | `:disabled:hover` | `.pui-btn--ghost:hover`/`--tab:hover` ยังเปลี่ยนสีตอน disabled |
-| `Button.css:16` `.pui-btn--icon:disabled` | `opacity:.32; color:var(--dim)` | `:disabled:hover` | `--icon:hover` (บรรทัด 15) ทับ `color` กลับเป็น `--accent` |
-| `Menu.css:13` `.pui-menu__item:disabled` | `opacity:.35; cursor:not-allowed` | `:disabled:hover` | รอบ 0047 บันทึกไว้แล้วแต่**อยู่ใน AUTOPILOT.md ไม่ใช่ README** เจ้าของจึงยังไม่เห็น |
+**ถ้าไม่มีคำตอบใหม่ ห้ามประดิษฐ์งานแทน** — เขียน SUMMARY.md ว่ารอบนี้ตรวจแล้วไม่มีอะไรปลดล็อก
+แล้วจบรอบ นั่นคือรอบที่สำเร็จ ไม่ใช่รอบที่ล้มเหลว การหางานมาทำเพิ่มตอนนี้คือ scope creep
+ที่ไม่มีใครขอ และทุกอย่างที่ "ดูเหมือนงาน" ที่เหลือล้วนขยับพิกเซล = สิทธิ์เจ้าของ
 
-⚠️ **ข้อที่น่าสนใจที่สุด ต้องเขียนให้ชัดใน decision:** `Button.css:6` ประกาศ `box-shadow:none`
-*ตั้งใจ*ดับ glow ตอน disabled อยู่แล้ว แต่มัน**ไม่ทำงาน** — `.pui-btn:disabled` กับ
-`.pui-btn--primary:hover` (บรรทัด 9) **specificity เท่ากันเป๊ะ (0,2,0)** → ตัดสินด้วยลำดับบรรทัด
-บรรทัด 9 อยู่ทีหลังจึงชนะ **ปุ่ม primary ที่ disabled ยังเรืองแสงตอน hover**
-นี่คือ "เจตนาที่เขียนไว้ในไฟล์เองแล้วโดน cascade กลืน" — ต่างจากอีก 3 แถวตรงที่ไม่ต้องเดาใจใคร
-ว่าอยากได้อะไร แต่**ทางแก้ยังขยับสีที่คนเห็นอยู่ดี** จึงยังเป็นของเจ้าของ อย่าแก้เอง
+**มีงานสำรองอยู่ 1 อย่างเท่านั้น ถ้าจะทำต้องทำอันนี้ ห้ามคิดอันอื่น:**
+**ทำให้ `docs/btn-parity-proof.mjs` อ่าน `design-system/src/**/*.css` ได้**
+เหตุผล: รอบ 0023 (แก้ `Toast.css`) และรอบ 0036 (เขียน decision 7) **ทั้งคู่ต้องถอยไปใช้
+"อ่าน `git diff` เอาเอง" เป็นหลักฐาน** เพราะ harness เห็นแค่ `index.html`
+แปลว่าทุกครั้งที่แตะ CSS ฝั่ง library เราไม่มีเครื่องมือพิสูจน์ว่าอะไรขยับบ้าง
+และถ้าเจ้าของตอบ decision 7 มา (ซึ่งแก้ `Button.css` + `Menu.css`) เราจะเจอปัญหานี้ทันที
+→ งานนี้ **ขยับพิกเซล 0 จุด** ไม่แตะ `tools/` ไม่ใช่ checker ตัวที่ 7 และเป็นการเตรียมทางให้ decision 7
 
-เขียนเป็น `### 7. …` ต่อท้าย `## Open decisions` ใน `README.md` ตามรูปแบบเดิมทุกข้อ
-(what is blocked → ตาราง options + cost → "**If you answer:**") อย่างน้อยต้องมี option
-"เติม `:disabled:hover` reset ให้ครบทั้ง 3 จุด (ตามแอป)" / "แก้เฉพาะ `box-shadow` ที่เป็น
-เจตนาเดิมของไฟล์" / "ปล่อยไว้" พร้อมบอกว่าแต่ละทางกระทบ consumer อื่นของ library อย่างไร
-แล้ว**อัปเดตประโยค "Six questions"/"Three of the seven" ที่หัวข้อให้ตรงกับจำนวนจริง**
+ขอบเขตของงานสำรอง (ห้ามเกินนี้):
+- รับ source เป็น `<sha>:design-system/src/components/X/X.css` หรือไฟล์บนดิสก์ แบบเดียวกับที่รับ `index.html`
+- ประกอบ stylesheet จากหลายไฟล์ตามลำดับที่ `styles.css` / `index.ts` import จริง — **ลำดับสำคัญ**
+  เพราะเคสทั้งหมดใน decision 7 ตัดสินด้วย source order ไม่ใช่ specificity ถ้าเรียงผิด ผลจะผิดแบบเงียบๆ
+- ต้องมี negative test อย่างน้อย 2 กรณี เหมือนทุกรอบ (เช่น สลับลำดับ 2 บรรทัดใน `Button.css`
+  แล้ว `:disabled` state ต้องเปลี่ยนผล / ขยับ padding 1px แล้วต้อง FAIL)
+- ยังต้องเขียวครบ 3 ขั้นของ Verify และ `toast-hit` ต้องได้ `FAIL — 5 declaration(s) differ` เท่าเดิม
 
-**ห้ามแก้ `Button.css` / `Menu.css` ในรอบนั้น** — ถ้าทำ Verify จะยังเขียว (jsdom ไม่ทำ
-hit testing และไม่มี checker ตัวไหนดู `:hover`) แปลว่า**ไม่มีอะไรจับได้เลยว่าสีเปลี่ยน**
-ซึ่งเป็นเหตุผลเดียวกับที่ decision 2/5/6 ยังค้างอยู่
+**ห้ามแก้ `Button.css` / `Menu.css` / `index.html` ในรอบนั้น** — decision 7 ยังไม่มีคำตอบ
+ถ้าแก้ Verify จะยังเขียว (jsdom ไม่ทำ hit testing และไม่มี checker ตัวไหนดู `:hover`)
+แปลว่า **ไม่มีอะไรจับได้เลยว่าสีเปลี่ยน** ซึ่งเป็นเหตุผลเดียวกับที่ decision 2/5/6 ยังค้างอยู่
 
-**Verify:** รัน 3 ขั้นตามปกติ (ต้องเขียวเพราะไม่ได้แตะโค้ด) และรัน
+**Verify:** รัน 3 ขั้นตามปกติ และรัน
 `node docs/btn-parity-proof.mjs toast-hit 3d3d5cc:index.html index.html`
 ต้องได้ `FAIL — 5 declaration(s) differ` **เท่าเดิมเป๊ะ** โดย `#toast` ไม่มี diff สักจุด
 ถ้าตัวเลขไม่ใช่ 5 แปลว่ามีคนไปแตะฝั่งแอป
 
-⚠️ **ความเสี่ยงที่ต้องรับมือ ไม่ใช่มองข้าม:** **ไม่มีเบราว์เซอร์ให้ verify**
-(decision 4 ยังไม่ได้รับอนุญาต) — ย่อหน้าข้างล่างนี้ใช้กับงานที่**แก้ `<style>` ของ `index.html`**
-(Next task รอบหน้าเป็นงานเอกสารล้วน ไม่แตะ CSS → ใช้แค่ท่อนยืนยันว่า `toast-hit` ยังได้ 5 เท่าเดิม
-ส่วน `.css` ของ DS นั้น harness อ่านไม่ได้เลย ถ้ารอบไหนต้องแก้จริง ให้แนบ `git diff` ตรงๆ แทน)
-→ ใช้วิธีเดิม: เพิ่ม refactor ใหม่เข้าไปใน `REFACTORS`
+⚠️ **ความเสี่ยงที่ต้องรับมือ ไม่ใช่มองข้าม:** **ไม่มีเบราว์เซอร์ให้ verify** (decision 4 ยังไม่ได้รับอนุญาต)
+ถ้ารอบไหนแก้ `<style>` ของ `index.html` → ใช้วิธีเดิม: เพิ่ม refactor ใหม่เข้าไปใน `REFACTORS`
 ของ `docs/btn-parity-proof.mjs` (ระบุ class ก่อน/หลัง + ancestor chain; ใส่ `type` ถ้า subject
 ไม่ใช่ `button`; ใช้ `beforeAncestors`/`afterAncestors` ถ้า ancestor เปลี่ยนคนละแบบกับ subject)
 แล้วรัน `node docs/btn-parity-proof.mjs <key> <sha>:index.html index.html`

@@ -4,7 +4,7 @@
 
 Generate complete shot breakdowns from a scene description, see each panel rendered as an evocative storyboard thumbnail on `<canvas>`, then export a production-ready PDF. No build tools, no npm, no backend — it's one `index.html` you can open straight in a browser.
 
-> **⚠️ Maintainers — four decisions are blocking the Phantom UI integration.** They are
+> **⚠️ Maintainers — seven decisions are blocking the Phantom UI integration.** They are
 > investigated and written up in [Open decisions](#open-decisions); each one needs an answer
 > from the project owner, not more analysis. Until they're answered the remaining work on that
 > effort cannot move.
@@ -397,7 +397,7 @@ node docs/btn-parity-proof.mjs segmented 021b966:index.html index.html
 
 ## Open decisions
 
-Six questions block nearly all remaining Phantom UI integration work. Every one has already
+Seven questions block nearly all remaining Phantom UI integration work. Every one has already
 been investigated to the end — what is missing is a **decision**, not more analysis. Each moves
 pixels or adds a file to the repo, so none is an automated agent's call to make.
 
@@ -583,6 +583,76 @@ Nothing here is a rendering bug — every field is legible and usable today.
 **If you answer:** a round applies the padding/font-size change, collapses the four rules onto one
 shared base with per-context overrides (the way `.btn` and `.seg` were collapsed), and re-runs the
 proof harness with a new `inputs` entry.
+
+### 7. Disabled controls that still react to hover — repair or accept?
+
+**Blocks:** *"basic elements match the component of the same name in the design system."* The
+eleven-row parity table in `AUTOPILOT.md` is closed — every component matches at rest. This is
+the one place left where the two sides disagree about **behaviour**, and unlike decisions 2, 5 and
+6 (which are questions of taste) two of the rows below are plain defects: a control that is
+`disabled` still lights up under the cursor, inviting a click that does nothing.
+
+Nothing here can be caught by the existing safety net. jsdom does no hit-testing, and neither
+`tools/check-tokens.mjs` nor `docs/btn-parity-proof.mjs` evaluates `:hover` — so any fix, and any
+regression, would land with the full Verify still green. That is exactly why it is written down
+instead of quietly applied.
+
+#### What Phantom UI is missing
+
+| Rule | Declares | Missing | Effect when disabled **and** hovered |
+|---|---|---|---|
+| `Button.css:6` `.pui-btn:disabled` | `opacity:.5; cursor:not-allowed; box-shadow:none` | `:disabled:hover` | `--ghost` still brightens `color` + `border-color` (line 12); `--tab` still takes `color:var(--text)` + `background:var(--surface)` (line 19) |
+| `Button.css:16` `.pui-btn--icon:disabled` | `opacity:.32; color:var(--dim)` | `:disabled:hover` | `color` is safe — line 16 sits after line 15 and wins the tie — but `background:var(--surface)` and `border-color:var(--dim)` from line 15 are untouched, so the box still lights up |
+| `Menu.css:13` `.pui-menu__item:disabled` | `opacity:.35; cursor:not-allowed` | `:disabled:hover` | line 12 still applies `background:var(--surface2); color:var(--accent)` — a disabled item highlights exactly like a live one |
+| `Menu.css:14` `.pui-menu__item--danger` | `color:var(--secondary)` | any `:hover` at all | the app's `.menu-pop button.danger:hover` tint has no counterpart, so danger items are the one kind that *don't* respond to hover |
+
+#### The interesting one: an intention already written in the file, then swallowed
+
+`Button.css:6` declares `box-shadow:none` on `:disabled`. That is not an oversight — someone meant
+to kill the primary button's glow while it is disabled. **It does not work.**
+
+```
+.pui-btn:disabled          → (0,2,0)   line 6
+.pui-btn--primary:hover    → (0,2,0)   line 9
+```
+
+The specificities are identical, so the cascade falls through to source order and the rule three
+lines below wins. **A disabled primary button still glows under the cursor.** This row differs
+from the other three: there is no need to guess what was wanted, because the file says it. The
+repair is still a visible change, so it is still yours to make.
+
+The app hit the same tie and won it by ordering alone — `#genBtn:hover` on `index.html:137`,
+`#genBtn:disabled` on `:138`, same `(1,1,0)` against `(1,1,0)`, reset last, glow correctly
+suppressed. Two files, one tie, opposite outcomes.
+
+#### The app is not clean either
+
+Earlier rounds recorded that the app "guards this everywhere". Re-checking the file for this
+write-up, that is not true — it guards three of five:
+
+- **Guarded:** `.btn--icon` (`:491–492`), `.pc-tools button` (`:573–574`), `.menu-pop button`
+  (`:584–585`), plus `#genBtn` by the ordering accident above.
+- **Not guarded — `#tourBack`** (`:558`) sets only `opacity` and `cursor`. It is a `.btn--ghost`,
+  and `.btn--ghost:hover` (`:344`) sets `color` + `border-color`, which the disabled rule never
+  mentions. The Back button on the first step of the tour is disabled and still brightens.
+- **Guard defeated — the context menu's Delete item.** `.menu-pop button:disabled:hover` (`:585`)
+  and `.menu-pop button.danger:hover` (`:588`) are both `(0,3,1)`; line 588 is later and wins. The
+  Delete entry carries `class="danger"` and is disabled whenever the panel is locked or the app is
+  read-only, so locking a panel and hovering Delete still paints the red tint. Same failure shape
+  as `Button.css:6`, in the app, at the bottom of a rule that was written to prevent it.
+
+| Option | Cost |
+|---|---|
+| **Add the `:disabled:hover` resets to Phantom UI** (three rules, mirroring the app) | The library stops advertising dead controls as live. Changes rendering for every consumer of `Button` and `Menu` — anyone who deliberately styled a disabled hover state would be overridden. Largest change, closes the whole class of defect. |
+| **Fix only `box-shadow`** (move `.pui-btn:disabled` below the variant rules, or add `.pui-btn--primary:disabled:hover{box-shadow:none}`) | Smallest possible edit and the easiest to defend, since it only makes a declaration already in the file do what it says. Leaves ghost/tab/icon/menu untouched. |
+| **Fix the two app-side gaps as well** (`#tourBack`, disabled danger item) | Two more rules in `index.html`. Moves pixels only in states that are already wrong; no resting-state change, so `docs/btn-parity-proof.mjs` would show a diff confined to `:hover` + `:disabled`. |
+| **Accept it** | Nothing to do. Disabled controls keep inviting clicks; the `box-shadow:none` on `Button.css:6` stays decorative. |
+
+**If you answer:** a round applies the chosen rules and adds a `disabled-hover` entry to
+`docs/btn-parity-proof.mjs` so the moved declarations are listed explicitly. Note the harness
+reads `index.html` only — it cannot see `design-system/src/**/*.css`, so any Phantom UI half of
+the change has to be reviewed from the `git diff` directly. Confirming it in a real browser needs
+decision 4 first.
 
 ---
 

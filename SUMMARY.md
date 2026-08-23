@@ -1,127 +1,136 @@
-# Round 2026-08-24_0023
+# Round 2026-08-24_0036
 
 ## What I did
 
-- **Restored the previous round's tip.** The runner cut this branch from `3503537` again — the
-  round-1 base, missing ~20 commits of Phantom UI work. Restored the tree from `e245085`
-  (tip of `auto/…/2026-08-24_0003`) and verified `git diff e245085` was empty before committing.
-- **Fixed the library-side mirror of the toast hit-testing defect** (`Toast.css`, 2 declarations):
-  `.pui-toast{pointer-events:none}` + `.pui-toast__action{pointer-events:auto}`, with a comment
-  explaining why the two must always ship together. Both sides of the codebase are now correct.
-- **Ran all three pre-checks the previous round required**, plus found one thing it didn't ask about
-  (see Risk). None of them blocked the change.
-- **Corrected one sentence of the app-side comment** on `.toast-act` in `index.html`. It read
-  *".pui-toast has no pointer-events:none, so it needs no counterpart here"* — this round made that
-  false. A comment is not a declaration and moves no pixels; the parity harness confirms it.
-- **Set the next task**: write a **decision 7** in the README for a *different* gap I found while
-  checking this one (disabled controls still hover in the DS). That one changes visible colour, so
-  it is the owner's call — I deliberately did not fix it. Details below.
+- **Restored the previous round's tip first.** The runner cut this branch from `3503537`, which is
+  12 rounds stale — the tree had no `tools/check-tokens.mjs`, no `docs/btn-parity-proof.mjs`, no
+  `SUMMARY.md`, and an `AUTOPILOT.md` whose "Next task" was the *very first* task of the effort.
+  Restored `771ed64` (tip of `auto/…/2026-08-24_0023`) as commit 1. Verified the diff contained no
+  deletions (`git diff --name-status --diff-filter=D`) before trusting `git checkout 771ed64 -- .`,
+  then confirmed `git diff --stat 771ed64` was empty.
+- **Wrote `### 7. Disabled controls that still react to hover — repair or accept?`** into
+  `README.md` under `## Open decisions`, in the house format (what is blocked → table of gaps →
+  options + cost → "**If you answer:**").
+- **Re-verified every claim against the source before writing it, and found two of them wrong.**
+  Corrected both in the decision text rather than repeating them (details under *Why*).
+- **Found a third defect nobody had recorded**, in the app: `.menu-pop button.danger:hover`
+  (`index.html:588`) and `.menu-pop button:disabled:hover` (`:585`) are both `(0,3,1)`, so line 588
+  wins on source order. The context menu's Delete item carries `class="danger"` and *is* disabled
+  when a panel is locked or the app is read-only — so the app's own guard is defeated by a rule
+  three lines below it. Documented as an option; not fixed (it moves visible pixels).
+- **Fixed two stale counts** the new decision made wrong: the maintainer banner said "four
+  decisions" (there were already six) and the section intro said "Six questions".
+- Updated `## Next task` and the criterion-2 notes in `AUTOPILOT.md`.
+
+**No `.css` file and no `index.html` line was touched.** `git status` showed `M README.md` only
+before the AUTOPILOT/SUMMARY edits.
 
 ## Why
 
-**The defect.** `.pui-toast` is `position:fixed`, `z-index:200`, `max-width:80vw`, and it never
-set `pointer-events`. `opacity:0` does not stop hit testing, so the element sat over the page
-swallowing clicks — visibly for the ~5s it showed, and arguably at all times in a consumer that
-keeps one mounted. The demo gallery (`design-system/demo/main.tsx:96`) renders a permanently-open
-`<Toast>`, so it demonstrates the bug rather than depending on the old behaviour.
+**The headline of the decision is a bug that the file already tried to prevent.**
+`Button.css:6` declares `.pui-btn:disabled{… box-shadow:none}` — a deliberate attempt to kill the
+primary button's glow while disabled. It does not work. `.pui-btn:disabled` and
+`.pui-btn--primary:hover` (line 9) are **both `(0,2,0)`**; the tie falls through to source order and
+the rule three lines below wins. A disabled primary button still glows under the cursor. That row
+is qualitatively different from the others in the table: there is nothing to guess about intent,
+because the file states it. The repair is still a visible change, so it is still the owner's call.
 
-**Why two declarations, not one.** `pointer-events` is an *inherited* property. Setting `:none`
-on the container reaches every descendant, so any interactive child must opt back in with `:auto`
-or it stops being a hit target — handler never fires, cursor never changes. Adding only the first
-declaration would have reproduced, in the library, the exact bug the app fixed last round. That is
-why the comment ties them together explicitly.
+The app contains the same tie *resolved the other way* — `#genBtn:hover` (`:137`) then
+`#genBtn:disabled` (`:138`), both `(1,1,0)`, reset last, glow correctly suppressed. Two files, one
+tie, opposite outcomes, decided by nothing but line order. I put that in the README because a
+working counterexample in the same repo is far more convincing than an argument about the cascade.
 
-**Why this was mine to fix and decision 7 is not.** Round 0047 ruled that the `.menu-pop
-button:disabled:hover` gap is owner territory because fixing it *changes a colour people see*.
-This fix changes no pixel in any state — it is hit-testing only. That line is exactly where I
-stopped: the disabled-hover gaps I found this round do move colour, so I wrote them up instead.
+**Two claims handed to me by the previous round were wrong.** I checked before writing:
+
+1. Round 0023 recorded that `.pui-btn--icon:hover` (line 15) overrides `color` back to `--accent`
+   when disabled. It does not — `.pui-btn--icon:disabled` (line 16) has equal specificity and comes
+   *after*, so `color:var(--dim)` wins. What actually leaks is `background:var(--surface)` and
+   `border-color:var(--dim)`, which `:disabled` never declares. Corroborated by the app: its fix at
+   `index.html:492` resets exactly `background`, `border-color` **and** `color` — i.e. the author
+   was addressing the box, not the text colour.
+2. Round 0023 recorded that the app "writes a `:disabled:hover` reset everywhere". It guards three
+   of five. `#tourBack` (`:558`) sets only `opacity`/`cursor`, but it is a `.btn--ghost` and
+   `.btn--ghost:hover` (`:344`) sets `color` + `border-color` that nothing resets — the Back button
+   on the first tour step is disabled and still brightens. And the danger-menu case above.
+
+Writing an owner-facing decision from an unverified premise is worse than writing nothing: the
+owner would answer a question about a defect that doesn't exist while the real one stayed hidden.
+
+**Why the fallback in the new Next task is the harness, not a CSS fix.** Two rounds in a row
+(0023 editing `Toast.css`, and this one) had to fall back to "read the `git diff` yourself" as
+evidence, because `docs/btn-parity-proof.mjs` only reads `index.html`. If the owner answers
+decision 7 — which edits `Button.css` and `Menu.css` — we hit that wall immediately. Teaching the
+harness to read `design-system/src/**/*.css` moves zero pixels, is in `docs/` not `tools/`, and is
+not a seventh token checker.
 
 ## Verification
 
-All three Verify steps, run at the final commit:
+Full Verify command, all three stages, run on the final tree:
 
 ```
-node tools/test.mjs                → 54 passed, 0 failed
-node tools/check-tokens.mjs        → all 6 checks pass (22/22 tokens, 4/4 fonts,
-                                     no derived-colour literals, font weights available,
-                                     no radius literals, typeface from one source)
-npm --prefix design-system test    → 12 files, 31 passed
+$ node tools/test.mjs
+54 passed, 0 failed
+
+$ node tools/check-tokens.mjs
+tokens in sync: 22/22 from design-system/src/tokens.css present and identical in index.html
+fonts in sync: 4/4 from design-system/src/fonts.css embedded byte-identical in index.html
+no derived-colour literals: 15 CSS source(s) scanned, none re-hardcode a tokenised colour
+font weights available: 15 CSS source(s) scanned, every font-weight is one of 400, 500, 700, 800
+no radius literals: 15 CSS source(s) scanned, every border-radius reads a --r-* token
+typeface from one source: 15 CSS source(s) scanned, every font-family reads var(--mono)
+
+$ npm --prefix design-system test
+Test Files  12 passed (12)
+     Tests  31 passed (31)
 ```
 
-App-side untouched, per the previous round's instruction:
+The guard the previous round required — proof that nobody touched the app side:
 
 ```
-node docs/btn-parity-proof.mjs toast-hit 3d3d5cc:index.html index.html
-→ FAIL — 5 declaration(s) differ, 0 markup problem(s)
+$ node docs/btn-parity-proof.mjs toast-hit 3d3d5cc:index.html index.html
+markup coverage OK — 0 old class tokens gone, 0 new class attributes at the expected counts
+✗ #toastUndo (base) / :hover / :disabled / :disabled:hover / :focus
+    pointer-events   before: (unset)   after: auto   <- .toast-act
+compared 10 (element, state) pairs across 2 "toast-hit" elements
+FAIL — 5 declaration(s) differ, 0 markup problem(s).
 ```
 
-That is the **expected and required** result: 5 is the count round 0003 deliberately introduced.
-All 5 are on `#toastUndo` (`pointer-events (unset)→auto`, one per state). `#toast` — the other of
-the 2 elements compared, 10 pairs total — shows **no diff in any state**, which is the evidence
-that this round did not touch the app's toast rules.
+`FAIL — 5 declaration(s) differ` is **the required result, unchanged**, and `#toast` shows no diff
+at any of its five states — which is the evidence that this round did not touch `index.html`.
 
-**Negative test** (to prove the 5 is read from the live file, not a stale constant): removed
-`pointer-events:auto` from `.toast-act`, re-ran → **`PASS — every element computes an identical
-declaration set`** (0 diffs). Restored it, re-ran → back to 5. So the harness is still tracking
-that exact declaration.
-
-**Evidence for the DS change is the diff itself** — `docs/btn-parity-proof.mjs` parses only the
-`<style>` block of `index.html` and cannot read DS `.css` files at all, as the previous round warned:
-
-```diff
--  opacity:0; transition:.25s; z-index:200; max-width:80vw; font-family:var(--mono);
-+  opacity:0; transition:.25s; z-index:200; pointer-events:none; max-width:80vw; font-family:var(--mono);
--.pui-toast__action{… text-decoration:underline; margin-left:8px}
-+.pui-toast__action{… text-decoration:underline; margin-left:8px; pointer-events:auto}
-```
-
-**Pre-checks** (all three required by the previous round):
-
-1. `Toast.tsx` — exactly one clickable child, `.pui-toast__action` (a `<span onClick>`). No close
-   button, no `onClick` declared on the root. So `__action` is the only child needing `:auto`.
-2. `Toast.test.tsx` (3 tests) — uses `fireEvent.click`, which dispatches straight at the node.
-   jsdom does no hit testing, so these tests are **green before and after and prove nothing about
-   this bug**. I am not claiming otherwise; the previous round was right to call this out.
-3. Demo gallery — `design-system/demo/main.tsx:96` renders `<Toast open message="…" />` with no
-   action and no root handler. Nothing depends on the old behaviour; it is a victim of the bug.
+Claims in the new decision were checked against source, not memory: `Button.css` and `Menu.css`
+read in full; `grep -n "disabled" index.html` for every app-side rule (138, 491–492, 558, 573–574,
+584–585, 588); `index.html:2196–2212` to confirm `bR`/`bX` are `.pc-tools` children; `:3860–3874`
+to confirm the Delete menu item carries `class="danger"` and receives `disabled`.
 
 ## What I did NOT do
 
-- **Did not fix the disabled-hover gaps I found.** The DS has no `:disabled:hover` reset anywhere,
-  while the app has three (`index.html:492`, `:574`, `:585`). Consequences today:
-  `.pui-btn--icon:hover` (line 15) overrides the disabled `color`; `--ghost`/`--tab` hover states
-  still apply when disabled. Fixing any of it changes rendered colour → owner's call, per the
-  precedent round 0047 set. Written up as the next task (a README decision 7, not a code change).
-- **Did not touch `tools/`** or add a 7th token check — the contract forbids it and all 22 tokens
-  are already covered.
-- **Did not answer any of the six open decisions.** I re-read `README.md` `## Open decisions`
-  first, as instructed; none has an owner answer yet, so the fallback task applied.
-- **Did not open a browser.** Decision 4 (MCP permission) is still unanswered, and the previous
-  rounds established that retrying without it just burns a round.
+- **Did not edit `Button.css`, `Menu.css`, or `index.html`.** The task said documentation only, and
+  every option in decision 7 changes what a person sees. `AUTOPILOT.md` is explicit that answering
+  an open decision is the owner's right, not an agent's.
+- **Did not answer any of decisions 1–7**, or fix the two app-side gaps I found.
+- **Did not tick any acceptance criterion.** Nothing was unblocked this round — decision 7 *adds* a
+  blocker to criterion 2 rather than removing one. Criterion 2 now waits on decisions 2, 5, 6, 7.
+- **Did not build the harness extension.** It is queued as the fallback in the next round's task,
+  behind "check for an owner answer first".
+- Did not touch `tools/`, `storyboard-simulator.html`, or the test markers.
 
 ## Risk
 
-**Read this one closely — it is a real caveat the pre-check list did not ask about.**
-`Toast.tsx` spreads `{...rest}` onto the root div (added in `e3a355c`, "forward native props on
-all components"). A consumer *can* therefore pass `onClick` to the root, and `pointer-events:none`
-will now silently swallow it. I judged this acceptable and documented it in the CSS comment,
-because the root is `role="status"` — an ARIA live region, not an interactive element — and the
-component already ships `action` as its interaction affordance. **If any consumer outside this
-repo puts a handler on the Toast root, this change breaks it, and nothing in the test suite will
-catch that.** If you disagree, the narrower fix is to scope `:none` to a wrapper rather than the
-root.
-
-Other things worth a reviewer's attention:
-
-- **Nothing executable proves the fix works.** jsdom ignores `pointer-events` (verified by reading
-  the tests, not assumed), the token checker does not model hit testing, and the parity harness
-  cannot read DS `.css`. The argument is from source plus the CSS spec — `pointer-events` inherits,
-  `opacity:0` does not suppress hit testing. Correct, but unexecuted. Decision 4 is what would
-  close this gap, for this change and for the twelve rounds of CSS work before it.
-- **This is a behaviour change to a library other consumers use.** Justified as a pure defect fix,
-  but it is not a no-op: clicks that previously landed on the toast will now pass through to
-  whatever is beneath it. That is the intent — flagging it so it is a decision, not a surprise.
-- **The parity harness reports FAIL and that is correct.** Anyone skimming for green output will
-  misread it. The 5 diffs belong to round 0003; `toast-hit` exists to show *what* moved, not to pass.
-- The restore commit (`5bb41cb`) is large by line count but is a mechanical `git checkout e245085 -- .`
-  with a verified-empty diff against that ref — not new work.
+- **The Verify command is green, and that proves almost nothing about this round's subject.** No
+  checker evaluates `:hover`, and jsdom does no hit-testing. Green here means "I didn't break
+  anything else", not "the disabled-hover analysis is right". The analysis rests on reading the CSS
+  and applying the cascade rules, plus the `index.html:492` corroboration noted above.
+- **The specificity arithmetic is the load-bearing claim and it is hand-computed.** Worth a
+  reviewer's own check: `.pui-btn:disabled` = `(0,2,0)`, `.pui-btn--primary:hover` = `(0,2,0)`;
+  `.menu-pop button:disabled:hover` = `(0,3,1)`, `.menu-pop button.danger:hover` = `(0,3,1)`. If
+  either tie is not a tie, the corresponding paragraph in decision 7 is wrong.
+- **I contradicted a previous round's written findings in two places.** If my correction is the
+  thing that's wrong, the README now misinforms the owner more confidently than before. Both
+  corrections are stated with their reasoning in `AUTOPILOT.md` (criterion 2, items ก/ข) so they
+  can be checked without re-deriving them.
+- **Still no browser verification** — decision 4 has not been granted. Every claim about what a user
+  sees is derived from source and the CSS cascade spec, never observed.
+- **The restore commit is large** (`+1959 / −162` across 16 files). It is a pure tree restore of
+  `771ed64`, verified byte-identical, but a reviewer diffing this branch against `main` will see 12
+  rounds of accumulated work as if it were one commit.
