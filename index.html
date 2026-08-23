@@ -354,10 +354,16 @@
   }
   #toast.on{opacity:1; transform:translateX(-50%) translateY(0)}
   #toast.err{border-left-color:var(--secondary); color:#ffb4a0}
-  /* Mirrors .pui-toast__action (design-system/src/components/Toast/Toast.css) except
-     margin-left: the DS spaces the action with margin-left:8px, this toast separates it
-     with a literal " · " in the text instead. Adding the margin would move pixels. */
-  .toast-act{color:var(--accent); cursor:pointer; text-decoration:underline}
+  /* Mirrors .pui-toast__action (design-system/src/components/Toast/Toast.css) except for
+     two deliberate differences:
+     - margin-left: the DS spaces the action with margin-left:8px, this toast separates it
+       with a literal " · " in the text instead. Adding the margin would move pixels.
+     - pointer-events: #toast above is click-through so it cannot swallow clicks on the
+       board for the 5s it is up, and pointer-events INHERITS — so the action has to opt
+       back in or it is not a hit target at all (its onclick never fires and cursor:pointer
+       never even shows). .pui-toast has no pointer-events:none, so it needs no counterpart
+       here; do not "sync" this away. */
+  .toast-act{color:var(--accent); cursor:pointer; text-decoration:underline; pointer-events:auto}
 
   .kbd-hint{font-size:8.5px; color:var(--dim); padding:8px 12px; line-height:1.7; border-top:1px solid var(--line)}
   .kbd-hint kbd{background:var(--surface2); border:1px solid var(--dim); border-radius:var(--r-sm); padding:0 4px; color:var(--muted); font-size:8px}

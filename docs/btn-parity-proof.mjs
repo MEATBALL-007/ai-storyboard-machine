@@ -113,10 +113,28 @@ const TOAST = [
     afterInline: null },
 ];
 
+/* The toast hit-target fix (2026-08-24) is not a refactor: no class moves and no declaration
+ * is relocated — exactly one is ADDED. It is listed here so the run can show precisely that,
+ * rather than the 0-diff the other keys aim for. Read the two rows together:
+ *   #toast     — must be byte-identical, i.e. pointer-events:none was NOT taken off the
+ *                container (doing that would make the toast swallow clicks for 5s)
+ *   #toastUndo — gains pointer-events:auto and nothing else
+ * The model carries no inheritance, so #toast's `none` never appears on the child's map; that
+ * inheritance is the whole mechanism of the bug and is the one part this harness cannot show.
+ * Markup coverage is vacuous here (no class token changes), so it proves nothing this round. */
+
+const TOAST_HIT = [
+  { name: '#toast', type: 'div', id: 'toast', ancestors: ['body'],
+    before: ['on'], after: ['on'] },
+  { name: '#toastUndo', type: 'span', id: 'toastUndo', ancestors: ['body', '#toast.on'],
+    before: ['toast-act'], after: ['toast-act'] },
+];
+
 const REFACTORS = {
   buttons: BUTTONS,
   segmented: SEGMENTED,
   toast: TOAST,
+  'toast-hit': TOAST_HIT,
 };
 
 const STATES = ['', ':hover', ':disabled', ':disabled:hover', ':focus'];
