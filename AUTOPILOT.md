@@ -295,12 +295,7 @@ segmented padding — ข้อ 5 เพิ่มรอบ 2026-08-23_0047 / inp
 **เกณฑ์ข้อ 2 บล็อกอยู่ที่ decision 2 + 5 + 6 + 7 เท่านั้น — งานสำรวจปิดครบ 11/11 แล้ว
 ไม่ต้องสำรวจ component เพิ่มอีก**
 
-## Next task — do ONLY this
-
-**ก่อนอื่น เปิด `README.md` หัวข้อ `## Open decisions` ดูว่าเจ้าของตอบข้อไหนมาแล้วหรือยัง
-ถ้าตอบมาแล้วแม้ข้อเดียว → ทำตามคำตอบนั้น (สำคัญกว่าทุกอย่างข้างล่าง และปลดล็อกเกณฑ์ได้จริง)**
-
-**ถ้ายังไม่มีคำตอบสักข้อ — งานที่ไม่ถูกบล็อกหมดแล้วจริงๆ อ่านย่อหน้านี้ให้จบก่อนลงมือ**
+## Where the work stands (context for the Next task below)
 
 รอบ 2026-08-24_0036 เขียน decision 7 ลง README เสร็จแล้ว → **decision ครบ 7 ข้อ
 และทุกเส้นทางที่เหลือของเกณฑ์ข้อ 1 / 2 / 3 อยู่หลัง decision ทั้งหมด**:
@@ -325,32 +320,45 @@ segmented padding — ข้อ 5 เพิ่มรอบ 2026-08-23_0047 / inp
 ⚠️ โหมด `.css` **ไม่มี phase markup coverage** (stylesheet ไม่มี markup) → ใส่ guard แทนคือ
 element ไหน match 0 rule ทั้งสอง version = FAIL (ไม่งั้นตารางที่พิมพ์ class ผิดจะขึ้น PASS เงียบๆ)
 
-**มีงานสำรองอยู่ 1 อย่างเท่านั้น ถ้าจะทำต้องทำอันนี้ ห้ามคิดอันอื่น:**
-**ทำให้ `docs/btn-parity-proof.mjs` *รายงาน* selector ที่มันไม่รองรับ แทนที่จะเงียบ**
-เหตุผล: header ของไฟล์เขียนว่า `>` `+` `~` และ structural pseudo (`:last-child`, `:nth-*`)
-ถูก **"reported as unsupported, not silently ignored"** — **ข้อความนั้นเป็นเท็จวันนี้**
-`ruleMatches()` คืน `{matched:false, unsupported:true}` แต่ `computed()` ทิ้ง flag นั้นทั้งหมด
-ของจริงคือ **เงียบสนิท** และตอนนี้มันมีผลแล้ว: `Menu.css:31`
-`.pui-menu__item:last-child{border-bottom:none}` เป็นกฎจริงที่ 2 ใน 3 element ของ
-`ds-disabled-hover` โดน และ decision 7 แก้ `Menu.css` → ถ้าใครขยับกฎนั้น harness จะขึ้น 0 diff
+✅ **งานสำรองอันสุดท้าย (ให้ harness รายงาน selector ที่อ่านไม่ได้) ทำเสร็จแล้ว รอบ 2026-08-24_0102**
+`ruleMatches()` แยก "ไม่ match" ออกจาก "ตัดสินไม่ได้" แล้ว และ `computed()` ไม่ทิ้ง flag อีกต่อไป
+ท้ายรันจะพิมพ์ `⚠ N undecidable rule(s)` พร้อมบอกว่าติดอะไร (`combinator >` / `structural pseudo
+:last-child`) และ element ไหนโดน — **เตือนอย่างเดียว ไม่ FAIL** (ตามที่รอบก่อนแนะนำ) แต่บรรทัด
+PASS ต่อท้ายว่า *"Except the N undecidable rule(s) … which this PASS says nothing about"*
+→ PASS เปล่าๆ ไม่ถูกอ่านเป็นหลักฐานคลุมกฎพวกนั้นอีก
+⚠️ **จุดที่ต้องรู้ก่อนแก้ต่อ:** เดิมมี 2 ทางที่เงียบ ไม่ใช่ทางเดียวอย่างที่รอบก่อนเขียน —
+combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน structural pseudo **ไม่เคยตั้ง flag เลย**
+(ตายใน `compoundMatchesElement`) → คืน `{matched:false}` เปล่าๆ แยกจาก non-match จริงไม่ได้
+การรายงานเช็ค **subject ก่อน แล้วถ้าไม่มี combinator ค่อยเช็ค prelude ตามปกติ** —
+ไม่งั้น `.menu-pop button:last-child` จะถูกรายงานใส่ปุ่มทั้งไฟล์ (ลองแล้ว: 17 ปุ่มของ key
+`buttons` โดนหมดทั้งที่ไม่มีตัวไหนอยู่ใน `.menu-pop`) ถ้ามี combinator ถึงจะข้าม prelude
+= **ตั้งใจให้ over-report ไว้ก่อน** เพราะความสัมพันธ์ตรงนั้น model ไม่ได้จริงๆ
 
-ขอบเขตของงานสำรอง (ห้ามเกินนี้):
-- เก็บ rule ที่ subject "จะ match ถ้าไม่ติดส่วนที่ไม่รองรับ" แล้วพิมพ์ออกมาท้ายรัน
-  พร้อมบอกว่าติดอะไร (combinator / structural pseudo) — **ไม่ต้องทำให้มัน match**
-  การพยายาม implement `:last-child` จริงต้องมี DOM tree ซึ่ง harness ไม่มี = คนละงาน
-- ตัดสินใจให้ชัดว่ามันทำให้ FAIL หรือแค่เตือน — **แนะนำให้แค่เตือน** เพราะทุก key ที่มีอยู่
-  วันนี้จะโดน (`Menu.css:31`) และการทำให้ FAIL ทันทีคือการทำลาย baseline ที่เพิ่งวางไว้
-  แต่ถ้าเตือน **ต้องเตือนเสียงดัง** และต้องมีเลขจำนวน rule กำกับ
-- negative test อย่างน้อย 2 กรณี: เติม `.pui-menu > .pui-menu__item{…}` แล้วต้องถูกรายงาน /
-  ลบ `:last-child` ออกจาก `Menu.css` แล้วจำนวนที่รายงานต้องลดลง
-- แก้ header ของไฟล์ให้ตรงกับของจริง (ไม่ว่าจะเลือกทางไหน)
+## Next task — do ONLY this
 
-**ห้ามแก้ `Button.css` / `Menu.css` / `index.html` ในรอบนั้น** — decision 7 ยังไม่มีคำตอบ
+**ก่อนอื่น เปิด `README.md` หัวข้อ `## Open decisions` เหมือนเดิม ถ้าเจ้าของตอบข้อไหนมาแล้ว
+→ ทำตามคำตอบนั้น (สำคัญกว่าทุกอย่างข้างล่าง และเป็นทางเดียวที่ปลดล็อกเกณฑ์ได้จริง)**
+
+**ถ้ายังไม่มีคำตอบ — รอบนี้ให้เขียน SUMMARY.md ว่าตรวจแล้วไม่มีอะไรปลดล็อก แล้วจบรอบ
+ห้ามประดิษฐ์งานแทนเด็ดขาด** คราวนี้ต่างจากรอบก่อนๆ ตรงที่ **งานสำรองหมดแล้วจริงๆ**:
+- ✅ token tooling ครบ 22/22 (เช็ค 6 ตัว) — รอบก่อนสรุปแล้วว่าไม่ควรเพิ่มเช็คที่ 7
+- ✅ parity table ปิดที่ 11/11 component — ไม่มีอะไรให้สำรวจ
+- ✅ harness อ่าน CSS ฝั่ง library ได้ (รอบ 0048) และรายงาน selector ที่อ่านไม่ได้แล้ว (รอบนี้)
+
+**สิ่งที่ *ห้าม* หยิบมาทำเองแม้จะดูน่าทำ** (ทุกอันขยับพิกเซลหรือเป็นสิทธิ์เจ้าของล้วน):
+- implement `:last-child` / `>` / `+` / `~` ให้ match จริง — ต้องมี DOM tree ซึ่ง harness
+  ตั้งใจไม่สร้าง เป็นการเขียน CSS engine ใหม่ ไม่ใช่งานรอบเดียว และไม่มีใครขอ
+- เอา harness เข้า Verify command — มันเป็นเครื่องมือของรอบ ไม่ใช่ checker ที่ต้องเขียวตลอด
+- แก้ `Button.css` / `Menu.css` / `index.html` ตาม decision 7 (หรือ 2 / 5 / 6) เอง
+
+**ห้ามแก้ `Button.css` / `Menu.css` / `index.html`** — decision 7 ยังไม่มีคำตอบ
 ถ้าแก้ Verify จะยังเขียว (jsdom ไม่ทำ hit testing และไม่มี checker ตัวไหนดู `:hover`)
 แปลว่า **ไม่มีอะไรจับได้เลยว่าสีเปลี่ยน** ซึ่งเป็นเหตุผลเดียวกับที่ decision 2/5/6 ยังค้างอยู่
 
 **Verify:** รัน 3 ขั้นตามปกติ และรันทั้ง 5 key ของ harness ให้ผลเท่าเดิม:
-`buttons` / `segmented` / `toast` → PASS, `ds-disabled-hover` → PASS,
+`buttons` (85 คู่ / 17 element) / `segmented` (45 / 9) / `toast` (5 / 1) → PASS **และไม่มี
+undecidable rule สักข้อ**, `ds-disabled-hover` (15 / 3) → PASS **พร้อม 1 undecidable rule**
+(`.pui-menu__item:last-child`, identical in both versions)
 `node docs/btn-parity-proof.mjs toast-hit 3d3d5cc:index.html index.html`
 ต้องได้ `FAIL — 5 declaration(s) differ` **เท่าเดิมเป๊ะ** โดย `#toast` ไม่มี diff สักจุด
 ถ้าตัวเลขไม่ใช่ 5 แปลว่ามีคนไปแตะฝั่งแอป

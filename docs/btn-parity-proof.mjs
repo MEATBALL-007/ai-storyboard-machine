@@ -222,8 +222,10 @@ const TOAST_HIT = [
  *     <rev>:design-system/src/styles.css design-system/src/styles.css
  *
  * Known blind spot for the menu rows: `.pui-menu__item:last-child{border-bottom:none}` uses a
- * structural pseudo-class, which this model treats as never matching (see the header). A
- * change confined to that rule would be reported as 0 diff. */
+ * structural pseudo-class, which this model never matches (see the header). It still cannot
+ * diff that rule — but as of the round that added the undecidable-rule list, the run names it
+ * every time and the PASS line excludes it, so a change confined to it is no longer read as
+ * proven. Verify that one by hand. */
 
 const DS_MENU = ['body', '.pui-menu'];
 
