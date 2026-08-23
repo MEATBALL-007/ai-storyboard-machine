@@ -1,136 +1,123 @@
-# Round 2026-08-24_0036
+# Round 2026-08-24_0048
 
 ## What I did
 
-- **Restored the previous round's tip first.** The runner cut this branch from `3503537`, which is
-  12 rounds stale — the tree had no `tools/check-tokens.mjs`, no `docs/btn-parity-proof.mjs`, no
-  `SUMMARY.md`, and an `AUTOPILOT.md` whose "Next task" was the *very first* task of the effort.
-  Restored `771ed64` (tip of `auto/…/2026-08-24_0023`) as commit 1. Verified the diff contained no
-  deletions (`git diff --name-status --diff-filter=D`) before trusting `git checkout 771ed64 -- .`,
-  then confirmed `git diff --stat 771ed64` was empty.
-- **Wrote `### 7. Disabled controls that still react to hover — repair or accept?`** into
-  `README.md` under `## Open decisions`, in the house format (what is blocked → table of gaps →
-  options + cost → "**If you answer:**").
-- **Re-verified every claim against the source before writing it, and found two of them wrong.**
-  Corrected both in the decision text rather than repeating them (details under *Why*).
-- **Found a third defect nobody had recorded**, in the app: `.menu-pop button.danger:hover`
-  (`index.html:588`) and `.menu-pop button:disabled:hover` (`:585`) are both `(0,3,1)`, so line 588
-  wins on source order. The context menu's Delete item carries `class="danger"` and *is* disabled
-  when a panel is locked or the app is read-only — so the app's own guard is defeated by a rule
-  three lines below it. Documented as an option; not fixed (it moves visible pixels).
-- **Fixed two stale counts** the new decision made wrong: the maintainer banner said "four
-  decisions" (there were already six) and the section intro said "Six questions".
-- Updated `## Next task` and the criterion-2 notes in `AUTOPILOT.md`.
-
-**No `.css` file and no `index.html` line was touched.** `git status` showed `M README.md` only
-before the AUTOPILOT/SUMMARY edits.
+- **Restored the previous round's tip first.** The runner cut this branch from the stale base
+  `3503537` again (44 rounds missing from the tree — no `tools/check-tokens.mjs`, no
+  `docs/btn-parity-proof.mjs`, `index.html` back at its pre-token state). Commit `10f2a0b`
+  brings the tree back to `526b564`, the tip of round `2026-08-24_0036`, exactly as the last
+  five rounds have had to do.
+- **Checked `README.md → ## Open decisions` for owner answers: there are none.** `git log --`
+  `README.md` shows its only commits are `ef3220e` / `44237ee` (pre-autopilot) plus this
+  round's restore. No decision is answered, so criteria 1 / 2 / 3 stay blocked and the
+  contract's single named fallback task applies.
+- **Taught `docs/btn-parity-proof.mjs` to read the design system's CSS** (commit `fb970f3`).
+  A source may now be a `.css` path (or `<rev>:<path>`), and when it is `styles.css` the
+  harness follows every `@import` and splices each imported file in **at the point the
+  `@import` appears**, depth first — which is the order a browser lays the rules down. Every
+  run prints the assembled file list in order (14 files today). Missing `@import` targets
+  throw; `@import` cycles throw; re-importing the same file down two paths is allowed,
+  because that is legal CSS and simply duplicates the rules.
+- **Added the `ds-disabled-hover` key** — the three controls decision 7 asks about
+  (`.pui-btn--icon`, `.pui-menu__item`, `.pui-menu__item--danger`). Classes are identical
+  before and after on purpose: today it is a 0-diff baseline whose job is to be re-run the
+  moment `Button.css` / `Menu.css` change and say exactly which declarations moved.
+- **Added the guard that replaces markup coverage in stylesheet mode.** A stylesheet has no
+  markup, so phase 1 cannot run; it now says `markup coverage N/A` instead of a misleading
+  `OK`, and hard-fails if an element in the table claims a class/inline change it cannot
+  prove. In its place, any element that matches **zero rules in both versions** is now a
+  failure in every mode — without that, a typo in the element table computes two empty
+  declaration sets, diffs clean, and reads as proof.
 
 ## Why
 
-**The headline of the decision is a bug that the file already tried to prevent.**
-`Button.css:6` declares `.pui-btn:disabled{… box-shadow:none}` — a deliberate attempt to kill the
-primary button's glow while disabled. It does not work. `.pui-btn:disabled` and
-`.pui-btn--primary:hover` (line 9) are **both `(0,2,0)`**; the tie falls through to source order and
-the rule three lines below wins. A disabled primary button still glows under the cursor. That row
-is qualitatively different from the others in the table: there is nothing to guess about intent,
-because the file states it. The repair is still a visible change, so it is still the owner's call.
-
-The app contains the same tie *resolved the other way* — `#genBtn:hover` (`:137`) then
-`#genBtn:disabled` (`:138`), both `(1,1,0)`, reset last, glow correctly suppressed. Two files, one
-tie, opposite outcomes, decided by nothing but line order. I put that in the README because a
-working counterexample in the same repo is far more convincing than an argument about the cascade.
-
-**Two claims handed to me by the previous round were wrong.** I checked before writing:
-
-1. Round 0023 recorded that `.pui-btn--icon:hover` (line 15) overrides `color` back to `--accent`
-   when disabled. It does not — `.pui-btn--icon:disabled` (line 16) has equal specificity and comes
-   *after*, so `color:var(--dim)` wins. What actually leaks is `background:var(--surface)` and
-   `border-color:var(--dim)`, which `:disabled` never declares. Corroborated by the app: its fix at
-   `index.html:492` resets exactly `background`, `border-color` **and** `color` — i.e. the author
-   was addressing the box, not the text colour.
-2. Round 0023 recorded that the app "writes a `:disabled:hover` reset everywhere". It guards three
-   of five. `#tourBack` (`:558`) sets only `opacity`/`cursor`, but it is a `.btn--ghost` and
-   `.btn--ghost:hover` (`:344`) sets `color` + `border-color` that nothing resets — the Back button
-   on the first tour step is disabled and still brightens. And the danger-menu case above.
-
-Writing an owner-facing decision from an unverified premise is worse than writing nothing: the
-owner would answer a question about a defect that doesn't exist while the real one stayed hidden.
-
-**Why the fallback in the new Next task is the harness, not a CSS fix.** Two rounds in a row
-(0023 editing `Toast.css`, and this one) had to fall back to "read the `git diff` yourself" as
-evidence, because `docs/btn-parity-proof.mjs` only reads `index.html`. If the owner answers
-decision 7 — which edits `Button.css` and `Menu.css` — we hit that wall immediately. Teaching the
-harness to read `design-system/src/**/*.css` moves zero pixels, is in `docs/` not `tools/`, and is
-not a seventh token checker.
+- Rounds 0023 (`Toast.css`) and 0036 (decision 7) both had to fall back to "read the
+  `git diff` yourself" as evidence, because the harness could only see `index.html`. Decision
+  7, whenever it is answered, edits `Button.css` and `Menu.css` — so this was the one
+  remaining piece of preparation that moves zero pixels.
+- **Import order, not specificity, is what decides every case decision 7 is about.** Reading
+  one component file in isolation, or several in the wrong order, would produce a confident
+  and wrong answer. That is why the harness assembles from `styles.css` rather than accepting
+  a list of files, and why it prints the order on every run.
+- The zero-rule guard is not extra scope, it is the load-bearing check for the new mode: in
+  HTML mode a bad table is caught by markup coverage, and stylesheet mode had nothing.
 
 ## Verification
 
-Full Verify command, all three stages, run on the final tree:
+Verify command, all three steps, run on the final committed tree:
 
 ```
-$ node tools/test.mjs
-54 passed, 0 failed
-
-$ node tools/check-tokens.mjs
-tokens in sync: 22/22 from design-system/src/tokens.css present and identical in index.html
-fonts in sync: 4/4 from design-system/src/fonts.css embedded byte-identical in index.html
-no derived-colour literals: 15 CSS source(s) scanned, none re-hardcode a tokenised colour
-font weights available: 15 CSS source(s) scanned, every font-weight is one of 400, 500, 700, 800
-no radius literals: 15 CSS source(s) scanned, every border-radius reads a --r-* token
-typeface from one source: 15 CSS source(s) scanned, every font-family reads var(--mono)
-
-$ npm --prefix design-system test
-Test Files  12 passed (12)
-     Tests  31 passed (31)
+node tools/test.mjs                  -> 54 passed, 0 failed
+node tools/check-tokens.mjs          -> tokens 22/22, fonts 4/4, and checks 3-6 all clean
+                                        (15 CSS sources scanned)
+npm --prefix design-system test      -> Test Files 12 passed (12), Tests 31 passed (31)
 ```
 
-The guard the previous round required — proof that nobody touched the app side:
+Every existing harness key still gives the result recorded for it:
 
 ```
-$ node docs/btn-parity-proof.mjs toast-hit 3d3d5cc:index.html index.html
-markup coverage OK — 0 old class tokens gone, 0 new class attributes at the expected counts
-✗ #toastUndo (base) / :hover / :disabled / :disabled:hover / :focus
-    pointer-events   before: (unset)   after: auto   <- .toast-act
-compared 10 (element, state) pairs across 2 "toast-hit" elements
-FAIL — 5 declaration(s) differ, 0 markup problem(s).
+buttons    2488f2d:index.html 9fab5c9:index.html -> PASS, 85 pairs / 17 elements
+segmented  021b966:index.html index.html         -> PASS, 45 pairs / 9 elements
+toast      bb10dd9:index.html 10e8f39:index.html -> PASS, 5 pairs / 1 element
+toast-hit  3d3d5cc:index.html index.html         -> FAIL — 5 declaration(s) differ
+                                                    (#toast: no diff at any state; all 5 are
+                                                     #toastUndo pointer-events (unset)->auto)
 ```
 
-`FAIL — 5 declaration(s) differ` is **the required result, unchanged**, and `#toast` shows no diff
-at any of its five states — which is the evidence that this round did not touch `index.html`.
+New key, on the current tree:
 
-Claims in the new decision were checked against source, not memory: `Button.css` and `Menu.css`
-read in full; `grep -n "disabled" index.html` for every app-side rule (138, 491–492, 558, 573–574,
-584–585, 588); `index.html:2196–2212` to confirm `bR`/`bX` are `.pc-tools` children; `:3860–3874`
-to confirm the Delete menu item carries `class="danger"` and receives `disabled`.
+```
+node docs/btn-parity-proof.mjs ds-disabled-hover \
+  HEAD:design-system/src/styles.css design-system/src/styles.css
+-> 14 files listed in @import order: styles, tokens, fonts, Button, Chip, Field, Toggle,
+   Modal, Toast, Menu, SegmentedToggle, Swatch, Badge, EmptyState
+-> markup coverage N/A — the source is a stylesheet, and no element claims a class change
+-> PASS, 15 pairs / 3 elements
+```
+
+Four negative tests, each reverted immediately afterwards (`git status` is clean apart from
+`AUTOPILOT.md` / `SUMMARY.md`):
+
+1. **Source order alone.** Swapped `Button.css:15` and `:16` — same two rules, same
+   specificity `(0,2,0)`, nothing else touched. Result:
+   `FAIL — 1 declaration(s) differ`, and the one diff is exactly the decision-7 case:
+   `.pui-btn--icon:disabled:hover  color  before var(--dim) <- :disabled  after var(--accent) <- :hover`.
+   This is also positive evidence the table matches real rules, and it independently confirms
+   round 0036's correction that `:disabled`, being later, wins `color`.
+2. **A pixel.** `padding:5px 10px` -> `5px 11px` on `.pui-btn--icon`:
+   `FAIL — 5 declaration(s) differ` (one per state).
+3. **A missing `@import` target.** Pointed `styles.css` at `Menu/Nope.css`: throws
+   `Error: no such file: design-system/src/components/Menu/Nope.css` and exits non-zero,
+   rather than quietly assembling a stylesheet one file short.
+4. **A wrong element table.** Typed `pui-menu__itemx` in the table:
+   `✗ .pui-menu__item matched no rule in either version — its row in the table is wrong, not
+   proven`, `FAIL — ... 1 unmatched element(s)`. Before this round that case printed PASS.
 
 ## What I did NOT do
 
-- **Did not edit `Button.css`, `Menu.css`, or `index.html`.** The task said documentation only, and
-  every option in decision 7 changes what a person sees. `AUTOPILOT.md` is explicit that answering
-  an open decision is the owner's right, not an agent's.
-- **Did not answer any of decisions 1–7**, or fix the two app-side gaps I found.
-- **Did not tick any acceptance criterion.** Nothing was unblocked this round — decision 7 *adds* a
-  blocker to criterion 2 rather than removing one. Criterion 2 now waits on decisions 2, 5, 6, 7.
-- **Did not build the harness extension.** It is queued as the fallback in the next round's task,
-  behind "check for an owner answer first".
-- Did not touch `tools/`, `storyboard-simulator.html`, or the test markers.
+- **Did not answer any of the seven open decisions,** and did not touch `Button.css`,
+  `Menu.css`, or `index.html`. Every one of those edits moves visible pixels with nothing in
+  the Verify command able to detect it (jsdom does no hit testing; no checker reads `:hover`).
+- **Did not touch `tools/`** and did not add a seventh token check — all 22 tokens are covered.
+- Did not implement `:last-child` / `>` / `+` / `~` matching. Doing that needs a real DOM
+  tree, which this harness deliberately does not build. See Risk.
+- Did not tick any acceptance criterion. This round produced no user-visible change; it built
+  the instrument that makes the next library-side change reviewable.
 
 ## Risk
 
-- **The Verify command is green, and that proves almost nothing about this round's subject.** No
-  checker evaluates `:hover`, and jsdom does no hit-testing. Green here means "I didn't break
-  anything else", not "the disabled-hover analysis is right". The analysis rests on reading the CSS
-  and applying the cascade rules, plus the `index.html:492` corroboration noted above.
-- **The specificity arithmetic is the load-bearing claim and it is hand-computed.** Worth a
-  reviewer's own check: `.pui-btn:disabled` = `(0,2,0)`, `.pui-btn--primary:hover` = `(0,2,0)`;
-  `.menu-pop button:disabled:hover` = `(0,3,1)`, `.menu-pop button.danger:hover` = `(0,3,1)`. If
-  either tie is not a tie, the corresponding paragraph in decision 7 is wrong.
-- **I contradicted a previous round's written findings in two places.** If my correction is the
-  thing that's wrong, the README now misinforms the owner more confidently than before. Both
-  corrections are stated with their reasoning in `AUTOPILOT.md` (criterion 2, items ก/ข) so they
-  can be checked without re-deriving them.
-- **Still no browser verification** — decision 4 has not been granted. Every claim about what a user
-  sees is derived from source and the CSS cascade spec, never observed.
-- **The restore commit is large** (`+1959 / −162` across 16 files). It is a pure tree restore of
-  `771ed64`, verified byte-identical, but a reviewer diffing this branch against `main` will see 12
-  rounds of accumulated work as if it were one commit.
+- **The harness silently drops selectors it cannot model, and the file's own header says
+  otherwise.** The header claims `>` `+` `~` and structural pseudo-classes are "reported as
+  unsupported, not silently ignored". They are not: `ruleMatches()` returns
+  `{matched:false, unsupported:true}` and `computed()` discards the flag. This is now load
+  bearing, because `Menu.css:31` `.pui-menu__item:last-child{border-bottom:none}` is a real
+  rule affecting two of the three `ds-disabled-hover` elements — a change confined to it would
+  report 0 diff. It is called out in the new table's comment and is set as the next task.
+  Nothing in this round's claims rests on that rule.
+- **`ds-disabled-hover` is a 0-diff baseline, so its PASS proves little on its own.** What
+  gives it weight is negative test 1: the same table turns a pure source-order swap into a
+  precise one-line diff, so the rules really are being matched and ordered.
+- **Still no browser** (decision 4 unanswered). Everything above is computed from source and
+  the CSS cascade rules, not observed in a renderer.
+- The harness is not in the Verify command and nothing forces it to keep up with the code —
+  the same caveat every round since 0027 has carried.

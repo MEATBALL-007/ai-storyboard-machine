@@ -315,27 +315,42 @@ segmented padding — ข้อ 5 เพิ่มรอบ 2026-08-23_0047 / inp
 แล้วจบรอบ นั่นคือรอบที่สำเร็จ ไม่ใช่รอบที่ล้มเหลว การหางานมาทำเพิ่มตอนนี้คือ scope creep
 ที่ไม่มีใครขอ และทุกอย่างที่ "ดูเหมือนงาน" ที่เหลือล้วนขยับพิกเซล = สิทธิ์เจ้าของ
 
+✅ **งานสำรองของรอบก่อน (ให้ harness อ่าน CSS ฝั่ง library) ทำเสร็จแล้ว รอบ 2026-08-24_0048**
+`docs/btn-parity-proof.mjs` รับ source เป็น `.css` ได้แล้ว และถ้าเป็น `styles.css` มันจะไล่
+`@import` **ประกอบ stylesheet ตามลำดับจริง** (splice ตรงตำแหน่ง `@import` แบบ depth-first)
+รันแล้วขึ้นรายการไฟล์ 14 ไฟล์ตามลำดับให้เห็นทุกครั้ง — ลำดับคือข้ออ้างหลักของโหมดนี้
+เพิ่ม key `ds-disabled-hover` (3 element ของ decision 7: `.pui-btn--icon`,
+`.pui-menu__item`, `.pui-menu__item--danger`) ไว้เป็น baseline 0 diff
+คำสั่ง: `node docs/btn-parity-proof.mjs ds-disabled-hover <rev>:design-system/src/styles.css design-system/src/styles.css`
+⚠️ โหมด `.css` **ไม่มี phase markup coverage** (stylesheet ไม่มี markup) → ใส่ guard แทนคือ
+element ไหน match 0 rule ทั้งสอง version = FAIL (ไม่งั้นตารางที่พิมพ์ class ผิดจะขึ้น PASS เงียบๆ)
+
 **มีงานสำรองอยู่ 1 อย่างเท่านั้น ถ้าจะทำต้องทำอันนี้ ห้ามคิดอันอื่น:**
-**ทำให้ `docs/btn-parity-proof.mjs` อ่าน `design-system/src/**/*.css` ได้**
-เหตุผล: รอบ 0023 (แก้ `Toast.css`) และรอบ 0036 (เขียน decision 7) **ทั้งคู่ต้องถอยไปใช้
-"อ่าน `git diff` เอาเอง" เป็นหลักฐาน** เพราะ harness เห็นแค่ `index.html`
-แปลว่าทุกครั้งที่แตะ CSS ฝั่ง library เราไม่มีเครื่องมือพิสูจน์ว่าอะไรขยับบ้าง
-และถ้าเจ้าของตอบ decision 7 มา (ซึ่งแก้ `Button.css` + `Menu.css`) เราจะเจอปัญหานี้ทันที
-→ งานนี้ **ขยับพิกเซล 0 จุด** ไม่แตะ `tools/` ไม่ใช่ checker ตัวที่ 7 และเป็นการเตรียมทางให้ decision 7
+**ทำให้ `docs/btn-parity-proof.mjs` *รายงาน* selector ที่มันไม่รองรับ แทนที่จะเงียบ**
+เหตุผล: header ของไฟล์เขียนว่า `>` `+` `~` และ structural pseudo (`:last-child`, `:nth-*`)
+ถูก **"reported as unsupported, not silently ignored"** — **ข้อความนั้นเป็นเท็จวันนี้**
+`ruleMatches()` คืน `{matched:false, unsupported:true}` แต่ `computed()` ทิ้ง flag นั้นทั้งหมด
+ของจริงคือ **เงียบสนิท** และตอนนี้มันมีผลแล้ว: `Menu.css:31`
+`.pui-menu__item:last-child{border-bottom:none}` เป็นกฎจริงที่ 2 ใน 3 element ของ
+`ds-disabled-hover` โดน และ decision 7 แก้ `Menu.css` → ถ้าใครขยับกฎนั้น harness จะขึ้น 0 diff
 
 ขอบเขตของงานสำรอง (ห้ามเกินนี้):
-- รับ source เป็น `<sha>:design-system/src/components/X/X.css` หรือไฟล์บนดิสก์ แบบเดียวกับที่รับ `index.html`
-- ประกอบ stylesheet จากหลายไฟล์ตามลำดับที่ `styles.css` / `index.ts` import จริง — **ลำดับสำคัญ**
-  เพราะเคสทั้งหมดใน decision 7 ตัดสินด้วย source order ไม่ใช่ specificity ถ้าเรียงผิด ผลจะผิดแบบเงียบๆ
-- ต้องมี negative test อย่างน้อย 2 กรณี เหมือนทุกรอบ (เช่น สลับลำดับ 2 บรรทัดใน `Button.css`
-  แล้ว `:disabled` state ต้องเปลี่ยนผล / ขยับ padding 1px แล้วต้อง FAIL)
-- ยังต้องเขียวครบ 3 ขั้นของ Verify และ `toast-hit` ต้องได้ `FAIL — 5 declaration(s) differ` เท่าเดิม
+- เก็บ rule ที่ subject "จะ match ถ้าไม่ติดส่วนที่ไม่รองรับ" แล้วพิมพ์ออกมาท้ายรัน
+  พร้อมบอกว่าติดอะไร (combinator / structural pseudo) — **ไม่ต้องทำให้มัน match**
+  การพยายาม implement `:last-child` จริงต้องมี DOM tree ซึ่ง harness ไม่มี = คนละงาน
+- ตัดสินใจให้ชัดว่ามันทำให้ FAIL หรือแค่เตือน — **แนะนำให้แค่เตือน** เพราะทุก key ที่มีอยู่
+  วันนี้จะโดน (`Menu.css:31`) และการทำให้ FAIL ทันทีคือการทำลาย baseline ที่เพิ่งวางไว้
+  แต่ถ้าเตือน **ต้องเตือนเสียงดัง** และต้องมีเลขจำนวน rule กำกับ
+- negative test อย่างน้อย 2 กรณี: เติม `.pui-menu > .pui-menu__item{…}` แล้วต้องถูกรายงาน /
+  ลบ `:last-child` ออกจาก `Menu.css` แล้วจำนวนที่รายงานต้องลดลง
+- แก้ header ของไฟล์ให้ตรงกับของจริง (ไม่ว่าจะเลือกทางไหน)
 
 **ห้ามแก้ `Button.css` / `Menu.css` / `index.html` ในรอบนั้น** — decision 7 ยังไม่มีคำตอบ
 ถ้าแก้ Verify จะยังเขียว (jsdom ไม่ทำ hit testing และไม่มี checker ตัวไหนดู `:hover`)
 แปลว่า **ไม่มีอะไรจับได้เลยว่าสีเปลี่ยน** ซึ่งเป็นเหตุผลเดียวกับที่ decision 2/5/6 ยังค้างอยู่
 
-**Verify:** รัน 3 ขั้นตามปกติ และรัน
+**Verify:** รัน 3 ขั้นตามปกติ และรันทั้ง 5 key ของ harness ให้ผลเท่าเดิม:
+`buttons` / `segmented` / `toast` → PASS, `ds-disabled-hover` → PASS,
 `node docs/btn-parity-proof.mjs toast-hit 3d3d5cc:index.html index.html`
 ต้องได้ `FAIL — 5 declaration(s) differ` **เท่าเดิมเป๊ะ** โดย `#toast` ไม่มี diff สักจุด
 ถ้าตัวเลขไม่ใช่ 5 แปลว่ามีคนไปแตะฝั่งแอป
