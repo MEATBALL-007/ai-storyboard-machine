@@ -25,9 +25,16 @@
  * or reading several in the wrong order — would answer confidently and wrongly.
  *
  * Scope of the model (deliberately small, and honest about it):
- *   - descendant combinators only; `>` `+` `~` are reported as unsupported, not silently ignored
- *   - `::pseudo-elements` never contribute to an element's own box -> treated as non-matching
- *   - structural pseudo-classes (:last-child, :nth-*) -> reported as unsupported, non-matching
+ *   - descendant combinators only. `>` `+` `~` and structural pseudo-classes (:last-child,
+ *     :nth-*, :not, :is, :where, :has) never match. Every rule containing one is LISTED at the
+ *     end of the run, if its subject compound would have matched the element once the
+ *     unsupported part is ignored. The list does not fail the run — every key today trips it
+ *     via Menu.css:11 — but it does mean a PASS is not a claim about those rules, and the run
+ *     says so on the PASS line. The prelude of such a selector (`.a > .b`'s `.a`) is the part
+ *     this model cannot evaluate at all, so it is not guessed at: the check is subject-only,
+ *     which over-reports rather than risk staying quiet about a rule that does apply.
+ *   - `::pseudo-elements` never contribute to an element's own box -> non-matching, and NOT
+ *     listed: that is a correct model of the cascade, not a gap in it.
  *   - @media blocks ARE parsed and applied unconditionally, and every match is reported,
  *     so a rule hiding behind a media query cannot slip through the diff
  *   - @font-face / @keyframes are skipped
@@ -317,17 +324,46 @@ function parseCompound(text) {
   return c;
 }
 
-function compoundMatchesElement(c, el, stateSet) {
-  if (c.pseudoElement || c.unsupported) return false;
+/* Compounds of a selector, split on descendant whitespace AND on `>` `+` `~` (which are legal
+ * with no surrounding space, so `.a>.b` is two compounds, not one). */
+function compoundsOf(sel) {
+  return sel.split(/\s*[>+~]\s*|\s+/).filter(Boolean);
+}
+
+/* Why this model cannot decide a selector — empty means it can. Two distinct causes, kept
+ * apart because they mislead differently: a combinator means the RELATIONSHIP is unmodelled,
+ * a structural pseudo means the element's POSITION among its siblings is. */
+function unsupportedReasons(sel) {
+  const reasons = [];
+  const combinators = sel.match(/[>+~]/g);
+  if (combinators) reasons.push(`combinator ${[...new Set(combinators)].join(' ')}`);
+  const structural = new Set();
+  for (const part of compoundsOf(sel)) {
+    for (const p of parseCompound(part).pseudos) if (STRUCTURAL.test(p)) structural.add(':' + p);
+  }
+  if (structural.size) reasons.push(`structural pseudo ${[...structural].join(' ')}`);
+  return reasons;
+}
+
+/* `relax` drops the structural pseudo-classes from the test instead of failing on them, so the
+ * caller can ask the weaker question "would this subject match if I ignored the part I cannot
+ * model?". `::pseudo-elements` stay fatal either way — see the header. */
+function compoundMatchesElement(c, el, stateSet, relax = false) {
+  if (c.pseudoElement) return false;
+  if (c.unsupported && !relax) return false;
   if (c.type && c.type !== '*' && c.type !== (el.type ?? 'button')) return false;
   if (c.id && c.id !== el.id) return false;
   if (!c.classes.every((k) => el.classes.includes(k))) return false;
-  if (!c.pseudos.every((p) => stateSet.has(p))) return false;
+  const pseudos = relax ? c.pseudos.filter((p) => !STRUCTURAL.test(p)) : c.pseudos;
+  if (!pseudos.every((p) => stateSet.has(p))) return false;
   return true;
 }
 
-function compoundMatchesAncestor(c, anc) {
-  if (c.pseudoElement || c.unsupported || c.pseudos.length) return false;
+function compoundMatchesAncestor(c, anc, relax = false) {
+  if (c.pseudoElement) return false;
+  if (c.unsupported && !relax) return false;
+  /* An ancestor carries no interaction state, so any surviving pseudo cannot hold. */
+  if ((relax ? c.pseudos.filter((p) => !STRUCTURAL.test(p)) : c.pseudos).length) return false;
   const a = parseCompound(anc);
   if (c.type && c.type !== '*' && c.type !== a.type) return false;
   if (c.id && c.id !== a.id) return false;
@@ -346,23 +382,45 @@ function specificity(sel) {
   return a * 10000 + b * 100 + c;
 }
 
-function ruleMatches(rule, el, stateSet) {
-  const sel = rule.selector;
-  if (/[>+~]/.test(sel)) return { matched: false, unsupported: true };
-  const parts = sel.split(/\s+/);
-  const subject = parseCompound(parts[parts.length - 1]);
-  if (!compoundMatchesElement(subject, el, stateSet)) return { matched: false };
+/* Walk the selector's prelude right-to-left against the element's ancestor chain. Descendant
+ * semantics: each compound may skip any number of ancestors, but never revisit one. */
+function ancestorsMatch(parts, el, relax = false) {
   let ai = el.ancestors.length - 1;
   for (let p = parts.length - 2; p >= 0; p--) {
     const cp = parseCompound(parts[p]);
     let found = false;
     while (ai >= 0) {
-      const hit = compoundMatchesAncestor(cp, el.ancestors[ai]);
+      const hit = compoundMatchesAncestor(cp, el.ancestors[ai], relax);
       ai--;
       if (hit) { found = true; break; }
     }
-    if (!found) return { matched: false };
+    if (!found) return false;
   }
+  return true;
+}
+
+function ruleMatches(rule, el, stateSet) {
+  const sel = rule.selector;
+  const parts = compoundsOf(sel);
+  const subject = parseCompound(parts[parts.length - 1]);
+
+  /* Undecidable rather than non-matching. Never let it into `hits`: reporting a rule this model
+   * cannot evaluate is honest, but pretending to know whether its declarations won would
+   * corrupt the very diff this file exists to produce. */
+  const reasons = unsupportedReasons(sel);
+  if (reasons.length) {
+    if (!compoundMatchesElement(subject, el, stateSet, true)) return { matched: false };
+    /* Skip only what is genuinely unevaluable. With no combinator the prelude is plain
+     * descendant and is checked normally — otherwise `.menu-pop button:last-child` reports
+     * against every button in the file and the warning drowns in its own noise. A combinator
+     * makes the RELATIONSHIP unmodelled, so there the prelude is skipped and this deliberately
+     * over-reports. */
+    if (!/[>+~]/.test(sel) && !ancestorsMatch(parts, el, true)) return { matched: false };
+    return { matched: false, unsupported: reasons };
+  }
+
+  if (!compoundMatchesElement(subject, el, stateSet)) return { matched: false };
+  if (!ancestorsMatch(parts, el)) return { matched: false };
   return { matched: true };
 }
 
@@ -371,9 +429,11 @@ function ruleMatches(rule, el, stateSet) {
 function computed(rules, el, state) {
   const stateSet = new Set(state.split(':').filter(Boolean));
   const hits = [];
+  const near = [];
   for (const rule of rules) {
     const r = ruleMatches(rule, el, stateSet);
     if (r.matched) hits.push(rule);
+    else if (r.unsupported) near.push({ rule, reasons: r.unsupported });
   }
   hits.sort((x, y) => specificity(x.selector) - specificity(y.selector) || x.order - y.order);
   const map = new Map();
@@ -393,7 +453,7 @@ function computed(rules, el, state) {
       from.set(d.prop, { selector: 'style=', media: null, important: false });
     }
   }
-  return { map, from, hits };
+  return { map, from, hits, near };
 }
 
 /* ── run ─────────────────────────────────────────────────────────────────────── */
@@ -503,6 +563,20 @@ const mediaHits = new Set();
  * this is the only thing standing between a wrong table and a confident PASS. */
 const unmatched = [];
 
+/* Rules this model cannot decide, kept per version: a selector present on only one side means
+ * the change itself added or removed an unreadable rule, which is a louder signal than one
+ * that merely sits there in both. selector+media -> {reasons, elements it could touch}. */
+const near = { before: new Map(), after: new Map() };
+function noteNear(version, list, elName) {
+  for (const { rule, reasons } of list) {
+    const key = rule.media ? `@media ${rule.media} { ${rule.selector} }` : rule.selector;
+    const entry = near[version].get(key) ?? { reasons: new Set(), els: new Set() };
+    for (const r of reasons) entry.reasons.add(r);
+    entry.els.add(elName);
+    near[version].set(key, entry);
+  }
+}
+
 for (const el of ELEMENTS) {
   let hitsHere = 0;
   for (const state of STATES) {
@@ -511,6 +585,8 @@ for (const el of ELEMENTS) {
     const a = computed(versions.after, { ...el, classes: el.after, ancestors: el.afterAncestors ?? el.ancestors,
       inline: 'afterInline' in el ? el.afterInline : el.inline }, state);
     hitsHere += b.hits.length + a.hits.length;
+    noteNear('before', b.near, el.name);
+    noteNear('after', a.near, el.name);
     if (state === STATES[STATES.length - 1] && hitsHere === 0) unmatched.push(el.name);
     compared++;
     for (const rule of [...b.hits, ...a.hits]) if (rule.media) mediaHits.add(`${rule.media} { ${rule.selector} }`);
@@ -540,8 +616,37 @@ if (mediaHits.size) {
   console.log('no @media rule matched any test element');
 }
 
+/* The blind spot, stated out loud. A warning and not a failure: every key in this file trips
+ * it today through `.pui-menu__item:last-child`, so failing here would retire the harness
+ * rather than sharpen it. But it must never be quiet, and it must carry a number — the count
+ * dropping is how you notice a rule left the stylesheet. */
+function reportNear(map, label) {
+  console.log(`⚠ ${map.size} undecidable rule(s)${label} — NOT covered by the diff above:`);
+  for (const [sel, e] of [...map.entries()].sort((x, y) => x[0].localeCompare(y[0]))) {
+    console.log(`    ${sel}`);
+    console.log(`      unreadable because: ${[...e.reasons].join('; ')}`);
+    console.log(`      subject matches: ${[...e.els].sort().join(', ')}`);
+  }
+}
+/* Count what is actually printed, not before+after: a rule sitting unchanged in both versions
+ * is ONE rule to go and read, and a summary line that says 2 undermines the whole point. */
+const sameNear = [...near.before.keys()].sort().join('\n') === [...near.after.keys()].sort().join('\n');
+const nearTotal = sameNear ? near.after.size : near.before.size + near.after.size;
+if (nearTotal) {
+  console.log('');
+  if (sameNear) {
+    reportNear(near.after, ' (identical in both versions)');
+  } else {
+    reportNear(near.before, ' in the BEFORE version');
+    reportNear(near.after, ' in the AFTER version');
+    console.log('  ⚠ the two lists DIFFER — this change added or removed a rule the model cannot read.');
+  }
+  console.log('  A change confined to one of these rules computes 0 diff here. Read them by hand.');
+}
+
 if (mismatches || markupErrors || unmatched.length) {
   console.log(`\nFAIL — ${mismatches} declaration(s) differ, ${markupErrors} markup problem(s), ${unmatched.length} unmatched element(s). The refactor moves pixels; revert it.`);
   process.exit(1);
 }
-console.log('\nPASS — every element computes an identical declaration set before and after.');
+console.log(`\nPASS — every element computes an identical declaration set before and after.${
+  nearTotal ? `\n       Except the ${nearTotal} undecidable rule(s) listed above, which this PASS says nothing about.` : ''}`);
