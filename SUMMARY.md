@@ -1,128 +1,140 @@
-# Round 2026-08-23_0103 — Toast / Field / Swatch / Toggle parity (the last four)
+# Round 2026-08-24_0003 — the toast "Undo" link was never clickable
 
 ## What I did
 
 - **Restored the previous round's tip first.** The runner cut this branch from `3503537` again
-  (thirteenth round in a row), so `tools/check-tokens.mjs`, `docs/btn-parity-proof.mjs` and every
-  token/radius/font edit were missing from the tree and the Verify command would have crashed on a
-  missing file. `git checkout bb10dd9 -- .` restored them; `git diff --stat bb10dd9 -- .` came back
-  empty, and the diff has no deletions, so path-checkout is tree-equivalent to a fast-forward here.
-  Kept as its own commit (`de07ea8`) so this round's real diff stays readable.
-- **Compared the last four Phantom UI components against the app — the parity table is now 11/11.**
-  `#toast`/`.on`/`.err` ↔ `Toast.css`, `.sw`/`.sw .lab` ↔ `Swatch.css`, `.toggle-row` ↔
-  `Toggle.css` all match value for value already; each has a single declaration set, so — like
-  `.menu-pop` last round — **there was nothing to collapse**. `Field.css` does not match: the app
-  draws one text input at four sizes.
-- **Collapsed the one thing that was genuinely duplicated: `.pui-toast__action`.** The app built
-  that span in a JS template string with an inline `style=` carrying the same three declarations.
-  It now reads `class="toast-act"` and the rule lives in `<style>`.
-- **Wrote up what only the owner can decide as README decision 6** (text inputs — one size or
-  four?), with the four rules, where each is used, how many elements each covers, and what each
-  option costs. Fixed a claim in decision 2 that my own survey had just made stale ("the only
-  remaining parity gap" — it is now one of three).
-- **Found a real bug while doing it and did not fix it:** the "Undo" link in the delete toast
-  cannot be clicked. Written up in README and set as the next task.
+  (fourteenth round in a row), so `tools/check-tokens.mjs`, `docs/btn-parity-proof.mjs` and every
+  token/radius/font/refactor edit since 2026-08-21 were absent and the Verify command would have
+  died on a missing file. `git checkout 3d3d5cc -- .` restored them; `git diff 3d3d5cc --stat`
+  then came back empty and `git status` showed no untracked leftovers, so the tree is exactly the
+  previous tip. Kept as its own commit (`1182f54`) so this round's real diff stays readable.
+- **Confirmed the root cause from source before touching anything.** `#toast` (`index.html:353`)
+  sets `pointer-events:none`. `pointer-events` is an **inherited** property, so the
+  `<span id="toastUndo" class="toast-act">` that `toastUndo()` builds at line 939 inherited `none`
+  and was skipped by hit testing entirely — `onclick` (line 942) never fired and `cursor:pointer`
+  never even painted, which matches the reported symptom exactly. Checked the two other
+  `pointer-events` sites (`.pc-canvas-wrap::after`, `.tour-spot`) — neither selector can match the
+  span — and confirmed no JS anywhere assigns `style.pointerEvents`.
+- **Fixed it with one declaration:** `.toast-act` now sets `pointer-events:auto`. `#toast` keeps
+  `pointer-events:none`. Extended the comment above the rule, which previously claimed
+  `margin-left` was the *only* deliberate difference from `.pui-toast__action`, so it now names
+  both differences and says why this one must not be "synced away".
+- **Added a `toast-hit` key to `docs/btn-parity-proof.mjs`** covering `#toast` *and* `#toastUndo`.
+  The container row is the point: it is what proves `pointer-events:none` was not quietly removed.
+- **Updated README** — the "not yet fixed" blockquote now records the fix, the proof, and the two
+  things the proof does not cover; the DS-side gap list now says the `.pui-toast` half is queued
+  rather than owner-blocked.
 
 ## Why
 
-**Why the toast action was worth moving and the other three were not.** The measure of a
-worthwhile collapse here is whether declarations are duplicated, not whether class names differ.
-Toast, swatch and toggle each already have exactly one declaration set that happens to equal the
-DS one — renaming `.sw` to `.pui-swatch` would move zero declarations and break every JS template
-string that writes `class="sw"`. The toast action was different: three declarations existed in two
-places conceptually and, more importantly, in the *wrong* place.
+**Why the fix went on the child and not the container.** The obvious "fix" is to delete
+`pointer-events:none` from `#toast`. That is wrong. The toast is `position:fixed`, up to
+`max-width:80vw` wide, at `z-index:200`, and stays up for 5s — the container rule is what stops it
+from eating clicks on the board underneath. Removing it trades a dead link for a dead screen
+region. `pointer-events:auto` on the one interactive descendant is the standard idiom for exactly
+this shape, and per spec a descendant with `auto` *is* hit-tested even under a `none` ancestor.
 
-**That inline style was the single unenforced token reference in the repo.** `check-tokens.mjs`
-blanks `<script>` before it scans `style=` attributes — deliberately, because the JS builds markup
-from template strings containing canvas colours that must stay literal. The consequence nobody had
-noticed is that a `style=` attribute *inside* a template string is invisible to all six checks. So
-`color:var(--accent)` there was the one token reference in either codebase that no checker could
-see. Moving it into `<style>` puts it under all six.
+**Why the design system was not used as the reference here.** `.pui-toast` sets no
+`pointer-events` at all, so its action works — and its toast swallows clicks for its whole
+lifetime. Copying Phantom UI in this one place would have imported the worse of the two bugs. This
+is the one spot in the parity work where the app is right and the library is wrong, and the code
+comment now says so, so a later "make it match the DS" round does not undo this.
 
-**Why `margin-left:8px` was not adopted.** `.pui-toast__action` has it; this toast separates the
-action from the message with a literal `" · "` in the text instead. Taking the margin would have
-moved pixels, which is the one thing this round claimed not to do.
-
-**Why decision 6 is a decision and not a refactor.** All four input rules repeat the same four
-chrome declarations and differ only in padding and font-size. Collapsing them onto a shared base is
-mechanical — but the base has to have *a* padding, and picking one changes the size of every field
-in three of the four contexts. That is the same shape as decision 5, and the same answer: the
-owner picks the size, then a round does the collapse in one step.
+**Why the harness is expected to fail this round.** Every previous use of
+`btn-parity-proof.mjs` argued "this refactor moves nothing"; a `PASS` was the claim. This round
+*intends* a behaviour change, so the run's job is to show precisely which declarations moved and
+that nothing else did — the same reading README decision 5 already sets out. Making it green would
+have meant either not fixing the bug or editing the harness to look away.
 
 ## Verification
 
-Verify command, all three parts, on the final tree:
+**Verify command — all three stages, on the committed tree:**
 
 ```
-node tools/test.mjs            -> 54 passed, 0 failed
-node tools/check-tokens.mjs    -> tokens 22/22 · fonts 4/4 · no derived-colour literals ·
-                                  font weights available · no radius literals ·
-                                  typeface from one source   (15 CSS sources scanned)
-npm --prefix design-system test -> 31 passed (see below)
+$ node tools/test.mjs
+54 passed, 0 failed
+
+$ node tools/check-tokens.mjs
+tokens in sync: 22/22 from design-system/src/tokens.css present and identical in index.html
+fonts in sync: 4/4 from design-system/src/fonts.css embedded byte-identical in index.html
+no derived-colour literals: 15 CSS source(s) scanned, none re-hardcode a tokenised colour
+font weights available: 15 CSS source(s) scanned, every font-weight is one of 400, 500, 700, 800
+no radius literals: 15 CSS source(s) scanned, every border-radius reads a --r-* token
+typeface from one source: 15 CSS source(s) scanned, every font-family reads var(--mono)
+
+$ npm --prefix design-system test
+Test Files  12 passed (12)
+     Tests  31 passed (31)
 ```
 
-Pixel-parity proof for the one CSS change:
+**The change itself —** `node docs/btn-parity-proof.mjs toast-hit 3d3d5cc:index.html index.html`
+(exit 1, as intended):
 
 ```
-node docs/btn-parity-proof.mjs toast HEAD:index.html index.html
-  markup coverage OK — 0 old class tokens gone, 1 new class attributes at the expected counts
-  compared 5 (element, state) pairs across 1 "toast" elements
-  PASS — every element computes an identical declaration set before and after.
+markup coverage OK — 0 old class tokens gone, 0 new class attributes at the expected counts
+
+✗ #toastUndo (base)
+    pointer-events
+      before: (unset)   <- -
+      after : auto   <- .toast-act
+… identical single-property diff repeated for :hover, :disabled, :disabled:hover, :focus …
+
+compared 10 (element, state) pairs across 2 "toast-hit" elements
+media-conditional rules that matched a test element:
+  @media(prefers-reduced-motion:reduce) { * }
+
+FAIL — 5 declaration(s) differ, 0 markup problem(s). The refactor moves pixels; revert it.
 ```
 
-Three negative tests against deliberately broken copies, all of which failed as they should:
+`#toast` produced **no diff in any of its five states** — that is the evidence that the container
+rule survived untouched. `#toastUndo` differs in exactly one property. Nothing else moved.
 
-| Injected fault | Result |
+**Negative tests (two), each run against a mutated copy of `index.html` in the temp dir, both
+deleted afterwards:**
+
+| Mutation | Result |
 |---|---|
-| `.toast-act` colour changed to `var(--muted)` | FAIL — 5 declaration(s) differ (one per state) |
-| `class="toast-act"` deleted from the JS template | markup coverage FAILED — **cascade diff still reported 0** |
-| inline `style=` left in place *and* the class added | markup coverage FAILED — **cascade diff still reported 0** |
+| strip `pointer-events:none` off `#toast` | 5 → **10** diffs; the `#toast` rows light up `none` → `(unset)` in all five states |
+| recolour `.toast-act` to `var(--secondary)` | 5 → **10** diffs; `color` appears alongside `pointer-events` |
 
-The third fault is why I added a phase to the harness: the cascade diff reads each element's inline
-style from the table in the script, not from the file, so a half-finished move (class added, style
-left behind) diffs to zero. It now fails outright. I also extended the harness with per-version
-inline styles (`beforeInline` / `afterInline`), mirroring the existing `beforeAncestors` /
-`afterAncestors`, since this refactor changes the inline style rather than the ancestor chain.
-
-Because I edited the harness, I re-ran both refactors it already certifies — `buttons`
-(`2488f2d` → `9fab5c9`) and `segmented` (`021b966` → working tree). Both still PASS.
+The first is the one that matters: it proves the `#toast` row is genuinely live and would catch the
+specific mistake this round was warned against, rather than silently matching nothing.
 
 ## What I did NOT do
 
-- **Did not fix the toast Undo bug.** `#toast` sets `pointer-events:none`; that property is
-  inherited, and `.toast-act` does not set `pointer-events:auto` to become hit-testable again, so
-  the `onclick` bound in `toastUndo()` never fires. It is one declaration, but it is a deliberate
-  *behaviour* change, and folding it into a commit whose entire claim is "this moved nothing" would
-  have made both harder to review. It is the next task, written up with the trap spelled out
-  (fix `.toast-act`, do **not** remove `pointer-events:none` from `#toast` — that would let a
-  centre-screen toast swallow every click under it for five seconds).
-- **Did not collapse the four input rules** onto a shared base. Pixel-neutral only if the base
-  keeps each context's own padding, which defeats the point; picking one size is decision 6.
-- **Did not add `pointer-events:none` to `.pui-toast`** or the disabled-hover rules to `Menu.css`,
-  though both are gaps on the library side. Editing Phantom UI changes it for every consumer.
-- **Did not invent an app counterpart for `.pui-field__hint`.** There is none — `.kbd-hint`,
-  `.pd-edit-hint` and `.apikey-note` are three different things at three sizes. Recorded as absent
-  rather than manufactured.
-- **Did not touch `tools/`** or add a seventh token check; all 22 tokens already have one.
-- **Did not answer any open decision.** Six now, all still the owner's.
+- **Did not fix `.pui-toast`.** It has the mirror defect — no `pointer-events` at all, so a Phantom
+  UI toast blocks clicks under it for its whole lifetime. That is a library behaviour change and a
+  separate task; it is now the Next task, with the three pre-checks it needs.
+- **Did not check the `## Open decisions` off, answer any, or add a seventh.** All six are still
+  unanswered, so the three acceptance criteria they gate stay unticked. I re-read the section
+  first, as the contract requires; nothing had been answered.
+- **Ticked no acceptance criterion.** This bug was not one — it was found *by* the parity work, not
+  required by it.
+- **Did not touch `tools/`,** per the contract, and added no seventh token check.
+- **Did not add a design-system test for this.** `Toast.test.tsx` runs in jsdom, which does no hit
+  testing, so a `userEvent.click` on the action passes whether or not `pointer-events` is set. A
+  test that cannot fail on the bug would be worse than none.
 
 ## Risk
 
-- **The toast Undo bug is real and predates this round** — `git log -S 'pointer-events:none'` was
-  not run to date it, but nothing in this round's diff introduced it; the declaration is untouched
-  on line 353. I reasoned it out from the CSS rather than clicking it, because no round has ever
-  had a browser (decision 4). If you can open the app, that click is the single highest-value
-  thing to check: my whole claim rests on `pointer-events` being an inherited property and nothing
-  re-enabling it (I checked — three `pointer-events` declarations in the file, none on
-  `.toast-act`, and no JS anywhere sets `style.pointerEvents`).
-- **The parity proof is not a regression test.** It is not in the Verify command and nothing keeps
-  it in sync with later CSS edits. It re-runs one past argument; it does not guard the present.
-  Its `toast` entry hard-codes the before-inline text, so it only proves the specific move made
-  here.
-- **`npm --prefix design-system test` reports 31 passed but the DS CSS is not covered by it** —
-  those are React component tests, and the four files I read this round (`Toast.css`, `Field.css`,
-  `Swatch.css`, `Toggle.css`) are only checked by `check-tokens.mjs`, i.e. for tokens, not for
-  layout. "The DS is green" says nothing about whether the app matches it; that is what the table
-  in the README is for, and the table is hand-verified.
-- **Still no browser has ever seen this app** across fourteen rounds of CSS work. Unchanged from
-  last round, and the reason decision 4 exists.
+**Read this closely — the proof has a hole, and it is the important part.**
+
+1. **The harness models no inheritance.** It builds each element's declaration set only from rules
+   that match that element, so `#toast`'s `pointer-events:none` never appears in `#toastUndo`'s
+   map — the child shows `(unset)` before the fix, not `none`. Inheritance *is* the whole mechanism
+   of this bug, so the run proves the change is minimal but cannot prove the bug existed or that it
+   is gone. That rests on reading the source against the spec (`pointer-events` is `Inherited:
+   yes`, and a descendant may re-enable itself with `auto`). I did not extend the harness to model
+   inheritance — that is a real change to a shared tool for a single round's benefit.
+2. **The markup-coverage phase is vacuous this round** (`0 old class tokens gone, 0 new class
+   attributes`) because no class attribute changed. It printed OK and proved nothing. Both
+   AUTOPILOT.md and the harness comment now say so, so it is not mistaken for a second check.
+3. **Still nobody has opened the app in a browser** — no round has, decision 4 unanswered.
+   Nothing here was clicked. If some rule I did not find re-disables the span, this fix does not
+   land and the run above would look identical.
+4. **The fix is unreachable from the test suite.** `tools/test.mjs` extracts pure logic between the
+   `PURE-LOGIC` markers; CSS is outside it by design. No automated check in the Verify command can
+   regress-guard this line — only the `toast-hit` key can, and it is deliberately not in Verify.
+5. **`#toast` is now a click-through element with one clickable child.** If a future round adds a
+   second interactive element to the toast (a close button, say), it will be dead on arrival for
+   exactly the same reason. The code comment warns about this; nothing enforces it.

@@ -286,20 +286,38 @@ Two differences run the other way, where the app declares something Phantom UI d
 changed here, because editing the library changes it for every consumer:
 
 - `#toast` sets `pointer-events:none`; `.pui-toast` does not, so a Phantom UI toast intercepts
-  clicks on whatever sits under it for as long as it is on screen.
+  clicks on whatever sits under it for as long as it is on screen. Unlike the hover gap below this
+  changes no pixel — it is a hit-testing defect, the mirror image of the app bug fixed on
+  2026-08-24 — so it is queued as the next round's task rather than left for the owner.
 - `.menu-pop button:disabled:hover` and `.menu-pop button.danger:hover` have no equivalent in
   `Menu.css`, so a disabled item in a Phantom UI menu still lights up on hover.
 
-> **Bug found by this comparison, not yet fixed:** that same `pointer-events:none` is inherited by
-> everything inside the toast, including the undo span. `pointer-events` is an inherited property
+> **Bug found by this comparison — fixed 2026-08-24:** that same `pointer-events:none` is inherited
+> by everything inside the toast, including the undo span. `pointer-events` is an inherited property
 > and a descendant only becomes hit-testable again by setting `pointer-events:auto`, which
-> `.toast-act` does not. So the **"Undo" link in the delete toast cannot be clicked** — the
-> `onclick` assigned in `toastUndo()` never fires, and the `cursor:pointer` never even shows,
-> because hit testing stops at the toast. Deleting a panel is still recoverable with `Cmd/Ctrl+Z`,
-> which is a separate code path. The fix is one declaration (`pointer-events:auto` on
-> `.toast-act`) and changes no rendered pixel, but it *is* a behaviour change and no round so far
-> has been able to open a browser (decision 4), so it was left for its own round rather than
-> folded into a refactor whose whole claim was that it changed nothing.
+> `.toast-act` did not. So the **"Undo" link in the delete toast could not be clicked** — the
+> `onclick` assigned in `toastUndo()` never fired, and the `cursor:pointer` never even showed,
+> because hit testing stopped at the toast. Deleting a panel was still recoverable with `Cmd/Ctrl+Z`,
+> a separate code path, so no data was ever at risk.
+>
+> `.toast-act` now sets `pointer-events:auto`. That is the whole fix: one declaration, no rendered
+> pixel moved. `pointer-events:none` stays on `#toast` — taking it off would trade a dead link for
+> an 80vw-wide dead zone over the board for the five seconds the toast is up.
+>
+> The evidence is `node docs/btn-parity-proof.mjs toast-hit 3d3d5cc:index.html index.html`, whose
+> `toast-hit` key covers both elements. It reports `#toast` as identical across all five states —
+> that row exists to prove the container rule was *not* removed — and exactly one property on
+> `#toastUndo`, `pointer-events` `(unset)` → `auto`. The harness therefore prints
+> `FAIL — 5 declaration(s) differ`, which is the correct result for a round that intends a
+> behaviour change; see the same caveat under decision 5. Two negatives confirm those rows are
+> live: stripping `pointer-events:none` off `#toast`, and recolouring `.toast-act`, each take the
+> count from 5 to 10.
+>
+> **What that proof does not cover, and nothing else does either:** the harness models no
+> inheritance, so `#toast`'s `none` never appears in the child's declaration map — and inheritance
+> is the entire mechanism of the bug. That part rests on reading the source against the spec
+> (`pointer-events` is `Inherited: yes`), not on a run. Nobody has clicked the link in a real
+> browser (decision 4).
 
 `Field.css` also declares `.pui-field__hint`; the app has **no counterpart** — `.kbd-hint`,
 `.pd-edit-hint`, and `.apikey-note` are each their own thing at their own size. Nothing was added

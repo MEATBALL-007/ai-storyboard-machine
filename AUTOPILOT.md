@@ -69,6 +69,20 @@
          `.toast-act` ไม่ได้ตั้ง `pointer-events:auto` กลับ → `onclick` ใน `toastUndo()` ไม่เคยยิง
          (ยัง undo ได้ด้วย `Cmd/Ctrl+Z` ซึ่งเป็นคนละ path) **ไม่ได้แก้ในรอบนี้** เพราะเป็น
          behaviour change และรอบนี้อ้างว่า "ไม่ขยับอะไรเลย" → ทำเป็น Next task)
+        ✅ **แก้แล้ว รอบ 2026-08-24_0003** — `.toast-act` เติม `pointer-events:auto` **จุดเดียว**
+         `#toast` ยังตั้ง `pointer-events:none` ไว้เหมือนเดิม (ถอดออก = toast บังคลิกทั้ง 80vw นาน 5 วิ)
+         พิสูจน์ด้วย key ใหม่ `docs/btn-parity-proof.mjs toast-hit 3d3d5cc:index.html index.html`
+         → `#toast` **ไม่ต่างเลยสักจุดทั้ง 5 state** (นี่คือหลักฐานว่าไม่ได้ถอด `none` ออก)
+         และ `#toastUndo` ต่าง **property เดียว** (`pointer-events` `(unset)`→`auto`) × 5 state = 5
+         harness ขึ้น `FAIL — 5 declaration(s) differ` **ซึ่งเป็นผลที่ถูกต้องของรอบนี้**
+         (รอบนี้*ตั้งใจ*เปลี่ยนพฤติกรรม — key `toast-hit` มีไว้ให้เห็นว่าเปลี่ยนอะไรบ้าง ไม่ได้มีไว้ให้ PASS)
+         negative test 2 กรณี: ถอด `pointer-events:none` ออกจาก `#toast` → 5→10 (แถว `#toast` ทำงานจริง),
+         เปลี่ยนสี `.toast-act` เป็น `--secondary` → 5→10
+         ⚠️ **phase markup coverage รอบนี้ว่างเปล่า** (`0 old class tokens gone, 0 new class attributes`)
+         เพราะไม่มี class ไหนขยับเลย → รอบนี้มันไม่ได้พิสูจน์อะไร อย่านับเป็นหลักฐาน
+         ⚠️ **harness ไม่ได้ model inheritance** — `none` ของ `#toast` ไม่เคยโผล่ในตารางของลูก
+         ซึ่งการ inherit *คือ*กลไกของบั๊กนี้ทั้งหมด → ส่วนนั้นพิสูจน์จาก source + spec เท่านั้น
+         ⚠️ **ยังไม่ได้กดจริงในเบราว์เซอร์** (decision 4 ยังไม่ได้รับอนุญาต))
         badge / modal / empty-state ต่างจาก DS แค่ `font-family:var(--mono)` (+ `color:var(--text)` ใน modal)
         ซึ่ง **`body` set ให้อยู่แล้วและไม่มีอะไรมา override** → render เหมือนกันเป๊ะ ไม่ต้องแก้
         ต่างแค่**ชื่อ class** (`.pc-badge` vs `.pui-badge--accent`) ซึ่งไม่ใช่เรื่องหน้าตา
@@ -243,29 +257,43 @@ segmented padding — ข้อ 5 เพิ่มรอบ 2026-08-23_0047 / inp
 **ก่อนอื่น เปิด `README.md` หัวข้อ `## Open decisions` ดูว่าเจ้าของตอบข้อไหนมาแล้วหรือยัง
 ถ้าตอบมาแล้วแม้ข้อเดียว → ทำตามคำตอบนั้นแทนงานข้างล่าง (สำคัญกว่า และปลดล็อกเกณฑ์ได้จริง)**
 
-ถ้ายังไม่มีคำตอบ ให้ทำงานนี้: **แก้บั๊กปุ่ม Undo ใน toast ที่กดไม่ได้** — รอบ 0103 เจอตอนเทียบ
-`Toast.css`: `#toast` (บรรทัด ~353) ตั้ง `pointer-events:none` ซึ่ง **inherit ลงไปถึงลูกทุกตัว**
-รวมทั้ง `<span id="toastUndo" class="toast-act">` ที่ `toastUndo()` (บรรทัด ~935) ผูก `onclick` ไว้
-descendant จะกลับมาเป็น hit target ได้ต้องตั้ง `pointer-events:auto` เอง ซึ่ง `.toast-act` ไม่ได้ตั้ง
-→ **คลิก Undo แล้วไม่เกิดอะไรขึ้น และ `cursor:pointer` ก็ไม่ขึ้นด้วยซ้ำ**
-(ลบ panel แล้วยังกู้ได้ด้วย `Cmd/Ctrl+Z` ซึ่งเป็นคนละ path — บั๊กนี้จึงไม่ทำข้อมูลหาย)
+ถ้ายังไม่มีคำตอบ ให้ทำงานนี้: **แก้บั๊กฝาแฝดฝั่ง library — `.pui-toast` กินคลิกทั้งจอ 5 วินาที**
 
-แก้ที่ `.toast-act` (บรรทัด ~357) เติม `pointer-events:auto` **จุดเดียว อย่าถอด
-`pointer-events:none` ออกจาก `#toast`** เพราะ toast กินพื้นที่กลางจอ ถ้าถอดออกมันจะบัง
-คลิกทุกอย่างที่อยู่ใต้มัน 5 วินาที (นั่นคือช่องโหว่ที่ `.pui-toast` มีอยู่ ไม่ใช่สิ่งที่ควรลอกมา)
+รอบ 0003 (2026-08-24) แก้ฝั่งแอปไปแล้ว: `.toast-act` เติม `pointer-events:auto` เพราะ
+`#toast` ตั้ง `pointer-events:none` แล้ว property นี้ inherit ลงไปทับลูก **ฝั่ง DS เป็นบั๊ก
+กลับด้านกันเป๊ะ**: `design-system/src/components/Toast/Toast.css` บรรทัด 1–6 (`.pui-toast`)
+**ไม่ได้ตั้ง `pointer-events` เลย** → toast เป็น `position:fixed` กว้างได้ถึง `max-width:80vw`
+วางอยู่ที่ `z-index:200` → ตลอด 5 วินาทีที่มันโชว์ มัน**บังคลิกทุกอย่างที่อยู่ใต้มัน**
+นี่ไม่ใช่เรื่องดีไซน์และไม่ขยับพิกเซลสักจุด — เป็น defect ล้วนๆ แบบเดียวกับที่เพิ่งแก้ฝั่งแอป
 
-⚠️ **รอบนี้ต่างจากรอบก่อนๆ: มัน *ตั้งใจ* เปลี่ยนพฤติกรรม** `pointer-events` ไม่ใช่ property
-ที่วาดพิกเซล ดังนั้น "หน้าตาไม่เปลี่ยน" ยังจริงอยู่ แต่ `docs/btn-parity-proof.mjs toast`
-**จะรายงาน diff 1 จุด (`pointer-events` เพิ่มขึ้นมา) และนั่นคือผลที่ถูกต้อง**
-อย่าไปแก้ harness หรือแก้ CSS ให้มัน PASS — ให้รันแล้ว**เอา output ที่ diff 1 จุดนั้นใส่ SUMMARY.md**
-เป็นหลักฐานว่าเปลี่ยนแค่ property เดียวจริงๆ (แบบเดียวกับที่ decision 5 เขียนไว้ว่า
-"the point of that run is to show exactly which declarations moved, not to pass")
+แก้ 2 declaration ใน `Toast.css` เท่านั้น:
+- `.pui-toast` → เติม `pointer-events:none`
+- `.pui-toast__action` → เติม `pointer-events:auto` (ไม่งั้นจะซ้ำรอยบั๊กเดิมของแอปทันที)
+เขียน comment กำกับว่าทำไมสองบรรทัดนี้ต้องมาคู่กันเสมอ (ลอกเหตุผลจาก `.toast-act` ใน `index.html`)
 
-ยืนยันว่าไม่มีอะไรอื่นตั้ง `pointer-events` ทับ: ตอนนี้ทั้งไฟล์มี 3 จุด (บรรทัด ~353 `#toast`,
-~507, ~538) และไม่มี JS ตัวไหน set `style.pointerEvents` เลย (ตรวจแล้วรอบ 0103)
+**ก่อนแก้ ต้องเช็ค 3 อย่างนี้ก่อน — ถ้าข้อไหนขัด ให้หยุดแล้วเขียนลง SUMMARY.md แทน:**
+1. `design-system/src/components/Toast/Toast.tsx` — มี element ลูกอื่นที่คลิกได้อีกไหม
+   (ปุ่มปิด? `onClick` บน root?) ถ้ามี **ทุกตัวต้องได้ `pointer-events:auto`** ไม่ใช่แค่ `__action`
+2. `Toast.test.tsx` (3 tests) — ถ้ามันยิง click ผ่าน testing-library จะ **ยังผ่านอยู่ดี**
+   เพราะ jsdom ไม่ทำ hit testing จริง → **เทสต์ชุดนี้พิสูจน์บั๊กนี้ไม่ได้ ห้ามอ้างว่ามันพิสูจน์**
+3. demo gallery (`design-system/src/**` ที่ import Toast) — ดูว่ามีอะไรพึ่งพฤติกรรมเดิมไหม
+
+**หลักฐานที่ต้องแนบ:** `docs/btn-parity-proof.mjs` อ่านแค่ `<style>` ของ `index.html`
+**ใช้กับไฟล์ `.css` ของ DS ไม่ได้เลย** อย่าเสียเวลาดัดแปลงมัน — ให้แนบ `git diff` ของ
+`Toast.css` ตรงๆ (2 บรรทัด) แล้วรัน Verify ครบ 3 ขั้น
+และ **รัน `node docs/btn-parity-proof.mjs toast-hit 3d3d5cc:index.html index.html` ซ้ำ**
+เพื่อยืนยันว่าฝั่งแอปยังเหมือนเดิม (ต้องได้ `FAIL — 5 declaration(s) differ` เท่าเดิมเป๊ะ
+โดย `#toast` ไม่มี diff สักจุด — ถ้าตัวเลขไม่ใช่ 5 แปลว่ามีคนไปแตะฝั่งแอป)
+
+⚠️ **นี่เป็นการเปลี่ยน behaviour ของ library ที่ consumer อื่นใช้อยู่** — ต่างจากช่องว่าง
+`.menu-pop button:disabled:hover` ที่รอบ 0047 เขียนไว้ว่าเป็นสิทธิ์เจ้าของ เพราะอันนั้น
+**เปลี่ยนสีที่คนเห็น** ส่วนอันนี้เป็น hit-testing ล้วน ไม่มีพิกเซลไหนขยับ
+ถ้ารอบหน้าอ่านแล้วยังไม่เห็นด้วย → **อย่าแก้ ให้เขียนเป็น decision 7 ใน README แทน** แล้วจบรอบ
 
 ⚠️ **ความเสี่ยงที่ต้องรับมือ ไม่ใช่มองข้าม:** **ไม่มีเบราว์เซอร์ให้ verify**
-(decision 4 ยังไม่ได้รับอนุญาต) → ใช้วิธีเดิม: เพิ่ม refactor ใหม่เข้าไปใน `REFACTORS`
+(decision 4 ยังไม่ได้รับอนุญาต) — ย่อหน้าข้างล่างนี้ใช้กับงานที่**แก้ `<style>` ของ `index.html`**
+(งาน Next task รอบหน้าแก้ `.css` ของ DS ซึ่ง harness อ่านไม่ได้ ดูวิธีแนบหลักฐานในหัวข้องานเอง)
+→ ใช้วิธีเดิม: เพิ่ม refactor ใหม่เข้าไปใน `REFACTORS`
 ของ `docs/btn-parity-proof.mjs` (ระบุ class ก่อน/หลัง + ancestor chain; ใส่ `type` ถ้า subject
 ไม่ใช่ `button`; ใช้ `beforeAncestors`/`afterAncestors` ถ้า ancestor เปลี่ยนคนละแบบกับ subject)
 แล้วรัน `node docs/btn-parity-proof.mjs <key> <sha>:index.html index.html`
