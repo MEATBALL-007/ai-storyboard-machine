@@ -17,6 +17,13 @@
  *   node docs/btn-parity-proof.mjs buttons   2488f2d:index.html 9fab5c9:index.html
  *   node docs/btn-parity-proof.mjs segmented 021b966:index.html index.html
  *
+ * A source may be the app (`index.html`, whose <style> block is the stylesheet) or the
+ * LIBRARY (`design-system/src/styles.css`, whose stylesheet is that file plus everything
+ * it @imports, spliced in at the point of the @import — see buildStylesheet). Both forms
+ * take a `<rev>:` prefix. The library form exists because every case decision 7 asks about
+ * is decided by SOURCE ORDER, not specificity, so reading one component file in isolation —
+ * or reading several in the wrong order — would answer confidently and wrongly.
+ *
  * Scope of the model (deliberately small, and honest about it):
  *   - descendant combinators only; `>` `+` `~` are reported as unsupported, not silently ignored
  *   - `::pseudo-elements` never contribute to an element's own box -> treated as non-matching
@@ -32,10 +39,75 @@ import { readFileSync } from 'node:fs';
 import { existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
-function readSource(ref) {
-  if (existsSync(ref)) return readFileSync(ref, 'utf8');
-  if (!ref.includes(':')) throw new Error(`no such file: ${ref}`);
-  return execFileSync('git', ['show', ref], { encoding: 'utf8', maxBuffer: 1 << 28 });
+/* Every source carries a path, and the path decides two things: how the text becomes a
+ * stylesheet, and where a relative @import inside it points. So keep them apart rather
+ * than passing the raw `<rev>:<path>` string around. */
+function splitRef(ref) {
+  if (existsSync(ref)) return { rev: null, path: ref.replace(/\\/g, '/') };
+  const colon = ref.indexOf(':');
+  if (colon < 0) throw new Error(`no such file: ${ref}`);
+  return { rev: ref.slice(0, colon), path: ref.slice(colon + 1) };
+}
+
+function readRef({ rev, path }) {
+  if (rev === null) {
+    if (!existsSync(path)) throw new Error(`no such file: ${path}`);
+    return readFileSync(path, 'utf8');
+  }
+  try {
+    return execFileSync('git', ['show', `${rev}:${path}`], { encoding: 'utf8', maxBuffer: 1 << 28 });
+  } catch {
+    throw new Error(`git show ${rev}:${path} failed — no such path at that revision`);
+  }
+}
+
+/* POSIX-style, so the same code resolves an @import against a working-tree path and
+ * against a path inside a git revision (where separators are always '/'). */
+function joinPath(fromPath, rel) {
+  const segs = fromPath.replace(/\\/g, '/').split('/').slice(0, -1);
+  for (const seg of rel.replace(/\\/g, '/').split('/')) {
+    if (seg === '' || seg === '.') continue;
+    else if (seg === '..') segs.pop();
+    else segs.push(seg);
+  }
+  return segs.join('/');
+}
+
+/* Splice each @import in at the point where it appears, depth first — that is the order the
+ * browser lays the rules down, and the only order in which source-order ties resolve the way
+ * they really do. A missing file throws rather than being skipped: a silently short
+ * stylesheet still produces a confident-looking 0-diff. `trail` doubles as the cycle guard,
+ * and entries leave it on the way out, because importing one file twice down two different
+ * paths is legal CSS (the rules simply appear twice) and only a true cycle is an error. */
+function loadCss(ref, trail, loaded) {
+  const key = `${ref.rev ?? ''}:${ref.path}`;
+  if (trail.includes(key)) {
+    throw new Error(`@import cycle: ${[...trail, key].map((k) => k.split(':').pop()).join(' -> ')}`);
+  }
+  trail.push(key);
+  loaded.push(ref.path);
+  const css = stripComments(readRef(ref));
+  const re = /@import\s+(?:url\(\s*)?(['"])(.*?)\1\s*\)?\s*;/g;
+  let out = '';
+  let at = 0;
+  let m;
+  while ((m = re.exec(css))) {
+    out += css.slice(at, m.index);
+    out += loadCss({ rev: ref.rev, path: joinPath(ref.path, m[2]) }, trail, loaded);
+    at = m.index + m[0].length;
+  }
+  out += css.slice(at);
+  trail.pop();
+  return out;
+}
+
+function buildStylesheet(ref) {
+  if (ref.path.endsWith('.css')) {
+    const loaded = [];
+    return { mode: 'css', css: loadCss(ref, [], loaded), loaded, raw: null };
+  }
+  const raw = readRef(ref);
+  return { mode: 'html', css: extractStyle(raw), loaded: [ref.path], raw };
 }
 
 /* ── the elements each refactor touches: class list before -> after ──────────────
@@ -130,11 +202,40 @@ const TOAST_HIT = [
     before: ['toast-act'], after: ['toast-act'] },
 ];
 
+/* The first table whose subjects live in the LIBRARY, not the app. These are the three
+ * controls named in decision 7 (README -> Open decisions): each declares nothing for
+ * `:disabled:hover`, so the `:hover` rule's declarations survive onto a control that cannot
+ * be clicked. Read the `:disabled:hover` rows of a run to see exactly which ones.
+ *
+ * Classes are identical before and after on purpose. Nothing has been decided yet, so a run
+ * against today's tree is a 0-diff baseline; its job is to be re-run the moment Button.css /
+ * Menu.css change, and to say precisely which declarations moved. Point it at the entry
+ * point, never at one component file:
+ *   node docs/btn-parity-proof.mjs ds-disabled-hover \
+ *     <rev>:design-system/src/styles.css design-system/src/styles.css
+ *
+ * Known blind spot for the menu rows: `.pui-menu__item:last-child{border-bottom:none}` uses a
+ * structural pseudo-class, which this model treats as never matching (see the header). A
+ * change confined to that rule would be reported as 0 diff. */
+
+const DS_MENU = ['body', '.pui-menu'];
+
+const DS_DISABLED_HOVER = [
+  { name: '.pui-btn--icon', ancestors: ['body'],
+    before: ['pui-btn', 'pui-btn--icon'], after: ['pui-btn', 'pui-btn--icon'] },
+  { name: '.pui-menu__item', ancestors: DS_MENU,
+    before: ['pui-menu__item'], after: ['pui-menu__item'] },
+  { name: '.pui-menu__item--danger', ancestors: DS_MENU,
+    before: ['pui-menu__item', 'pui-menu__item--danger'],
+    after: ['pui-menu__item', 'pui-menu__item--danger'] },
+];
+
 const REFACTORS = {
   buttons: BUTTONS,
   segmented: SEGMENTED,
   toast: TOAST,
   'toast-hit': TOAST_HIT,
+  'ds-disabled-hover': DS_DISABLED_HOVER,
 };
 
 const STATES = ['', ':hover', ':disabled', ':disabled:hover', ':focus'];
@@ -309,13 +410,30 @@ if (!ELEMENTS) {
   process.exit(2);
 }
 
-const sources = { before: readSource(beforeRef), after: readSource(afterRef) };
+const sheets = { before: buildStylesheet(splitRef(beforeRef)), after: buildStylesheet(splitRef(afterRef)) };
+if (sheets.before.mode !== sheets.after.mode) {
+  console.error(`cannot compare a ${sheets.before.mode} source against a ${sheets.after.mode} one`);
+  process.exit(2);
+}
 const versions = {};
 for (const key of ['before', 'after']) {
   const rules = [];
-  parseRules(extractStyle(sources[key]), null, rules);
+  parseRules(sheets[key].css, null, rules);
   versions[key] = rules;
 }
+
+/* Print the assembly, in order. For a library source this IS the load-bearing claim — a run
+ * that read the right files in the wrong order looks exactly like a correct one. */
+if (sheets.before.loaded.join('\n') === sheets.after.loaded.join('\n')) {
+  console.log(`stylesheet assembled from ${sheets.after.loaded.length} file(s), in @import order:`);
+  sheets.after.loaded.forEach((p, i) => console.log(`  ${String(i + 1).padStart(2)}. ${p}`));
+} else {
+  for (const key of ['before', 'after']) {
+    console.log(`${key} stylesheet — ${sheets[key].loaded.length} file(s), in @import order:`);
+    sheets[key].loaded.forEach((p, i) => console.log(`  ${String(i + 1).padStart(2)}. ${p}`));
+  }
+}
+console.log('');
 
 /* ── phase 1: markup coverage ────────────────────────────────────────────────
  * The cascade diff below assumes each button really carries its `after` classes.
@@ -331,42 +449,69 @@ for (const key of ['before', 'after']) {
 let markupErrors = 0;
 const oldTokens = new Set();
 for (const el of ELEMENTS) for (const c of el.before) if (!el.after.includes(c)) oldTokens.add(c);
-for (const t of [...oldTokens].sort()) {
-  const n = sources.after.split(t).length - 1;
+
+/* A stylesheet contains no markup, so there is nothing here to check and saying "OK" would be
+ * a lie. The library's markup lives in the .tsx files and its class lists are asserted by the
+ * component tests, which is the reason a class-moving refactor cannot be proven from here. */
+const cssMode = sheets.after.mode === 'css';
+if (cssMode) {
+  const moved = ELEMENTS.filter((el) => el.before.join(' ') !== el.after.join(' ') || 'beforeInline' in el);
+  for (const el of moved) {
+    markupErrors++;
+    console.log(`✗ ${el.name} declares a class/inline change, which a stylesheet source cannot confirm`);
+  }
+  console.log(moved.length
+    ? '\nmarkup coverage FAILED — move this element to an HTML source or drop the claim'
+    : 'markup coverage N/A — the source is a stylesheet, and no element claims a class change');
+}
+
+for (const t of cssMode ? [] : [...oldTokens].sort()) {
+  const n = sheets.after.raw.split(t).length - 1;
   if (n) { markupErrors++; console.log(`✗ old class token "${t}" still appears ${n}x in the after source`); }
 }
 /* An element that gives up its inline style must really have given it up: with the class added
  * but the `style=` left in place the cascade diff below still reads 0, because the harness takes
  * the inline text from this table rather than from the file. */
-for (const el of ELEMENTS) {
+for (const el of cssMode ? [] : ELEMENTS) {
   if (!el.beforeInline || el.afterInline) continue;
-  const n = sources.after.split(el.beforeInline).length - 1;
+  const n = sheets.after.raw.split(el.beforeInline).length - 1;
   if (n) { markupErrors++; console.log(`✗ ${el.name} still carries its old inline style ${n}x in the after source`); }
 }
 const wanted = new Map();
-for (const el of ELEMENTS) {
+for (const el of cssMode ? [] : ELEMENTS) {
   if (el.before.join(' ') === el.after.join(' ')) continue;
   const attr = `class="${el.after.join(' ')}"`;
   wanted.set(attr, (wanted.get(attr) ?? 0) + 1);
 }
 for (const [attr, n] of wanted) {
-  const got = sources.after.split(attr).length - 1;
+  const got = sheets.after.raw.split(attr).length - 1;
   if (got !== n) { markupErrors++; console.log(`✗ expected ${n}x ${attr} in the after source, found ${got}`); }
 }
-console.log(markupErrors
-  ? `\nmarkup coverage FAILED (${markupErrors} problem(s)) — the cascade diff below is meaningless`
-  : `markup coverage OK — ${oldTokens.size} old class tokens gone, ${wanted.size} new class attributes at the expected counts`);
+if (!cssMode) {
+  console.log(markupErrors
+    ? `\nmarkup coverage FAILED (${markupErrors} problem(s)) — the cascade diff below is meaningless`
+    : `markup coverage OK — ${oldTokens.size} old class tokens gone, ${wanted.size} new class attributes at the expected counts`);
+}
 
 let mismatches = 0;
 let compared = 0;
 const mediaHits = new Set();
 
+/* An element whose selectors never match anything computes an empty declaration set in both
+ * versions and therefore diffs clean — a typo in the table above reads as proof. In HTML mode
+ * markup coverage catches that; in stylesheet mode there is no markup to check against, so
+ * this is the only thing standing between a wrong table and a confident PASS. */
+const unmatched = [];
+
 for (const el of ELEMENTS) {
+  let hitsHere = 0;
   for (const state of STATES) {
     const b = computed(versions.before, { ...el, classes: el.before, ancestors: el.beforeAncestors ?? el.ancestors,
       inline: 'beforeInline' in el ? el.beforeInline : el.inline }, state);
     const a = computed(versions.after, { ...el, classes: el.after, ancestors: el.afterAncestors ?? el.ancestors,
       inline: 'afterInline' in el ? el.afterInline : el.inline }, state);
+    hitsHere += b.hits.length + a.hits.length;
+    if (state === STATES[STATES.length - 1] && hitsHere === 0) unmatched.push(el.name);
     compared++;
     for (const rule of [...b.hits, ...a.hits]) if (rule.media) mediaHits.add(`${rule.media} { ${rule.selector} }`);
 
@@ -385,6 +530,9 @@ for (const el of ELEMENTS) {
 }
 
 console.log(`\ncompared ${compared} (element, state) pairs across ${ELEMENTS.length} "${refactor}" elements`);
+for (const name of unmatched) {
+  console.log(`✗ ${name} matched no rule in either version — its row in the table is wrong, not proven`);
+}
 if (mediaHits.size) {
   console.log('media-conditional rules that matched a test element:');
   for (const m of mediaHits) console.log('  ' + m);
@@ -392,8 +540,8 @@ if (mediaHits.size) {
   console.log('no @media rule matched any test element');
 }
 
-if (mismatches || markupErrors) {
-  console.log(`\nFAIL — ${mismatches} declaration(s) differ, ${markupErrors} markup problem(s). The refactor moves pixels; revert it.`);
+if (mismatches || markupErrors || unmatched.length) {
+  console.log(`\nFAIL — ${mismatches} declaration(s) differ, ${markupErrors} markup problem(s), ${unmatched.length} unmatched element(s). The refactor moves pixels; revert it.`);
   process.exit(1);
 }
 console.log('\nPASS — every element computes an identical declaration set before and after.');
