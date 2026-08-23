@@ -361,8 +361,8 @@
      - pointer-events: #toast above is click-through so it cannot swallow clicks on the
        board for the 5s it is up, and pointer-events INHERITS — so the action has to opt
        back in or it is not a hit target at all (its onclick never fires and cursor:pointer
-       never even shows). .pui-toast has no pointer-events:none, so it needs no counterpart
-       here; do not "sync" this away. */
+       never even shows). .pui-toast now carries the same pair for the same reason, so this
+       one is in sync — but it is load-bearing, not decoration: do not drop it. */
   .toast-act{color:var(--accent); cursor:pointer; text-decoration:underline; pointer-events:auto}
 
   .kbd-hint{font-size:8.5px; color:var(--dim); padding:8px 12px; line-height:1.7; border-top:1px solid var(--line)}

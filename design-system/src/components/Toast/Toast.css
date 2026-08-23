@@ -1,9 +1,19 @@
+/* pointer-events on .pui-toast and .pui-toast__action are a matched pair — never add or
+   remove one without the other.
+   The toast is position:fixed at z-index:200 and up to 80vw wide, so while it is showing it
+   covers whatever is beneath it. Without pointer-events:none it swallows every click in that
+   area even at opacity:0, because opacity does not affect hit testing.
+   pointer-events INHERITS, so :none here reaches every descendant. Any interactive child must
+   opt back in with :auto or it stops being a hit target entirely — its handler never fires and
+   its cursor never even changes. .pui-toast__action is the only such child today; give any new
+   one the same :auto. The app hit this exact bug from the other direction (see .toast-act in
+   index.html, where the container had :none and the action had no counterpart). */
 .pui-toast{
   position:fixed; bottom:18px; left:50%; transform:translateX(-50%) translateY(20px);
   background:var(--surface2); border:1px solid var(--dim); border-left:3px solid var(--accent);
   padding:10px 16px; border-radius:var(--r-lg); font-size:11px; color:var(--text);
-  opacity:0; transition:.25s; z-index:200; max-width:80vw; font-family:var(--mono);
+  opacity:0; transition:.25s; z-index:200; pointer-events:none; max-width:80vw; font-family:var(--mono);
 }
 .pui-toast.is-open{opacity:1; transform:translateX(-50%) translateY(0)}
 .pui-toast--error{border-left-color:var(--secondary); color:#ffb4a0}
-.pui-toast__action{color:var(--accent); cursor:pointer; text-decoration:underline; margin-left:8px}
+.pui-toast__action{color:var(--accent); cursor:pointer; text-decoration:underline; margin-left:8px; pointer-events:auto}
