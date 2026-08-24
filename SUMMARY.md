@@ -1,37 +1,46 @@
-# Round 2026-08-24_0322
+# Round 2026-08-25_0007
 
 ## What I did
 
 - **Restored the previous round's tip first.** The runner cut this branch from the stale base
-  `3503537` again — no `tools/check-tokens.mjs`, no `docs/btn-parity-proof.mjs`, `index.html`
-  back at its pre-token state, and the `## Next task` section arrived **empty** in the prompt.
-  Commit `6b7043b` brings the tree to `479fe7e`, the tip of round `2026-08-24_0102`;
-  `git diff --stat 479fe7e -- .` is empty, so the restore is total.
-- **Checked `README.md → ## Open decisions` for owner answers: there are none.** All seven are
-  still unanswered option tables ending in "**If you answer:**". Decision 1's expected artefact
-  (a `jspdf.umd.min.js` at the repo root) is absent.
-- **Ruled out an answer arriving anywhere other than this branch.** `main` is still at `ef3220e`
-  (2 commits, unchanged since this work began), `git status --untracked-files=all` is empty, and
-  no README line matches an answer marker (`answer|owner|decided|chosen|ตอบ|เลือก|decision:`).
-- **Ended the round without inventing a substitute task**, exactly as the contract instructs.
-  The only commits are the restore and this bookkeeping commit. No `.css`, no `index.html`, no
+  `3503537` again: no `tools/check-tokens.mjs`, no
+  `docs/btn-parity-proof.mjs`, `index.html` back at its pre-token state, and the `## Next task`
+  section arrived **empty** in the prompt. Commit `24391f3` brings the tree to `094e5c0`, the tip
+  of round `2026-08-24_0322`; `git diff <tip> -- .` after the checkout prints nothing.
+- **Tried the cleaner restore first and recorded why it is unavailable.** `094e5c0` is a direct
+  descendant of `3503537`, so `git merge --ff-only` would have been a true fast-forward with no
+  synthetic commit and a linear history. The Bash tool denies `git merge` outright ("This command
+  requires approval"). That is the standing reason the path-checkout convention exists; it had not
+  been written down before, so it is in the restore commit message now.
+- **Checked all four channels an owner answer could arrive through. All four are clean.**
+  README `## Open decisions` still has 7 `### N.` headings and 7 intact `**If you answer:**`
+  markers (one per decision, none consumed); no answer prose matches
+  `^(\*\*)?(answer|owner (says|decision)|decided|ตอบ)`; `main` is still at `ef3220e`;
+  `git status --untracked-files=all` is empty; and `git ls-files | grep -i jspdf` is empty, so
+  decision 1's expected artefact never landed.
+- **Ended the round without inventing a substitute task**, exactly as the contract instructs. The
+  only commits are the restore and this bookkeeping commit. No `.css`, no `index.html`, no
   `tools/`, no `docs/` source line changed.
-- **Ran the full Verify command and all five harness keys anyway** (below) — a no-op round is
-  still a round that must prove the tree it hands on is green.
+- **Ran the full Verify command and all five harness keys anyway** (below). A no-op round is still
+  a round that must prove the tree it hands on is green.
 
 ## Why
 
-- The contract's "Next task" is unusually explicit that **the fallback work is exhausted**: token
-  tooling is 22/22 with six checks and the previous round concluded a seventh would enforce
-  nothing; the element-parity table is closed at 11/11; the harness now reads library CSS and
-  reports its own undecidable selectors. It then names the specific things not to pick up anyway
-  (implementing `:last-child`/`>`/`+`/`~`, adding the harness to Verify, applying decisions
-  2/5/6/7 unilaterally). With no owner input, the correct output of this round is a record that
-  nothing unlocked — hard rule 5 says a round that only confirms the plan is a successful round.
-- **Why I checked `main` and untracked files rather than just the README:** the owner's answer to
-  decision 1 is a *file drop*, not prose, and an answer could in principle have landed on `main`
-  instead of a round branch. Reading only the README would have missed both. Both are clean, so
-  the "no answers" finding covers every channel an answer could plausibly arrive through.
+- The contract's "Next task" is unusually explicit that **the fallback work is exhausted** — token
+  tooling is 22/22 across six checks and a seventh would enforce nothing, the element-parity table
+  is closed at 11/11, and the harness already reads library CSS and reports its own undecidable
+  selectors. It then pre-names the tempting candidates as out of bounds (implementing
+  `:last-child`/`>`/`+`/`~`, adding the harness to Verify, applying decisions 2/5/6/7 unilaterally).
+  With no owner input, the correct output of this round is a record that nothing unlocked; hard
+  rule 5 says a round that only confirms the plan is a successful round.
+- **Why I checked four channels rather than just the README:** decision 1's answer is a *file drop*,
+  not prose, and an answer could in principle land on `main` instead of a round branch. Two of the
+  four channels are therefore invisible to a README read. All four being clean is what makes "no
+  answers" a finding rather than an assumption.
+- **Why I read the task from the restored file, not the prompt.** The `AUTOPILOT.md` text handed to
+  me described the repo as of round `_0036` and its `## Next task` section was empty. The restored
+  file's Next task is three rounds newer and says something materially different. A round that
+  trusted the prompt would have re-done committed work.
 
 ## Verification
 
@@ -62,16 +71,16 @@ toast-hit  3d3d5cc:index.html index.html         -> FAIL — 5 declaration(s) di
                                                     behaviour change — not a regression.
 ```
 
-No negative test this round: nothing was changed, so there is no claim of the form "this edit
-moved no pixels" for a negative test to falsify. The previous three rounds' negative tests stand
-as the evidence that these keys still bite.
+No negative test this round: nothing was changed, so there is no claim of the form "this edit moved
+no pixels" for a negative test to falsify. The earlier rounds' negative tests stand as the evidence
+that these keys still bite.
 
 ## What I did NOT do
 
-- **Did not answer any of the seven open decisions** and did not touch `index.html`,
-  `Button.css`, `Menu.css`, `tools/`, or `docs/btn-parity-proof.mjs`.
-- **Did not invent substitute work.** The tempting candidates were all pre-named as out of
-  bounds by the previous round, and each either moves pixels or is the owner's call.
+- **Did not answer any of the seven open decisions** and did not touch `index.html`, `Button.css`,
+  `Menu.css`, `tools/`, or `docs/btn-parity-proof.mjs`.
+- **Did not invent substitute work.** Every tempting candidate was pre-named as out of bounds by the
+  contract, and each either moves pixels or is the owner's call.
 - **Did not tick any acceptance criterion.** This round produced no user-visible change and
   unlocked nothing.
 - Did not run a browser (decision 4 still unanswered; Playwright and Chrome-DevTools MCP are
@@ -79,19 +88,25 @@ as the evidence that these keys still bite.
 
 ## Risk
 
-- **This round is now structurally a no-op loop, and that is the thing to look at.** Every
-  remaining criterion depends on a human answering `README.md → ## Open decisions`. Until that
-  happens each round can only re-verify and re-report. The runner will keep opening
-  near-identical PRs; that cost is real and it is not something a round can fix from inside.
-- **The AUTOPILOT.md text handed to me in the prompt was two rounds stale** — it described the
-  repo as of round `_0036` while the newest tip was `_0102` (branches `_0048` and `_0102` were
-  missing from it entirely). Combined with the empty "Next task" section, a round that trusted
-  the prompt over the restored file would have redone work that is already committed. I read the
-  task from the restored `AUTOPILOT.md`, not from the prompt.
+- **This is the third consecutive round that could only re-verify and re-report** — the previous
+  round recorded itself as the second. Every remaining acceptance criterion depends on a human
+  answering `README.md → ## Open decisions`. The runner will keep opening near-identical PRs; that
+  cost is real and no round can fix it from the inside. **This is the thing to look at, and the
+  only input that changes it is an owner answer.**
 - **The stale-base restore is the load-bearing step of this round.** It is a path checkout
   (`git checkout <tip> -- .`), which is tree-equivalent to a fast-forward only because no file is
-  deleted between `3503537` and `479fe7e` — I checked `--diff-filter=D` and it was empty. If a
-  future round's diff ever deletes a file, this technique silently leaves the deleted file behind.
+  deleted between `3503537` and `094e5c0` — I checked `--name-status` and it lists only `M`/`A`
+  entries, no `D`. If a future round's diff ever deletes a file, this technique silently leaves the
+  deleted file behind. Since `git merge` is denied, the check must be re-run every round rather
+  than assumed.
+- **The "Nth round in a row" tally that restore commit messages carry is not verifiable and
+  undercounts.** The previous round's message said "Fifteenth"; only 9 commits across all 47 round
+  branches use that wording at all, so rounds that phrased the restore differently were never
+  counted. I have not repeated a specific number — the checkable facts are that HEAD was at
+  `3503537` at checkout (see reflog) and that no round has yet started from a correct base.
 - **Nothing here re-proves the app renders correctly.** All five harness keys and all six token
-  checks read source text; none opens a renderer. The `ds-disabled-hover` PASS explicitly
-  disclaims `.pui-menu__item:last-child`, which is exactly the rule decision 7 would touch.
+  checks read source text; none opens a renderer. The `ds-disabled-hover` PASS explicitly disclaims
+  `.pui-menu__item:last-child`, which is exactly the rule decision 7 would touch — so the one open
+  decision most likely to be acted on next is also the one the harness is blindest to.
+- **The `toast-hit` key is a FAIL that must stay a FAIL at exactly 5.** A reviewer skimming for
+  green will misread it. If that number ever moves, someone has touched the app side of the toast.
