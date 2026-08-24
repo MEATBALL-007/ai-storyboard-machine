@@ -1,60 +1,54 @@
-# Round 2026-08-25_0018
+# Round `auto/deep_dive_AI_Storyboard_Machine/2026-08-25_0025`
+
+**Outcome: no-op round — checked every channel an owner answer could arrive through, found none,
+verified the tree is unchanged, ended. Fifth such round in a row.**
 
 ## What I did
 
-- **Restored the previous round's tip first.** The runner cut this branch from the stale base
-  `3503537` yet again — `git log --oneline -1` at checkout showed `3503537`, `tools/` held only
-  `test.mjs`, `docs/` only `superpowers/`, and the `## Next task` section arrived **empty** in the
-  prompt. Commit `0b48c63` brings the tree to `43426ad`, the tip of round `2026-08-25_0007`.
-- **Verified the restore with a stronger check than the convention asked for.** The standing
-  instruction was "confirm `git diff --name-status 3503537 <tip>` has no `D` lines", which *infers*
-  tree equality from the shape of the diff. I ran `git diff --stat 43426ad` instead — it printed
-  nothing, which *proves* the working tree equals `43426ad` and would also catch a file that should
-  have been deleted and wasn't. That is now written into `AUTOPILOT.md` as the check to run.
-- **Re-tested both cleaner restore paths; both are still denied.** `git merge --ff-only 43426ad`
-  → "This command requires approval", as round 0007 recorded. I also tried
-  `git read-tree -u --reset 43426ad`, which *does* delete files and would be the correct primitive
-  — it is denied too. The path checkout remains the only available route.
-- **Checked five channels an owner answer could arrive through. All five are clean.**
-  The four from the contract: README `## Open decisions` still has 7 `### N.` headings and 7 intact
-  `**If you answer:**` markers (none consumed); `git ls-files | grep -i jspdf` is empty, so
-  decision 1's file drop never landed; `main` is still at `ef3220e`;
-  `git status --untracked-files=all` is empty. **Plus a fifth I added:** the non-autopilot refs
-  (`design-system`, `hardening-pass`, `main`, and their `origin`/`mac` counterparts) have a newest
-  commit of **2026-08-13** — older than every round of this work, so no answer is parked on a
-  sibling branch. A keyword scan of `README.md` for `Answer|ANSWER|ตอบ|Decision:|Chosen` also
-  returned nothing.
-- **Ended the round without inventing a substitute task.** The only commits are the restore and
-  this bookkeeping commit. No `.css`, no `index.html`, no `tools/`, no `docs/` source line changed.
+- **Restored the previous round's tip.** The runner cut this branch from `3503537` again, so
+  the working tree arrived without `tools/check-tokens.mjs`, `docs/btn-parity-proof.mjs`, or any
+  of the token/radius/parity work. Restored `auto/…/2026-08-25_0018` as its own commit
+  (`36d2c86`) so this round's real diff stays readable.
+- **Checked all five owner-answer channels. All five are dry:**
+  1. `README.md → ## Open decisions` — headings `### 1.`–`### 7.` all present, `If you answer:`
+     count is still 7 (one per decision, none consumed). No answer text anywhere.
+  2. No file matching `jspdf*` at the repo root (decision 1's artefact).
+  3. `main` still `ef3220e` ("Add README") — has not moved.
+  4. `git status --untracked-files=all` — empty.
+  5. Non-`auto/*` refs — newest is `design-system`/`origin/design-system` at **2026-08-13**,
+     older than every round of this work. Nothing hidden on a sibling branch.
+- **Ran the full Verify plus all five harness keys** and confirmed every recorded number is
+  unchanged (below).
+- **Updated `AUTOPILOT.md`** — status line now names round `0025`, and I recorded two tool
+  constraints this round hit so the next round doesn't spend calls rediscovering them.
 
 ## Why
 
-- The restored `## Next task` is explicit that **the fallback work is exhausted** — token tooling is
-  22/22 across six checks, the element-parity table is closed at 11/11, and the harness already
-  reads library CSS and reports its own undecidable selectors. It then pre-names every tempting
-  candidate as out of bounds (implementing `:last-child`/`>`/`+`/`~`, adding the harness to Verify,
-  applying decisions 2/5/6/7 unilaterally). With no owner input, the correct output is a record
-  that nothing unlocked; hard rule 5 says a round that only confirms the plan is a successful round.
-- **Why I added a fifth channel.** The four prescribed channels all assume the answer arrives in
-  this branch's working tree or on `main`. An owner poking at the repo could equally have committed
-  to `hardening-pass` or `design-system`, which are real branches here. Checking them costs one
-  command and converts "probably no answer" into "no answer anywhere reachable".
-- **Why I read the task from the restored file, not the prompt.** The `AUTOPILOT.md` handed to me
-  described the repo as of round `_0036` and its `## Next task` was empty. The restored file's Next
-  task is materially different. A round that trusted the prompt would have re-done committed work —
-  most likely re-writing `tools/check-tokens.mjs` from scratch.
+The queued Next task said, in its own words: check the decisions first; if none is answered,
+write SUMMARY.md and end the round, and **do not invent a substitute task**. That instruction
+exists because the fallback work really is exhausted — token tooling is 22/22 across six checks,
+the element-parity table is closed at 11/11 components, and the harness now reports its own
+undecidable selectors. The three remaining acceptance criteria are gated on decisions 1, 2/5/6
+and 4, every one of which moves pixels or adds a file, and so is the owner's call.
+
+I deliberately did not treat "nothing to do" as licence to pick up the explicitly-forbidden
+list (implementing `:last-child`/combinator matching, adding the harness to Verify, or applying
+decisions 2/5/6/7 unilaterally). Those were forbidden precisely because an idle round is
+tempted by them.
 
 ## Verification
 
-Verify command, all three steps, on the final committed tree:
+Full Verify command, all three stages green:
 
 ```
 node tools/test.mjs             -> 54 passed, 0 failed
-node tools/check-tokens.mjs     -> tokens 22/22, fonts 4/4, checks 3-6 clean (15 CSS sources)
+node tools/check-tokens.mjs     -> tokens 22/22, fonts 4/4,
+                                   checks 3-6 clean across 15 CSS sources
 npm --prefix design-system test -> Test Files 12 passed (12), Tests 31 passed (31)
 ```
 
-All five harness keys, against the counts the contract records — every number identical:
+All five harness keys, against the same before/after pairs the previous round recorded — every
+count identical:
 
 ```
 buttons    2488f2d:index.html 9fab5c9:index.html -> PASS, 85 pairs / 17 elements
@@ -64,52 +58,48 @@ ds-disabled-hover HEAD:design-system/src/styles.css design-system/src/styles.css
                                                  -> PASS, 15 pairs /  3 elements,
                                                     1 undecidable rule
                                                     (.pui-menu__item:last-child, "structural
-                                                     pseudo :last-child", subject matches
-                                                     .pui-menu__item and .pui-menu__item--danger)
+                                                     pseudo :last-child")
 toast-hit  3d3d5cc:index.html index.html         -> FAIL — 5 declaration(s) differ,
-                                                    0 markup problem(s), 0 unmatched.
-                                                    `grep -c "✗ #toast:"` = 0, so #toast has no
-                                                    diff at any state and all 5 are #toastUndo
-                                                    pointer-events (unset)->auto.
+                                                    0 markup problems, 0 unmatched.
+                                                    grep -c "✗ #toast:" = 0
 ```
 
-`toast-hit`'s FAIL is the expected, recorded result of round 0003's deliberate behaviour change —
-not a regression. Its `10 pairs / 2 elements` line counts `#toast` and `#toastUndo`; the 5 diffs are
-all on the latter.
+`toast-hit`'s FAIL is the expected, recorded result of round 0003's deliberate behaviour change,
+not a regression. The `grep` count of `0` is the load-bearing part: no diff on `#toast` at any
+state means all 5 differing declarations are `#toastUndo`'s `pointer-events (unset)→auto`, which
+in turn proves nobody removed `pointer-events:none` from the container.
 
-No negative test this round: nothing was changed, so there is no claim of the form "this edit moved
-no pixels" for a negative test to falsify. The earlier rounds' negative tests stand as the evidence
-that these keys still bite.
+Restore completeness was verified by `git diff --stat auto/…/2026-08-25_0018 -- .` printing
+nothing — that checks the *result*, so it catches a file that should have been deleted, which
+inspecting the diff's shape beforehand would not.
 
 ## What I did NOT do
 
-- **Did not answer any of the seven open decisions** and did not touch `index.html`, `Button.css`,
-  `Menu.css`, `tools/`, or `docs/btn-parity-proof.mjs`.
-- **Did not invent substitute work.** Every tempting candidate is pre-named out of bounds by the
-  contract, and each either moves pixels or is the owner's call.
-- **Did not tick any acceptance criterion.** This round produced no user-visible change.
-- Did not run a browser (decision 4 still unanswered; Playwright and Chrome-DevTools MCP are
-  permission-blocked here, not merely headless).
+- **Did not answer, edit, reorder or delete any of the seven open decisions.** Each one moves
+  pixels or adds a file to the repo.
+- **Did not touch `index.html`, `Button.css` or `Menu.css`** — decision 7's territory.
+- **Did not add a seventh token check.** All 22 tokens are already covered; a previous round
+  concluded there is nothing left to enforce, and I agree after re-reading the checker's output.
+- **Did not retry Playwright / Chrome-DevTools MCP.** They are *permission*-blocked, not merely
+  headless; retrying costs a round and changes nothing until decision 4 is answered.
+- **Did not add the harness to the Verify command.** It is a per-round evidence tool tied to
+  specific before/after shas, not an invariant that should stay green forever.
 
 ## Risk
 
-- **This is the fourth consecutive round that could only re-verify and re-report.** Every remaining
-  acceptance criterion depends on a human answering `README.md → ## Open decisions`. The runner will
-  keep opening near-identical PRs; that cost is real and no round can fix it from the inside.
-  **This is the thing to look at, and the only input that changes it is an owner answer.**
-- **The stale-base restore is the load-bearing step of this round.** It is a path checkout, which
-  cannot delete files. It happened to be tree-exact here (`git diff --stat 43426ad` empty), but if a
-  future round's tip ever deletes a file relative to `3503537`, this technique leaves the deleted
-  file behind and the checker is the only thing standing between that and a silently wrong tree.
-  Both better primitives (`git merge --ff-only`, `git read-tree -u --reset`) are denied.
-- **I have not asserted a verifiable "Nth round in a row" count.** I state fourth because rounds
-  0322, 0007 and this one each recorded a no-op and 0102 was the last round with real work, but
-  restore-commit wording is inconsistent across the 47 round branches so any tally read from commit
-  messages undercounts. The checkable facts are the reflog (HEAD at `3503537` on checkout) and the
-  unchanged `main`.
-- **Nothing here re-proves the app renders correctly.** All five harness keys and all six token
-  checks read source text; none opens a renderer. The `ds-disabled-hover` PASS explicitly disclaims
-  `.pui-menu__item:last-child`, which is exactly the rule decision 7 would touch — so the one open
-  decision most likely to be acted on next is also the one the harness is blindest to.
-- **The `toast-hit` key is a FAIL that must stay a FAIL at exactly 5.** A reviewer skimming for
-  green will misread it. If that number ever moves, someone has touched the app side of the toast.
+- **This round changes no behaviour at all.** The only diffs are the mechanical restore commit
+  and two documentation edits (`AUTOPILOT.md` status line + two tool-constraint notes). A
+  reviewer should confirm exactly that: `git diff 36d2c86..HEAD` should touch `AUTOPILOT.md`
+  and `SUMMARY.md` and nothing else.
+- **Nothing in this repo has ever been verified in a real browser.** Every claim in the Verify
+  block comes from source-text analysis or jsdom; no renderer was opened. The
+  `ds-disabled-hover` PASS explicitly disclaims one rule it cannot read, and jsdom does no
+  hit-testing, so the `:hover` and `pointer-events` reasoning rests on the CSS spec rather than
+  observation. This is decision 4.
+- **The stall is now five rounds deep and will not clear on its own.** Every future round will
+  produce exactly this SUMMARY until someone answers a decision in `README.md`. The cheapest
+  unblock is decision 4 (a permission grant) or decision 1 (dropping `jspdf.umd.min.js` at the
+  repo root) — neither requires a design judgement.
+- **Nothing has been merged to `main` (still `ef3220e`, 2 commits).** 40+ `auto/*` branches now
+  stack in parallel off `3503537`, each re-restoring its predecessor. That is a runner-side
+  problem, but it grows with every round spent here.
