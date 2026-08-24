@@ -1,121 +1,70 @@
-# Round `auto/deep_dive_AI_Storyboard_Machine/2026-08-25_0042`
-
-**Outcome: no-op round — restored the previous tip, checked every channel an owner answer could
-arrive through, found none, re-ran the full Verify plus all five harness keys unchanged, ended.
-Seventh such round in a row.**
+# SUMMARY — รอบ `2026-08-25_0049`
 
 ## What I did
 
-- **Restored the previous round's tip.** The runner cut this branch from `3503537` again, so the
-  tree arrived without `tools/check-tokens.mjs`, `docs/btn-parity-proof.mjs`, `SUMMARY.md` or any
-  of the token / radius / parity work. Restored `auto/…/2026-08-25_0035` (`458d297`) as its own
-  commit (`09e1627`) so this round's real diff stays readable.
-- **Checked all five owner-answer channels. All five are dry:**
-  1. `README.md → ## Open decisions` — `### 1.`–`### 7.` all present (count 7), `**If you
-     answer:**` count still 7 (one per decision, none consumed). A line-start regex sweep for
-     `Answer:` / `Decision:` / `Owner:` / `ตอบ:` (case-insensitive) found nothing.
-  2. `git ls-files | grep -i jspdf` — empty. Decision 1's artefact has not been dropped in.
-  3. `main` still `ef3220e` — unmoved since 2026-06-27.
-  4. `git status --untracked-files=all --short` — empty.
-  5. Non-`auto/deep_dive…` refs — newest is `design-system` / `origin/design-system` at
-     **2026-08-13**, older than every round of this work; `hardening-pass` and the `mac/*` mirrors
-     are 2026-07-20. Nothing hidden on a sibling branch.
-- **Ran the full three-stage Verify and all five harness keys** — every recorded number reproduces
-  exactly (below).
-- **Updated `AUTOPILOT.md`** — status line now names round `0042` / seventh no-op, plus one new
-  process note (the single `for-each-ref` call that settles three checks at once, recorded below).
+- **Restore tip ของรอบก่อน** — HEAD เริ่มรอบที่ `3503537` (base เก่า) ตามปกติของ runner bug
+  → `git checkout f85132c -- .` (`f85132c` = tip ของ `_0042`, ยืนยันแล้วว่า **local และ `origin/`
+  ชี้ sha เดียวกัน** ก่อน restore) แล้ว commit แยกเป็น `0336b3e` ให้ diff ของรอบอ่านง่าย
+  `git diff --stat f85132c -- .` **ว่างเปล่า** = tree เท่ากับ tip ทุก byte
+- **ตรวจ 5 ช่องทางที่คำตอบเจ้าของจะมาได้ — ไม่มีคำตอบสักข้อ (no-op ที่ 8 ติดกัน)** รายละเอียดข้างล่าง
+- **จบรอบตามที่ Next task สั่ง** — ไม่หยิบงานสำรอง ไม่ประดิษฐ์งานแทน (งานสำรองหมดจริงตั้งแต่รอบ 0035)
+- อัปเดต `## Next task` ใน `AUTOPILOT.md`: เลื่อนสถานะเป็นรอบ `_0049` / no-op ที่ 8
+  และเพิ่มบันทึกว่าช่องทาง 1/2/4 ยุบเหลือ Bash call เดียวได้ (ทั้งรอบเหลือ 6 Bash call)
 
 ## Why
 
-The queued Next task is explicit: check the decisions first; if none is answered, write SUMMARY.md
-and end the round, and **do not invent a substitute task**. That instruction exists because the
-fallback work genuinely is exhausted — token tooling is 22/22 across six checks, the element-parity
-table is closed at 11/11 components, and the harness already reports its own undecidable selectors.
-The three open acceptance criteria are gated on decisions 1, 2/5/6 and 4; every one of them either
-moves pixels or adds a file to the repo, so every one is the owner's call, not mine.
+Next task ของรอบก่อนเขียนไว้ชัดว่า **ถ้ายังไม่มีคำตอบให้เขียน SUMMARY แล้วจบรอบ ห้ามประดิษฐ์งานแทน**
+และ hard rule ข้อ 5 ของ contract ก็บอกตรงกันว่า "รอบที่แก้แผนอย่างเดียวคือรอบที่สำเร็จ"
+เกณฑ์ที่เหลือทุกข้อ (chip padding / segmented padding / input size / decision 7 / jsPDF / browser verify)
+**ขยับพิกเซลที่คนเห็น หรือเป็นสิทธิ์ตัดสินใจของเจ้าของ** — และไม่มี checker ตัวไหนจับได้ถ้าแอบทำ
+(jsdom ไม่ทำ hit testing, ไม่มีเช็คไหนดู `:hover`) จึงเป็นเหตุผลตรงที่ว่าทำไมต้อง**รอ** ไม่ใช่ "ลองดูก่อน"
 
-I deliberately did not treat "nothing to do" as licence to start the explicitly-forbidden work
-(implementing `:last-child`/combinator matching, folding the harness into Verify, or applying
-decisions 2/5/6/7 unilaterally). Those are forbidden precisely because an idle round is tempted by
-them.
-
-One process note added to `AUTOPILOT.md` this round: **a single `git for-each-ref` with
-`%(objectname:short)` added to the format settles three separate checks before the restore even
-happens** — channel 3 (`main`'s sha), channel 5 (dates on non-`auto/*` refs), and the sha of the
-previous round's tip in both `refs/heads` and `refs/remotes`, which is the stated precondition for
-trusting the channel-1 shortcut. Piping it through `sort -r | head` and through
-`grep -v "auto/deep_dive"` both pass the Bash tool. The correct round opening is therefore
-`git log --oneline -1` → that one `for-each-ref` → restore → read `## Next task` from the file.
+การ restore ยังต้องทำทุกรอบ เพราะ runner ตัด branch จาก `3503537` เสมอ — ไม่ใช่จาก tip รอบก่อน
 
 ## Verification
 
-Full Verify command, all three stages green (run as three separate calls — the Bash tool rejects
-the `&&` chain):
+**ช่องทางที่ 1 — `README.md` `## Open decisions`:**
+`grep -c "^### [1-7]\." README.md` → **7**, `grep -c "If you answer:" README.md` → **7**
+(ครบ 7 ข้อ 7 ช่องตอบ ยังไม่ถูกใช้ไปสักอัน)
+เสริมด้วยหลักฐานที่แข็งกว่า: `git diff --stat f85132c -- .` ว่างเปล่า = `README.md` เป็นไฟล์เดิมทุก byte
 
+**ช่องทางที่ 2 — jsPDF vendored:** `git ls-files | grep -i jspdf` → ไม่มี output
+
+**ช่องทางที่ 3 — `main` ขยับไหม:** `ef3220e` (2026-06-27) **เท่าเดิม**
+
+**ช่องทางที่ 4 — ไฟล์ที่เจ้าของวางไว้เฉยๆ:** `git status --untracked-files=all --short` → ว่างเปล่า
+
+**ช่องทางที่ 5 — ref ที่ไม่ใช่ `auto/deep_dive…`:** จาก `git for-each-ref` คอลเดียวกับที่หา tip
+`design-system` `3503537` (2026-08-13), `hardening-pass` `592e7c3` (2026-07-20),
+`main` `ef3220e` (2026-06-27) + remote `origin/`/`mac/` ของทั้งสาม → **ใหม่สุด 2026-08-13**
+เก่ากว่างานทุกรอบ ไม่มีคำตอบซ่อนบน branch ข้างเคียง
+
+**Verify command (รันเองครบ 3 ขั้น เขียวหมด):**
 ```
-node tools/test.mjs             -> 54 passed, 0 failed
-node tools/check-tokens.mjs     -> tokens 22/22, fonts 4/4,
-                                   checks 3-6 clean across 15 CSS sources
-npm --prefix design-system test -> Test Files 12 passed (12), Tests 31 passed (31)
+node tools/test.mjs            → 54 passed, 0 failed
+node tools/check-tokens.mjs    → tokens 22/22 · fonts 4/4 · no derived-colour literals (15 CSS sources)
+                                 · font weights 400/500/700/800 · no radius literals · font-family = var(--mono)
+npm --prefix design-system test → 12 test files, 31 passed
 ```
-
-All five harness keys, against the same before/after pairs previous rounds recorded — every count
-identical:
-
-```
-buttons    2488f2d:index.html 9fab5c9:index.html -> PASS, 85 pairs / 17 elements
-segmented  021b966:index.html index.html         -> PASS, 45 pairs /  9 elements
-toast      bb10dd9:index.html 10e8f39:index.html -> PASS,  5 pairs /  1 element
-ds-disabled-hover HEAD:design-system/src/styles.css design-system/src/styles.css
-                                                 -> PASS, 15 pairs /  3 elements,
-                                                    1 undecidable rule
-                                                    (.pui-menu__item:last-child, "structural
-                                                     pseudo :last-child")
-toast-hit  3d3d5cc:index.html index.html         -> FAIL — 5 declaration(s) differ,
-                                                    0 markup problems, 0 unmatched.
-                                                    grep -c "✗ #toast:" = 0
-```
-
-`toast-hit`'s FAIL is the expected, recorded result of round 0003's deliberate behaviour change,
-not a regression. The `grep` count of `0` is the load-bearing part: no diff on `#toast` at any
-state means all 5 differing declarations are `#toastUndo`'s `pointer-events (unset)→auto`, which
-in turn proves nobody removed `pointer-events:none` from the container.
-
-Restore completeness was verified by `git diff --stat 458d297 -- .` printing nothing **before** the
-restore commit. That checks the *result*, so it also catches a file that should have been deleted —
-which `git checkout <tip> -- .` cannot do. I additionally confirmed `git diff --name-status HEAD
-458d297` contained zero `D` entries, and that `458d297` was still the live tip on both
-`auto/…/0035` and `origin/auto/…/0035` before restoring from it.
 
 ## What I did NOT do
 
-- **Did not answer, edit, reorder or delete any of the seven open decisions.** Each moves pixels or
-  adds a file to the repo.
-- **Did not touch `index.html`, `Button.css` or `Menu.css`** — decision 7's territory. No `.css`
-  file and no application file was modified this round.
-- **Did not add a seventh token check.** All 22 tokens are covered; re-confirmed from the checker's
-  own output above.
-- **Did not retry Playwright / Chrome-DevTools MCP.** Both are *permission*-blocked, not merely
-  headless; their schemas appearing in the session's deferred-tool list is not a permission grant,
-  and decision 4 is still unanswered.
-- **Did not add the harness to the Verify command.** It is a per-round evidence tool tied to
-  specific before/after shas, not an invariant that should stay green forever.
+- **ไม่แตะ `Button.css` / `Menu.css` / `index.html` / `Chip.css` / `SegmentedToggle.css` / `Field.css`**
+  — decision 2 / 5 / 6 / 7 ยังไม่มีคำตอบ ทุกข้อขยับพิกเซล
+- **ไม่เพิ่มเช็คที่ 7 ใน `check-tokens.mjs`** — token ครบ 22/22 มี checker แล้ว ไม่เหลืออะไรให้บังคับ
+- **ไม่เอา `docs/btn-parity-proof.mjs` เข้า Verify** — มันเป็นเครื่องมือของรอบ ไม่ใช่ checker ที่ต้องเขียวตลอด
+- **ไม่รันเบราว์เซอร์** — Playwright / Chrome-DevTools MCP ถูก permission บล็อก (พิสูจน์แล้วรอบ 2026-08-21)
+- **ไม่รัน harness parity proof รอบนี้** — ไม่มี CSS เปลี่ยนสักบรรทัด จึงไม่มีอะไรให้เทียบ
 
 ## Risk
 
-- **This round changes no behaviour at all.** The only diffs are the mechanical restore commit
-  (`09e1627`) and two documentation edits (`AUTOPILOT.md` status line + one process note, and this
-  `SUMMARY.md`). A reviewer should confirm exactly that: everything after the restore commit should
-  touch `AUTOPILOT.md` and `SUMMARY.md` and nothing else.
-- **Nothing in this repo has ever been verified in a real browser.** Every claim above comes from
-  source-text analysis or jsdom; no renderer was opened. `ds-disabled-hover` explicitly disclaims
-  one rule it cannot read, and jsdom does no hit-testing, so all `:hover` and `pointer-events`
-  reasoning rests on the CSS spec rather than observation. This is decision 4.
-- **The stall is now seven rounds deep and will not clear on its own.** Every future round produces
-  exactly this SUMMARY until someone answers a decision in `README.md`. The cheapest unblocks are
-  decision 4 (a permission grant) or decision 1 (dropping `jspdf.umd.min.js` at the repo root) —
-  neither requires a design judgement.
-- **Nothing has ever been merged to `main` (still `ef3220e`, 2 commits).** 40+ `auto/*` branches now
-  stack in parallel off `3503537`, each re-restoring its predecessor. That is a runner-side problem,
-  but the restore chain grows one link longer every round spent here, and a single bad restore would
-  silently drop the whole body of work.
+- 🔴 **โปรเจคบล็อกสนิทที่ owner decision 7 ข้อ มา 8 รอบติด** ทุกรอบตั้งแต่ `_0007` เป็น no-op
+  ล้วน — งานจริงหยุดตั้งแต่ `2026-08-24_0023` การรันรอบต่อไปโดยไม่มีคำตอบจะได้ผลเหมือนกันเป๊ะ
+  **สิ่งที่ปลดล็อกได้มีทางเดียว: เจ้าของตอบใน `README.md` `## Open decisions`** (มีช่อง
+  "**If you answer:**" เตรียมไว้ให้ครบ 7 ข้อแล้ว) หรือ vendor `jspdf.umd.min.js` เข้า repo
+- ⚠️ **runner bug ยังอยู่** — branch นี้ก็ถูกตัดจาก `3503537` อีก และไม่มีอะไรถูก merge เข้า `main`
+  เลย (`main` ยัง 2 commits, ไม่มี design-system) → ตอนนี้มี `auto/*` branch ซ้อนกัน 25+ อัน
+  ที่ diff ทับกันเอง **reviewer ควรดูเรื่องนี้ก่อนดู diff ของรอบไหนก็ตาม**
+- ⚠️ diff ของรอบนี้ = commit restore (`0336b3e`, ทั้งหมดเป็นงานของรอบก่อนๆ) + commit เอกสาร
+  (`SUMMARY.md` + `AUTOPILOT.md`) **ไม่มีการเปลี่ยน CSS/JS สักบรรทัด** — ยืนยันได้จาก
+  `git diff --stat f85132c HEAD` ที่ควรมีแค่ 2 ไฟล์นี้
