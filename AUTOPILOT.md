@@ -342,7 +342,7 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 **ถ้ายังไม่มีคำตอบ — รอบนี้ให้เขียน SUMMARY.md ว่าตรวจแล้วไม่มีอะไรปลดล็อก แล้วจบรอบ
 ห้ามประดิษฐ์งานแทนเด็ดขาด** คราวนี้ต่างจากรอบก่อนๆ ตรงที่ **งานสำรองหมดแล้วจริงๆ**:
 
-> **สถานะล่าสุด: รอบ `2026-08-25_0035` ตรวจแล้ว — ยังไม่มีคำตอบสักข้อ (รอบ no-op ที่ 6 ติดกัน)**
+> **สถานะล่าสุด: รอบ `2026-08-25_0042` ตรวจแล้ว — ยังไม่มีคำตอบสักข้อ (รอบ no-op ที่ 7 ติดกัน)**
 > ตรวจครบทุกช่องทางที่คำตอบจะมาได้ ไม่ใช่แค่ README:
 > `## Open decisions` ยังมีหัวข้อ `### 1.`–`### 7.` ครบ 7 ข้อ และมี "**If you answer:**"
 > ครบ 7 อัน (ข้อละ 1 อัน ยังไม่ถูกใช้ไปสักอัน), ไม่มีไฟล์ไหน match `jspdf` ใน `git ls-files`,
@@ -353,6 +353,12 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 > ใช้ `git for-each-ref --format="%(refname:short)" refs/heads refs/remotes | grep -v "auto/deep_dive"`
 > (`git branch -a --format=…` โดน Bash tool ปฏิเสธ ส่วนรูปแบบนี้ผ่าน — รอบ 0025 เติม
 >  `%(committerdate:short)` เข้าไปใน format ด้วย ผ่านเหมือนกัน และทำให้เห็นวันที่ในคำสั่งเดียว)
+> **รอบ 0042 เพิ่ม — เติม `%(objectname:short)` แล้วคำสั่งนี้จบ 3 อย่างในคอลเดียว *ก่อน* restore:**
+>  ช่องทางที่ 3 (`main` = `ef3220e` ไหม), ช่องทางที่ 5 (วันที่ของ ref ที่ไม่ใช่ `auto/…`),
+>  **และ sha ของ tip รอบก่อน (ทั้ง local และ `origin/`) ซึ่งเป็น precondition ของ shortcut ช่องทางที่ 1**
+>  → เรียงลำดับให้ถูกคือ: `git log --oneline -1` → `for-each-ref` คำสั่งนี้ → restore → อ่าน Next task
+>  (รอบ 0042 ใช้ `| sort -r | head -12` ดู tip ล่าสุด และ `| grep -v "auto/deep_dive"` ดูช่องทางที่ 5
+>   จาก output ก้อนเดียวกัน — ทั้งสอง pipe ผ่าน Bash tool)
 > **รอบ 0025 เพิ่ม: `sed -n '/pat/,$p'` โดน Bash tool ปฏิเสธ ("potentially dangerous")**
 > อ่าน `## Next task` จาก `AUTOPILOT.md` ด้วย `Grep -A 60` แทน — เสียเวลาน้อยกว่ามาลองซ้ำ
 > **และเรียก harness เปล่าๆ (`node docs/btn-parity-proof.mjs buttons`) ไม่ได้** มันต้องการ
