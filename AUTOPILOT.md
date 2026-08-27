@@ -342,8 +342,25 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 **ถ้ายังไม่มีคำตอบ — รอบนี้ให้เขียน SUMMARY.md ว่าตรวจแล้วไม่มีอะไรปลดล็อก แล้วจบรอบ
 ห้ามประดิษฐ์งานแทนเด็ดขาด** คราวนี้ต่างจากรอบก่อนๆ ตรงที่ **งานสำรองหมดแล้วจริงๆ**:
 
-> **สถานะล่าสุด: รอบ `2026-08-28_0020` ตรวจแล้ว — ยังไม่มีคำตอบสักข้อ (รอบ no-op ที่ 10 ติดกัน)**
-> (tip ที่ restore มาคือ `24c578b` = `_0004`; local กับ `origin/` ตรงกันทั้งคู่)
+> **สถานะล่าสุด: รอบ `2026-08-28_0031` ตรวจแล้ว — ยังไม่มีคำตอบสักข้อ (รอบ no-op ที่ 11 ติดกัน)**
+> (tip ที่ restore มาคือ `bf66429` = `_0020`; local กับ `origin/` ตรงกันทั้งคู่
+>  และ `git diff --stat 24c578b bf66429` ขึ้นแค่ `AUTOPILOT.md` + `SUMMARY.md` = tip สะอาด)
+>
+> **รอบ 0031 เพิ่ม — คู่ sha ของทั้ง 5 key อยู่ตรงนี้แล้ว ไม่ต้องไปขุด SUMMARY เก่า:**
+> ```
+> buttons    2488f2d:index.html 9fab5c9:index.html -> PASS, 85 pairs / 17 elements
+> segmented  021b966:index.html index.html         -> PASS, 45 pairs /  9 elements
+> toast      bb10dd9:index.html 10e8f39:index.html -> PASS,  5 pairs /  1 element
+> ds-disabled-hover HEAD:design-system/src/styles.css design-system/src/styles.css
+>                                                  -> PASS, 15 pairs / 3 elements, 1 undecidable
+> toast-hit  3d3d5cc:index.html index.html         -> FAIL — 5 differ, grep -c "✗ #toast:" = 0
+> ```
+>  **และให้รันทั้ง 5 key ทุกรอบ แม้รอบที่ไม่แก้ CSS** — รอบ `_0020` ข้ามด้วยเหตุผลว่า
+>  "ไม่มี CSS เปลี่ยน ไม่มีอะไรให้เทียบ" ซึ่งมองข้ามประโยชน์อีกด้าน: ในรอบ restore ตัวเลขพวกนี้
+>  คือ**ลายนิ้วมือของ tree** — `git diff --stat` ว่างเปล่าพิสูจน์แค่ byte ตรง แต่ harness
+>  คำนวณ declaration set ที่ชนะ cascade ใหม่จากไฟล์ที่ยืนอยู่จริง → restore ผิด tip หรือได้มาไม่ครบ
+>  ตัวเลขจะเพี้ยนทันที ต้นทุนแค่ 2 Bash call (ใช้ `;` คั่น — `toast-hit` คืน exit≠0 จะตัด `&&` ทิ้ง
+>  และ `| grep -Ei "pairs|undecidable|PASS|FAIL"` ทำให้ไม่ต้องอ่าน output ยาวๆ ทั้งก้อน)
 >
 > **รอบ 0020 เพิ่ม — เช็ค 1 บรรทัดที่ควรทำทุกครั้งหลัง restore: `git diff --stat <tip-2รอบก่อน> <tip>`**
 >  รอบ `_0004` ยอมรับเองว่า commit `b2ed91d` เป็น artifact ของ tree ผิด → คำถามที่ค้างคือ
