@@ -342,10 +342,27 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 **ถ้ายังไม่มีคำตอบ — รอบนี้ให้เขียน SUMMARY.md ว่าตรวจแล้วไม่มีอะไรปลดล็อก แล้วจบรอบ
 ห้ามประดิษฐ์งานแทนเด็ดขาด** คราวนี้ต่างจากรอบก่อนๆ ตรงที่ **งานสำรองหมดแล้วจริงๆ**:
 
-> **สถานะล่าสุด: รอบ `2026-08-29_0009` ตรวจแล้ว — ยังไม่มีคำตอบสักข้อ (รอบ no-op ที่ 14 ติดกัน)**
-> (tip ที่ restore มาคือ `cf6df00` = `_0049`; local กับ `origin/` ตรงกันทั้งคู่ตามที่ `for-each-ref` พิมพ์
->  และ `git diff --stat 21d91a1 cf6df00` ขึ้นแค่ `AUTOPILOT.md` + `SUMMARY.md` = tip สะอาด
->  harness ทั้ง 5 key ให้ตัวเลขตรงกับตารางข้างล่างทุกค่า รวม `✗ #toast:` = 0)
+> **สถานะล่าสุด: รอบ `2026-08-29_0019` ตรวจแล้ว — ยังไม่มีคำตอบสักข้อ (รอบ no-op ที่ 15 ติดกัน)**
+> (tip ที่ restore มาคือ `47adb64` = `_0009`; local กับ `origin/` ตรงกันทั้งคู่ตามที่ `for-each-ref` พิมพ์
+>  และ `git diff --stat cf6df00 47adb64` ขึ้นแค่ `AUTOPILOT.md` + `SUMMARY.md` = tip สะอาด
+>  harness ทั้ง 5 key ให้ตัวเลขตรงกับตารางข้างล่างทุกค่า รวม `✗ #toast:` = 0
+>  ช่องทางที่ 5 รอบนี้พิมพ์ครบ: `design-system` = `3503537` (2026-08-13) ใหม่สุดในกลุ่มนี้,
+>  `main`/`mac/main`/`origin/main` = `ef3220e`, `hardening-pass` มีแต่ `origin/`+`mac/` = `592e7c3`)
+>
+> **รอบ 0019 เพิ่ม — ยุบ precondition ของ restore เหลือ 1 call ก่อนแตะ tree:**
+>  `git merge-base --is-ancestor 3503537 <tip> && echo ancestor-ok && git diff --stat HEAD <tip> | tail -20`
+>  ผ่าน Bash tool ทั้งก้อน และตอบ 2 อย่างพร้อมกัน: (ก) base เป็นบรรพบุรุษตรงไหม
+>  (ข) diff มีบรรทัด `deleted` ไหม — ซึ่งเป็นเงื่อนไขเดียวที่ทำให้ path-checkout เทียบเท่า fast-forward
+>  รอบนี้ได้ 16 ไฟล์ 2445+/162- ไม่มี `deleted` → restore ปลอดภัย (ยืนยันซ้ำด้วย `git diff --stat <tip> -- .` ว่างเปล่า)
+>
+> **รอบ 0019 เพิ่ม — grep รองของช่องทางที่ 1 ขี่ไปกับ Verify ใน call เดียวได้:**
+>  `grep -c "^### [1-7]\." README.md ; grep -c "If you answer:" README.md ; echo --- ;
+>   node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test 2>&1 | tail -15`
+>  ผสม `;` กับ `&&` ในคำสั่งเดียว Bash tool ไม่ปฏิเสธ (`;` กันไม่ให้ grep ที่ exit≠0 ตัดสาย
+>  ส่วน `&&` ยังคงความหมายเดิมของ Verify ไว้คือ "ขั้นก่อนหน้าต้องเขียวจึงรันขั้นถัดไป")
+>  → รอบ no-op จบได้ใน **8 Bash call**: `git log -1` → `for-each-ref` → precondition
+>  → `checkout <tip> -- .` → `commit` restore → ช่องทาง 1/2/4 → grep รอง + Verify
+>  → harness 5 key. (`grep -c "✗ #toast:"` + tip-clean check รวมเป็น call ที่ 9)
 >
 > **รอบ 0009 เพิ่ม — ช่องทางที่ 4 ยังใช้ได้แม้รันหลัง commit restore แล้ว (มีคนอาจสงสัยว่าโมฆะ):**
 >  `git checkout <tip> -- .` **ไม่ลบและไม่ stage ไฟล์ untracked** และ `git commit -m` (ไม่มี `-a`)
