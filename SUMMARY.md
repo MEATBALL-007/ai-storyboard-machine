@@ -1,125 +1,114 @@
-# SUMMARY — รอบ `2026-08-28_0049`
+# SUMMARY — round `auto/deep_dive_AI_Storyboard_Machine/2026-08-29_0009`
+
+**ผลของรอบนี้: no-op ที่ตั้งใจ — ตรวจครบ 5 ช่องทางแล้วไม่มีคำตอบจากเจ้าของสักข้อ จบรอบตามที่ Next task สั่ง**
+(ไม่มีไฟล์ในโปรเจคถูกแก้เลยนอกจาก `AUTOPILOT.md` + `SUMMARY.md`)
 
 ## What I did
 
-- **Restore tip ของรอบก่อนเป็นงานแรก** — `git log --oneline -1` ขึ้น `3503537` (runner bug ตามเดิม)
-  → `git checkout 21d91a1 -- .` (`21d91a1` = tip ของ `_0039`) commit แยกเป็น commit แรกของรอบ
-  (`e6c0128`) — `git diff --stat 21d91a1` **ว่างเปล่า** = tree เท่ากับ tip ทุก byte
-- **ตรวจ 5 ช่องทางที่คำตอบเจ้าของจะมาได้ — ไม่มีคำตอบสักข้อ (no-op ที่ 13 ติดกัน)**
-- **จบรอบตามที่ `## Next task` สั่ง** — ไม่หยิบงานสำรอง ไม่แตะลิสต์ห้าม
-  **ไม่แตะ CSS / JS / `tools/` / `docs/` สักบรรทัด** (ไฟล์ที่รอบนี้เขียนมีแค่ `SUMMARY.md` + `AUTOPILOT.md`)
-- **รันครบทั้ง 5 key ของ harness** — ได้ตัวเลขตรงกับตารางใน `## Next task` **ทุกค่า**
-  รวมถึง `grep -c "✗ #toast:"` = 0 และชื่อ undecidable rule ที่ตรงกันเป๊ะ
-- อัปเดต `## Next task`: เลื่อนสถานะเป็นรอบ `_0049` / no-op ที่ 13 + **แก้ข้อเท็จจริงเรื่อง
-  `hardening-pass` ที่ SUMMARY รอบก่อนๆ เขียนผิด** + บันทึกว่า `git reflog` เป็นทางที่สั้นที่สุด
-  ในการหา tip ของรอบก่อน
+- **Restore ก่อนอ่านอะไรทั้งสิ้น** — `git log --oneline -12` ยืนยัน HEAD = `3503537` (runner bug เดิม
+  ตัด branch จาก base เก่าทุกรอบ) และ `ls tools` เห็นแค่ `test.mjs` ไม่มี `check-tokens.mjs`
+  → restore tip ของรอบก่อน `cf6df00` (`…/2026-08-28_0049`) ด้วย `git checkout cf6df00 -- .`
+  แล้ว commit แยกเป็น `b2c155f` เพื่อให้ diff ของงานจริงในรอบนี้อ่านง่าย
+- **ตรวจครบทั้ง 5 ช่องทางที่คำตอบของเจ้าของจะมาได้ — ไม่พบคำตอบสักข้อ** (รายละเอียดใต้หัวข้อ Verification)
+- **รัน Verify ครบ 3 ขั้น เขียวทั้งหมด** และรัน `docs/btn-parity-proof.mjs` ครบทั้ง 5 key
+  → ตัวเลขตรงกับตารางใน `AUTOPILOT.md` ทุกค่า = ยืนยันซ้ำว่า restore ได้ tree ที่ถูกต้องครบถ้วน
+- **อัปเดต `## Next task` ใน `AUTOPILOT.md`** เป็นสถานะรอบนี้ (no-op ที่ 14 ติดกัน) พร้อมบันทึกใหม่ 1 ข้อ
+  เรื่องความถูกต้องของช่องทางที่ 4 เมื่อรันหลัง commit restore
+- **ไม่หยิบงานสำรองมาทำ** — Next task สั่งไว้ชัดว่างานสำรองหมดแล้วจริงและห้ามประดิษฐ์งานแทน
 
 ## Why
 
-`## Next task` ที่อ่านจาก**ไฟล์ที่ restore แล้ว** (ไม่ใช่จาก prompt ของ runner ซึ่งเป็นฉบับ
-`3503537` และมี `## Next task` **ว่างเปล่า**) สั่งตรงๆ ว่า ถ้ายังไม่มีคำตอบให้เขียน SUMMARY
-แล้วจบรอบ ห้ามประดิษฐ์งานแทน — hard rule ข้อ 5 ของ contract บอกตรงกัน
-
-เกณฑ์ที่เหลือทุกข้อขยับพิกเซลที่คนเห็น (chip padding / segmented padding / input size /
-`:hover` ของปุ่ม disabled) หรือเป็นสิทธิ์ตัดสินใจของเจ้าของ (vendor jsPDF / เปิด permission
-ให้เบราว์เซอร์) และ**ไม่มี checker ตัวไหนจับได้ถ้าแอบทำ** — ไม่มีอะไรดู `:hover` และ jsdom
-ไม่ทำ hit testing → Verify จะยังเขียวครบทั้งที่หน้าตาเปลี่ยน นี่คือเหตุผลตรงๆ ที่ต้อง**รอ**
-ไม่ใช่ "ลองดูก่อน"
-
-**ทำไม `git checkout <tip> -- .` ปลอดภัยในรอบนี้:** คำสั่งนี้**ลบไฟล์ไม่เป็น** ถ้า tip ลบไฟล์
-ที่ base มี ไฟล์นั้นจะตกค้างเงียบๆ → รอบนี้ยืนยันสองชั้น: `git merge-base --is-ancestor
-3503537 21d91a1` เป็นจริง (base เป็นบรรพบุรุษตรง = ไม่มีไฟล์ฝั่ง base ที่ tip ไม่รู้จัก)
-และ `git diff --stat 21d91a1` **ว่างเปล่า** หลัง commit
-
-**ทำไมรันแฮร์เนสทั้งที่ไม่ได้แก้ CSS:** ในรอบ restore ตัวเลขพวกนี้คือ**ลายนิ้วมือของ tree**
-`git diff --stat` ว่างเปล่าพิสูจน์แค่ว่า *byte* ตรง ส่วน harness คำนวณ declaration set
-ที่ชนะ cascade ของแต่ละ element **ใหม่จริงๆ** จาก `index.html` + `design-system/src/*.css`
-ที่ยืนอยู่ตอนนี้ → ถ้า restore หยิบผิด tip หรือได้มาไม่ครบ ตัวเลขจะเพี้ยนทันที
+- **ทำไมต้อง restore ก่อน:** runner ตัดทุก `auto/*` branch จาก `3503537` ไม่ใช่จาก tip ของรอบก่อน
+  แต่ข้อความ `AUTOPILOT.md` ใน prompt ถูก generate จากรอบก่อน → tree ที่ยืนอยู่**ไม่ตรงกับสัญญา**
+  ความผิดพลาดที่แพงที่สุดคือ*อ่านไฟล์ก่อน restore* (tree เก่าไม่ได้ดูพัง มันดูเหมือนงานเสร็จแล้ว)
+  รอบนี้จึงไม่เปิดไฟล์ในโปรเจคเลยก่อน `git log`
+- **ทำไม `git diff --stat cf6df00` ว่างเปล่าถึงเป็นหลักฐานหลักของช่องทางที่ 1 ไม่ใช่ `grep`:**
+  ถ้าเจ้าของพิมพ์คำตอบ**ต่อท้าย** `**If you answer:**` เลขจาก `grep -c` ก็ยังเป็น 7 เท่าเดิม
+  แต่ tree ที่เท่ากับ tip ทุก byte แปลว่า `README.md` เป็นไฟล์เดิมเป๊ะ — grep สองอันเป็นหลักฐานรอง
+  (จับกรณี "หัวข้อหาย" ได้) precondition คือ `cf6df00` ยังเป็นปลาย branch จริงทั้ง local และ `origin/`
+  ซึ่ง `git for-each-ref` ยืนยันในคอลเดียวกับที่ตรวจ `main` และ ref ข้างเคียง
+- **ทำไมยังรัน harness ทั้ง 5 key ทั้งที่ไม่ได้แก้ CSS สักบรรทัด:** `git diff --stat` ว่างเปล่าพิสูจน์แค่
+  byte ตรงกัน ส่วน harness **คำนวณ declaration set ที่ชนะ cascade ใหม่จากไฟล์ที่ยืนอยู่จริง**
+  → restore ผิด tip หรือได้มาไม่ครบ ตัวเลขจะเพี้ยนทันที เป็น checksum อิสระของ tree ที่ราคาแค่ 2 call
 
 ## Verification
 
-**precondition ของ shortcut ช่องทางที่ 1 (ตรวจแล้ว):**
-`auto/…/2026-08-28_0039` และ `origin/auto/…/2026-08-28_0039` ชี้ `21d91a1` **ทั้งคู่**
-→ ไม่ใช่ sha ค้าง ไม่มีคำตอบที่เจ้าของ commit ทับ branch เก่าแล้วโดน restore กลบ
+**Verify command ครบ 3 ขั้น — เขียวทั้งหมด:**
 
-**ช่องทางที่ 1 — `README.md` `## Open decisions`:**
-`grep -c "^### [1-7]\." README.md` → **7** · `grep -c "If you answer:" README.md` → **7**
-⚠️ **เลข 7/7 เป็นหลักฐานรอง ไม่ใช่ตัวปิดช่อง** — มันนับแค่ว่า*หัวข้อกับช่องตอบยังอยู่ครบ*
-ถ้าเจ้าของพิมพ์คำตอบ**ต่อท้าย** "If you answer:" เลขก็ยัง 7 เท่าเดิม
-หลักฐานที่ปิดช่องนี้จริงคือ **`git diff --stat 21d91a1` ว่างเปล่า** → `README.md` เป็นไฟล์เดิมทุก byte
-
-**ช่องทางที่ 2 — jsPDF vendored:** `git ls-files | grep -i jspdf` → ไม่มี output
-
-**ช่องทางที่ 3 — `main` ขยับไหม:** `ef3220e` (2026-06-27) **เท่าเดิม** (ทั้ง `main`, `origin/main`, `mac/main`)
-
-**ช่องทางที่ 4 — ไฟล์ที่เจ้าของวางไว้เฉยๆ:** `git status --untracked-files=all --short` → ว่างเปล่า
-
-**ช่องทางที่ 5 — ref ที่ไม่ใช่ `auto/deep_dive…`** (`git for-each-ref … refs/heads refs/remotes
-| grep -v "auto/deep_dive"`) — ใหม่สุดคือ **2026-08-13** เก่ากว่างานทุกรอบ ไม่มีคำตอบซ่อนบน branch ข้างเคียง
 ```
-design-system         3503537  2026-08-13   origin/design-system  3503537  2026-08-13
-mac                   e3a355c  2026-07-20   origin                ef3220e  2026-06-27
-mac/design-system     e3a355c  2026-07-20   origin/hardening-pass 592e7c3  2026-07-20
-mac/hardening-pass    592e7c3  2026-07-20   origin/main           ef3220e  2026-06-27
-mac/main              ef3220e  2026-06-27   main                  ef3220e  2026-06-27
-```
-🔴 **แก้ข้อเท็จจริงที่ SUMMARY รอบก่อนๆ เขียนผิด:** รอบ 0039 (และรอบก่อนหน้า) เขียนว่า
-`hardening-pass` เป็นหนึ่งใน "local branch" ที่ตรวจ — **ไม่จริง** `git for-each-ref refs/heads
-| grep -v "auto/deep_dive"` คืนแค่ **`design-system` กับ `main`** เท่านั้น `hardening-pass`
-มีอยู่เฉพาะเป็น remote ref (`origin/` และ `mac/`) **ข้อสรุปของช่องทางที่ 5 ไม่เปลี่ยน**
-(ยังไงก็ครอบคลุมเพราะสแกน `refs/remotes` ด้วย) แต่คำบรรยายเดิมไม่ตรงกับ output จริง
-
-**tip ที่ restore มาสะอาด:** `git diff --stat 9a4c685 21d91a1` → `AUTOPILOT.md` (27 บรรทัด)
-+ `SUMMARY.md` (103 บรรทัด) **เท่านั้น** → ไม่มีเศษโค้ดของรอบ no-op ตกค้างใน tree
-
-**Verify command (รันครบ 3 ขั้นจากไฟล์ที่ restore มา เขียวหมด):**
-```
-node tools/test.mjs         → 54 passed, 0 failed
-node tools/check-tokens.mjs → tokens 22/22 · fonts 4/4 · no derived-colour literals (15 sources)
-                              font weights 400/500/700/800 · no radius literals · font-family 1 source
-npm --prefix design-system test → 12 files, 31 passed (31)
+node tools/test.mjs         -> 54 passed, 0 failed
+node tools/check-tokens.mjs -> tokens in sync: 22/22 from design-system/src/tokens.css
+                               fonts in sync: 4/4 embedded byte-identical
+                               no derived-colour literals: 15 CSS source(s) scanned
+                               font weights available: 15 CSS source(s), all in 400/500/700/800
+                               no radius literals: 15 CSS source(s), every border-radius reads --r-*
+                               typeface from one source: 15 CSS source(s), every font-family = var(--mono)
+npm --prefix design-system test -> Test Files 12 passed (12) / Tests 31 passed (31)
 ```
 
-**harness ทั้ง 5 key — ตรงกับตารางใน `## Next task` ทุกค่า:**
+**`docs/btn-parity-proof.mjs` ทั้ง 5 key — ตรงกับตารางใน `AUTOPILOT.md` ทุกค่า:**
+
 ```
-buttons            85 pairs / 17 elements  → PASS
-segmented          45 pairs /  9 elements  → PASS
-toast               5 pairs /  1 element   → PASS
-ds-disabled-hover  15 pairs /  3 elements  → PASS + ⚠ 1 undecidable rule
-toast-hit          10 pairs /  2 elements  → FAIL — 5 differ, 0 markup, 0 unmatched
-                                             grep -c "✗ #toast:" = 0
+buttons    2488f2d:index.html 9fab5c9:index.html -> PASS, 85 pairs / 17 elements
+segmented  021b966:index.html index.html         -> PASS, 45 pairs /  9 elements
+toast      bb10dd9:index.html 10e8f39:index.html -> PASS,  5 pairs /  1 element
+ds-disabled-hover HEAD:design-system/src/styles.css design-system/src/styles.css
+                                                 -> PASS, 15 pairs / 3 elements, 1 undecidable
+toast-hit  3d3d5cc:index.html index.html         -> FAIL — 5 declaration(s) differ,
+                                                    0 markup problem(s), 0 unmatched element(s)
+                                                    grep -c "✗ #toast:" = 0
 ```
-`toast-hit` **FAIL คือผลที่ถูกต้อง** — key นี้เทียบกับ `3d3d5cc` (ก่อนแก้บั๊ก Undo กดไม่ได้)
-มีไว้ให้เห็นว่ารอบนั้น*ตั้งใจ*เปลี่ยนอะไรบ้าง ไม่ได้มีไว้ให้ PASS
-`✗ #toast:` = 0 คือหลักฐานว่า `#toast` ไม่ถูกแตะ (ยังมี `pointer-events:none` ครบ)
-diff ทั้ง 5 อยู่ที่ `#toastUndo` ล้วน
+
+`toast-hit` **ตั้งใจให้ FAIL** — มันเทียบกับสภาพก่อนแก้บั๊ก `pointer-events` ตัวเลข 5 คือ
+`#toastUndo` ต่างที่ property เดียว × 5 state ส่วน `#toast` ไม่ต่างสักจุด (`✗ #toast:` = 0)
+= ฝั่งแอปไม่ถูกใครแตะ ถ้าเลขไม่ใช่ 5 หรือ `✗ #toast:` ไม่ใช่ 0 แปลว่ามีคนไปขยับ
+
+**ช่องทางที่ตรวจว่าเจ้าของตอบมาหรือยัง — ครบ 5 ช่อง ไม่พบคำตอบ:**
+
+1. `README.md` → `git diff --stat cf6df00 -- .` **พิมพ์ว่างเปล่า** = tree เท่ากับ tip ทุก byte
+   → README ไม่ถูกแก้ (หลักฐานรอง: `grep -c "^### [1-7]\." README.md` = 7,
+   `grep -c "If you answer:" README.md` = 7 — หัวข้อและช่องตอบยังครบ ยังไม่ถูกใช้)
+2. precondition ของข้อ 1 — `git for-each-ref` แสดง `auto/…/2026-08-28_0049` และ
+   `origin/auto/…/2026-08-28_0049` ชี้ที่ `cf6df00` **ทั้งคู่** → sha ที่ restore ไม่ใช่ของค้าง
+3. `main` ยังอยู่ที่ `ef3220e` (2026-06-27) ไม่ขยับ
+4. ไม่มีไฟล์ไหน match `jspdf` ใน `git ls-files` และ `git status --untracked-files=all --short`
+   **พิมพ์ว่างเปล่า** → เจ้าของยังไม่ได้ vendor jsPDF เข้ามา
+5. ref ที่ไม่ใช่ `auto/deep_dive…` — `design-system` (`3503537`, 2026-08-13), `main` (`ef3220e`,
+   2026-06-27), `mac`/`mac/design-system` (`e3a355c`, 2026-07-20), `hardening-pass`
+   (`592e7c3`, 2026-07-20, มีเฉพาะ remote ไม่ใช่ local branch), `origin/*` ของทั้งหมด
+   → commit ใหม่สุด **2026-08-13** เก่ากว่างานทุกรอบ = ไม่มีคำตอบซ่อนบน branch ข้างเคียง
+
+**ความสะอาดของ tip ที่ restore:** `git diff --stat 21d91a1 cf6df00` ขึ้นแค่ `AUTOPILOT.md` +
+`SUMMARY.md` (2 files changed) → ไม่มีการแก้โค้ด/CSS ค้างอยู่ระหว่างสองรอบ no-op ล่าสุด
+และ `git merge-base --is-ancestor 3503537 cf6df00` ผ่าน + `git diff --diff-filter=D` ว่างเปล่า
+→ path-checkout เทียบเท่า fast-forward ได้จริง ไม่มีไฟล์ตกค้างที่ควรถูกลบ
 
 ## What I did NOT do
 
-- **ไม่แตะเกณฑ์ที่เหลือทั้ง 3 ข้อ** — chip padding (decision 2), segmented padding (decision 5),
-  input 4 ขนาด (decision 6), `:hover` ของปุ่ม disabled (decision 7) **ทุกข้อขยับพิกเซล
-  และเป็นสิทธิ์ตัดสินใจของเจ้าของ** ไม่ใช่ refactor ที่ agent ตัดสินเองได้
-- **ไม่ inline jsPDF** — ไม่มีสำเนาบนเครื่อง network ถูกบล็อก เจ้าของต้อง vendor เข้า repo ก่อน
-- **ไม่ลองเปิดเบราว์เซอร์ซ้ำ** — Playwright/Chrome-DevTools MCP ถูก permission บล็อก
-  (รอบ 2026-08-21 พิสูจน์แล้ว) การลองซ้ำคือการเสียรอบเปล่า
-- **ไม่เพิ่มเช็คที่ 7 ใน `check-tokens.mjs`** — token ทั้ง 22 ตัวมี checker ครบแล้ว
-  ไม่เหลืออะไรให้บังคับ การเพิ่มเช็คใหม่คือการประดิษฐ์งาน
-- **ไม่แตะ `docs/btn-parity-proof.mjs`** — รันอย่างเดียว ไม่แก้
+- **ไม่ตอบคำถามใน `## Open decisions` เอง** (ทั้ง 7 ข้อ) — ทุกข้อขยับพิกเซลที่คนเห็น
+  หรือเพิ่มไฟล์เข้า repo ซึ่งเป็นสิทธิ์ของเจ้าของ
+- **ไม่แตะ `Button.css` / `Menu.css` / `index.html`** ตาม decision 2 / 5 / 6 / 7 — ทั้งหมดยังบล็อกอยู่
+  และถ้าแอบแก้ **Verify จะยังเขียว** (jsdom ไม่ทำ hit testing, ไม่มี checker ตัวไหนดู `:hover`)
+  แปลว่าไม่มีอะไรจับได้เลยว่าสีเปลี่ยน — นั่นคือเหตุผลที่ต้องรอคำตอบ ไม่ใช่ "ลองดูก่อน"
+- **ไม่เพิ่มเช็คที่ 7 ใน `tools/check-tokens.mjs`** — token ครบ 22/22 มี checker คุมหมดแล้ว
+  ไม่เหลืออะไรให้บังคับ และ Next task ห้ามแตะ `tools/` ไว้ชัดเจน
+- **ไม่หยิบงานในลิสต์ "ห้ามหยิบมาทำเอง" มาทำ** (implement `:last-child`/`>`/`+`/`~` ใน harness,
+  เอา harness เข้า Verify command) — "รอบนี้ไม่มีอะไรทำ" ไม่ใช่ข้ออ้างที่ใช้ได้
+- **ไม่ได้เปิดเบราว์เซอร์จริง** — decision 4 ยังไม่ได้รับอนุญาต และรอบก่อนๆ พิสูจน์แล้วว่า
+  Playwright/Chrome-DevTools MCP ถูก permission บล็อก ไม่ใช่แค่ไม่มีจอ (อย่าเสียรอบไปลองซ้ำ)
 
 ## Risk
 
-- 🔴 **รอบนี้ไม่ได้ทำให้เกณฑ์ข้อไหนขยับเลย และรอบต่อไปก็จะไม่ขยับเช่นกันจนกว่าเจ้าของจะตอบ**
-  งานที่เหลือทั้งหมดถูกบล็อกด้วย decision 1–7 ใน `README.md` `## Open decisions`
-  **ระบบนี้กำลังเผารอบทิ้งไปเรื่อยๆ (13 รอบติดกันแล้ว)** — ถ้าเจ้าของอยากให้เดินต่อ
-  ต้องตอบใน README หรือเปิด permission ให้เบราว์เซอร์/vendor jsPDF อย่างใดอย่างหนึ่ง
-- 🔴 **runner ยังตัด branch จาก `3503537` ทุกรอบ** — ทุกรอบต้องเสีย commit แรกไปกับการ restore
-  นี่เป็นบั๊กของ runner config ไม่ใช่ของ repo **ถ้าไม่แก้ที่ runner ความเสี่ยงคือ**: รอบไหนที่ agent
-  ลืม restore แล้วเริ่มทำงานบน tree ของ `3503537` เลย จะได้ tree ที่ *ดูสมเหตุสมผลทุกอย่าง*
-  (รอบ 0004 โดนมาแล้ว) → PR ที่กลบงาน 20+ รอบทิ้ง
-  สัญญาณที่เชื่อได้มีสองอย่าง: `git log --oneline -1` = `3503537` และ `ls tools` เห็นแค่ `test.mjs`
-- ⚠️ **`toast-hit` รายงาน FAIL เป็นปกติ** — reviewer ที่เห็น "FAIL" แล้วคิดว่ารอบนี้พัง **เข้าใจผิด**
-  key นี้ไม่เคย PASS ตั้งแต่รอบ `2026-08-24_0003` และไม่ควร PASS
-  ตัวที่ต้องเขียวคือ Verify command 3 ขั้น ซึ่งเขียวครบ
-- ⚠️ **หลักฐานของรอบนี้เกือบทั้งหมดเป็น "ของไม่เปลี่ยน"** — ตรวจว่าไม่มีคำตอบใหม่ ตรวจว่า tree
-  เท่าเดิม การพิสูจน์เชิงลบแบบนี้อ่อนกว่าการพิสูจน์เชิงบวกโดยธรรมชาติ จุดที่แข็งที่สุดคือ
-  `git diff --stat 21d91a1` ว่างเปล่า + สอง ref ชี้ sha เดียวกัน ที่เหลือเป็นหลักฐานประกอบ
+- 🔴 **โปรเจคบล็อกสนิทมา 14 รอบติดกันแล้ว** เกณฑ์ที่เหลือทุกข้อขึ้นกับคำตอบ 7 ข้อใน
+  `README.md` → `## Open decisions` ทั้งหมด **รอบอัตโนมัติต่อจากนี้จะเป็น no-op ไปเรื่อยๆ
+  จนกว่าเจ้าของจะเข้ามาตอบ** — ต้นทุนต่อรอบไม่ได้ให้อะไรกลับมานอกจากยืนยันว่ายังไม่มีคำตอบ
+  ถ้าเจ้าของอยากให้เดินต่อ ทางที่เร็วที่สุดคือตอบข้อ 2 / 5 / 6 / 7 (สี่ข้อนี้ปลดล็อก parity ที่เหลือทั้งหมด)
+- 🟠 **runner bug ยังไม่ถูกแก้** — branch ยังถูกตัดจาก `3503537` ทุกรอบ ทำให้ทุกรอบต้องเสีย
+  commit หนึ่งอันไปกับการ restore และมี `auto/*` branch 30+ อันซ้อนกันอยู่โดยไม่มีอะไร merge เข้า
+  `main` เลย (`main` ยังอยู่ที่ `ef3220e` = 2 commits ไม่มี design-system) **ถ้ารอบไหนลืม restore
+  งานทั้งหมดจะหายไปเงียบๆ โดย Verify ยังเขียว** เพราะ tree เก่าก็ผ่าน test ของตัวเองได้
+- 🟡 **`toast-hit` คืน exit code ≠ 0 โดยตั้งใจ** — ถ้ามีใครเอา harness เข้า Verify command
+  หรือเอาไปต่อด้วย `&&` สายคำสั่งจะขาด และดูเหมือนรอบพัง ทั้งที่เป็นผลที่ถูกต้อง
+- 🟡 **`ds-disabled-hover` มี 1 undecidable rule** (`.pui-menu__item:last-child`) ที่ PASS ของมัน
+  **ไม่ได้ครอบคลุม** — harness ไม่ implement structural selector ตัวเลข PASS ของ key นี้จึงพูดถึง
+  เฉพาะ 15 คู่ที่เทียบได้ ไม่ใช่ทั้งไฟล์
