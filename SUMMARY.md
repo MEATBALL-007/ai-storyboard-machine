@@ -1,19 +1,18 @@
-# Round 2026-08-30_0044 — no-op: five channels checked, no owner answer; the `iso8601` fix finally proved
+# Round 2026-08-30_0054 — no-op: five channels checked, no owner answer; a second, worse tip-ranking failure mode found
 
 ## What I did
 
-- **Restored the previous round's tip `59a555b` (`_0034`) before reading anything in the project.**
+- **Restored the previous round's tip `5886125` (`_0044`) before reading anything else in the project.**
   `git log --oneline -1` showed HEAD at `3503537` — the stale base the runner cuts every `auto/*` branch
-  from — and `ls tools` showed `test.mjs` only, the independent tell that the tree was stale. Restored with
-  `git checkout 59a555b -- .` as its own commit (`51d328e`) so this round's real diff stays readable.
+  from — and `ls tools` showed `test.mjs` only, the independent tell. Restored with
+  `git checkout <tip> -- .` as its own commit (`169e71b`) so this round's real diff stays readable.
 - **Checked all five channels an owner answer could arrive through — none has one.** Every number under
   Verification is this round's own command output; nothing is transcribed from a previous SUMMARY.
 - **Ran the full Verify command and all five parity-harness keys.** Every value matches the expected table
   in `AUTOPILOT.md` exactly, including `grep -c "✗ #toast:"` = 0.
-- **Observed the discriminating case for the tip-ranking one-liner — the first in eleven rounds.** The
-  superseded `%(committerdate:short)` formula ranks a *two-rounds-stale* tip first on today's refs. Rounds
-  `_0009` / `_0018` / `_0027` / `_0034` all predicted this case existed but never saw it; this round did,
-  and captured the command output. See Why — this is the only substantive finding here.
+- **Found a second failure mode of the superseded tip-ranking formula, distinct from the one round `_0044`
+  documented, and worse.** `git for-each-ref --sort=-committerdate:short` ranks the **four-rounds-stale**
+  `_0009` first, not the two-rounds-stale `_0027`. See Why — this is the only substantive finding here.
 - **Changed no CSS, no `tools/`, no `docs/`, no `README.md`.** Beyond the restore commit, the only files
   this round writes are `SUMMARY.md` and `AUTOPILOT.md`.
 
@@ -24,50 +23,47 @@ one either moves visible pixels or adds a file to the repo — the owner's call,
 work behind them is finished (token tooling 22/22 across six checks, parity table closed at 11/11
 components), so there is no honest fallback task left. The queued Next task says so explicitly: if no
 decision has been answered, check the channels, write `SUMMARY.md`, end the round, and do not invent a
-substitute. That is exactly what this round is — the eleventh consecutive no-op.
+substitute. That is exactly what this round is — the twelfth consecutive no-op.
 
-### The `iso8601` tip-ranking fix is now proved, with the harm it prevents made concrete
+### "The old formula" names two different bugs, with two different wrong answers
 
-Four previous rounds recorded the same caveat: the round-`_0009` fix (`%(committerdate:short)` →
-`%(committerdate:iso8601)`) is *correct*, but no round had yet hit a case where the two formulas disagree.
-That needs same-day tips whose sha order runs opposite to their time order. **Today's refs are that case.**
+Round `_0044` proved the superseded formula misranks real refs in this repo, and recorded the mechanism as:
+all dates collapse to one calendar day, so `sort -r` falls through to comparing **sha** strings, ranking
+`7f93323` (`_0027`) first. **That account is correct for the formula as written in the contract** — a
+`for-each-ref … | sort -r` pipeline over printed text. I reproduced its premise and it holds.
 
-Old formula — same calendar day for every tip, so `sort -r` falls through to comparing sha strings:
+But the truncation bug has a second form, and this round hit it. If a round reaches for git's *native*
+sort instead of the text pipeline, the tie is broken by **refname ascending**, not by sha:
 
 ```
-2026-08-30 7f93323 auto/…/2026-08-30_0027     <- ranked first, and it is TWO ROUNDS STALE
+git for-each-ref --sort=-committerdate:short --format='%(committerdate:short) %(objectname:short) %(refname:short)' refs/heads/auto
+2026-08-30 3c4a327 auto/…/2026-08-30_0009     <- ranked first, and it is FOUR ROUNDS STALE
 2026-08-30 6fb8369 auto/…/2026-08-30_0018
-2026-08-30 59a555b auto/…/2026-08-30_0034     <- the actual previous round
-2026-08-30 51d328e auto/…/2026-08-30_0044     <- this round
+2026-08-30 7f93323 auto/…/2026-08-30_0027
+2026-08-30 59a555b auto/…/2026-08-30_0034
+2026-08-30 5886125 auto/…/2026-08-30_0044     <- the actual previous round, ranked LAST
 ```
 
-New formula — second-resolution, so it is a total order and needs no tiebreak:
+Same truncated key, opposite ordering, and the previous round lands at the **bottom** of the list rather
+than merely below a rival. The pipeline variant loses two rounds of work; this variant loses four. Both are
+silent for exactly the reason `_0044` gave: a wrong restore of no-op rounds discards only `AUTOPILOT.md`
+and `SUMMARY.md`, so tests and every harness key still pass.
 
-```
-2026-08-30 00:45:10 51d328e auto/…/2026-08-30_0044   <- self (expected; I ran this after the restore)
-2026-08-30 00:40:17 59a555b auto/…/2026-08-30_0034   <- correct tip
-2026-08-30 00:32:39 7f93323 auto/…/2026-08-30_0027
-```
+The practical rule this yields: **the sort key and the display format are independent, and only the key
+matters.** `--sort=-committerdate` (full precision) with a `%(committerdate:short)` *display* is safe,
+because truncation never touches the comparison. Truncation is only dangerous when it reaches the thing
+being compared — the `:short` inside `--sort=`, or the `:short` printed as the first field ahead of
+`| sort -r`. The contract's one-liner is correct as written; I am not changing it.
 
-`7f93323` beats `59a555b` lexicographically while losing to it chronologically. A round following the old
-formula would have restored `_0027` and **silently discarded round `_0034`'s commit** — the tree would
-still have looked coherent, `git status` would still have been clean, and every harness key would still
-have passed, because `_0034` changed only `AUTOPILOT.md` and `SUMMARY.md`. The failure would have surfaced
-as a quietly rewound plan, not as an error. The fix stays; the standing caveat can now be retired.
-
-**How I actually picked the tip this round, and why it was not the one-liner.** I deviated from the
-documented order: I read `git reflog --date=iso` first and took the predecessor from the
-`checkout: moving from …_0034 to …_0044` entry, then restored, then ran `for-each-ref`. The reflog names
-the predecessor branch *directly* and in true sequence, so it is immune to the sort bug entirely — it is
-the most robust of the three methods available here, though it is local to this clone and would be empty
-in a fresh one. The one-liner, the branch-name order, the author check and the empty tree diff all
-corroborated it afterward. Recording this because the deviation is the reason the comparison above was
-available at all: I had the correct answer from an independent source before running either formula.
+**How I actually picked the tip this round.** `git for-each-ref --sort=-committerdate` (full-precision
+key, `:short` only in the display), run **before** the restore, in the documented order — so my own branch
+still sat at `3503537` / 2026-08-13 and could not float to the top. It put `5886125` first. Branch-name
+order agrees, the author check and the empty whole-tree diff corroborate, and the sha ordering rules out a
+truncated key having produced the answer by luck: `5886125` sorts *below* `59a555b` lexicographically, so
+a sha tiebreak could not have returned it.
 
 **On the owner-vs-runner discriminator.** Round `_0027` corrected the rule to key on the commit **author**
-(`%an`/`%ae`) rather than on a `chore: round … no-op` **subject**. This round's tip satisfies both halves,
-but that is a coincidence of what `_0034` committed last, not evidence the subject test works. I used the
-author field as the decision.
+(`%an`/`%ae`) rather than a `chore: round … no-op` **subject**. I used the author field as the decision.
 
 ## Verification
 
@@ -77,31 +73,32 @@ Ran myself, this round, in this order.
 
 - `git log --oneline -1` → `3503537` = stale base, restore required.
 - `ls tools` → `test.mjs` only (no `check-tokens.mjs`) — independent confirmation the tree was stale.
-- `git reflog --date=iso` → `checkout: moving from auto/…/2026-08-30_0034 to auto/…/2026-08-30_0044`,
-  with `59a555b` as that branch's last commit. Predecessor identified without relying on any sort.
-- `git log -1 --format="%h %an <%ae> %ad %s" 59a555b` → `PHANTOM AUTOPILOT <autopilot@phantom.local>
-  Sun Aug 30 00:40:17 2026 +0700 chore: round 2026-08-30_0034 no-op -- 5 channels checked, no owner
-  answer` — runner author, so not an owner commit.
-- `git diff --stat 7f93323 59a555b` → `AUTOPILOT.md` + `SUMMARY.md` only (102+/99-) = the tip is clean,
-  no residue from a bad tree.
-- `for-each-ref` (channel 5 output below) shows `59a555b` on **both** `auto/…/2026-08-30_0034` and
-  `origin/auto/…/2026-08-30_0034` — the sha has not moved, so restoring from it cannot bury an answer.
+- `git for-each-ref --sort=-committerdate` (before restore) → `5886125` on **both**
+  `auto/…/2026-08-30_0044` and `origin/auto/…/2026-08-30_0044`; the sha has not moved, so restoring from
+  it cannot bury an answer. Precondition read free from the same output.
+- `git log -1 --format="%h %an <%ae> %ad %s" 5886125` → `PHANTOM AUTOPILOT <autopilot@phantom.local>
+  Sun Aug 30 00:51:14 2026 +0700 chore: round 2026-08-30_0044 no-op -- 5 channels checked, no owner
+  answer; iso8601 tip-ranking fix finally proved…` — runner author, so not an owner commit.
+- `git diff --stat 59a555b 5886125` → `AUTOPILOT.md` + `SUMMARY.md` only (147+/78-) = the tip is clean.
+- `git diff --name-status HEAD 5886125` → 13 `M`, 3 `A`, **no `D`** → a path-checkout is equivalent to a
+  fast-forward here. This is what makes `git checkout <tip> -- .` safe; it would silently resurrect
+  deleted files otherwise.
 
 **Restore**
 
-- `git read-tree --reset -u 59a555b` → Bash tool refused ("requires approval"); `git checkout 59a555b -- .`
-  went through. Same outcome here, confirmed below.
-- `git diff 59a555b --stat` (whole tree, **no** `-- .` pathspec) → **empty**. This is stronger than the
-  `--diff-filter=D` check earlier rounds ran: an empty full-tree diff proves there are no leftover files
-  from the stale base *and* no missing files, in one command. It is also what closes channel 1 without a
-  grep — `README.md` is unchanged byte for byte.
-- Committed as `51d328e chore: restore previous round tip 59a555b (branch cut from stale base 3503537)`.
+- `git checkout 5886125 -- .`, then committed as
+  `169e71b chore: restore previous round tip 5886125 (branch cut from stale base 3503537)`.
+- `git diff 5886125 --stat` (whole tree, **no** `-- .` pathspec) → **empty**. Proves no leftover files from
+  the stale base *and* no missing files in one command, and closes channel 1 without a grep —
+  `README.md` is unchanged byte for byte.
 
 **The five channels**
 
-1. `README.md → ## Open decisions` — unchanged (empty tree diff above, precondition met). Secondary
-   counts: `grep -c "^### [1-7]\."` = **7**, `grep -c "If you answer:"` = **7**,
-   `grep -c "| Option | Cost |"` = **7** → all seven option tables still stand, none replaced by an answer.
+1. `README.md → ## Open decisions` — unchanged (empty whole-tree diff above). Secondary counts:
+   `grep -c "^### [1-7]\."` = **7**, `grep -c "If you answer:"` = **7**,
+   `grep -c "| Option | Cost |"` = **7**. I also grepped the prose for an answer left *inline* rather than
+   as a table replacement (`answer|decided|chose|we pick`): all nine hits are the standing prompts and the
+   section's own framing — no owner reply.
 2. jsPDF vendored? `git ls-files | grep -i jspdf` → **no output**.
 3. `main` moved? → `ef3220e` (2026-06-27), unchanged, as are `mac/main` / `origin` / `origin/main`.
 4. Files dropped in untracked? `git status --untracked-files=all --short` → **empty**.
@@ -147,33 +144,31 @@ toast-hit          3d3d5cc:index.html index.html         -> FAIL - 5 declaration
   Decisions 2 / 5 / 6 / 7 all move visible pixels; that is the owner's call.
 - **Did not touch `Button.css`, `Menu.css`, `index.html`, `tools/`, or `README.md`.** The Next task block
   names these explicitly as forbidden while decision 7 is unanswered.
-- **Did not change the tip-ranking one-liner.** It is already correct; this round only supplied the missing
-  evidence. I did *not* replace it with the reflog method — see Risk.
+- **Did not change the tip-ranking one-liner.** It is correct as written. This round only documents that a
+  *different* spelling of the same idea fails in a second way, so no future round reaches for it.
 - **Did not add a seventh token check.** All 22 tokens already have enforcement.
 - **Did not invent a substitute task.** The fallback list is genuinely exhausted.
-- **Did not audit whether earlier same-day rounds restored the wrong sibling tip.** Now materially more
-  urgent than it was — see Risk — but it is a separate task and would break the one-task rule.
+- **Did not audit whether earlier same-day rounds restored the wrong sibling tip** — see Risk. It is a
+  separate task and would break the one-task rule.
 - **Did not open a browser.** Decision 4 is still unanswered.
 
 ## Risk
 
-- **The retrospective audit just got a concrete motive, and I did not do it.** Until today the "restores
-  may have picked the wrong same-day tip" worry was theoretical. This round demonstrates the old formula
-  *does* misrank real refs in this repo. Rounds before `_0009` used that formula, and several fell on the
-  same calendar day. A reviewer who wants one thing checked should check that. The mechanism is silent:
-  a wrong restore of a no-op round loses only `AUTOPILOT.md` / `SUMMARY.md`, so tests and harness keys all
-  still pass.
-- **I deviated from the documented step order** (restored before running `for-each-ref`, having taken the
-  tip from the reflog). The outcome is verified correct four independent ways, but the documented order
-  exists so that the one-liner runs while the current branch still sits at the old base and cannot float to
-  the top. Anyone repeating my order must skip the self entry deliberately, as I did.
-- **The reflog is not a durable channel.** It is local to this clone and would be empty in a fresh one, so
-  it cannot replace the `for-each-ref` one-liner in the contract — only corroborate it.
+- **The retrospective audit is now better motivated than when `_0044` flagged it, and I still did not do
+  it.** There are two known misranking modes, not one, and the native-sort mode puts the correct tip
+  *last*. Rounds before `_0009` used a truncated key; several fell on the same calendar day. A reviewer who
+  wants one thing checked should check that. The mechanism is silent by construction.
+- **My second-failure-mode finding is about a command no round is instructed to run.** The contract's
+  one-liner is the text-pipeline form and is correct. I ran the native-sort form deliberately, to compare;
+  it is not evidence that any past round used it. Do not read it as a defect in the current contract.
+- **The empty whole-tree diff is the load-bearing check for the restore**, and it passed. But it only
+  proves the tree matches `5886125` — it says nothing about whether `5886125` was the right tip. That rests
+  on the four corroborating methods listed under Verification.
 - **This round changes only `SUMMARY.md` and `AUTOPILOT.md`** on top of the restore commit, which is
-  byte-for-byte the previous round's tip (empty whole-tree diff).
+  byte-for-byte the previous round's tip.
 - **The five harness keys are not in the Verify command, by design.** Nothing forces a future round to run
   them or keeps them in sync with the code. They confirmed this restore was complete; they are not a
   standing guarantee.
-- **Eleven consecutive rounds have now produced nothing but bookkeeping.** Three of the seven acceptance
+- **Twelve consecutive rounds have now produced nothing but bookkeeping.** Three of the seven acceptance
   criteria cannot close without an owner decision. A reviewer should read
   `README.md → ## Open decisions`, not this file.
