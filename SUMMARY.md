@@ -11,8 +11,9 @@
   SUMMARY.
 - **Ran the full Verify command and all five parity-harness keys.** Every value matches the expected
   table in `AUTOPILOT.md` exactly, including `grep -c "✗ #toast:"` = 0.
-- **Recorded one procedural gotcha in the tip-ranking one-liner** (see Why): its top line is *this*
-  round's own branch, not the previous tip. Documentation only.
+- **Recorded one procedural gotcha in the tip-ranking one-liner** (see Why): run after the restore
+  commit — as I did — its top line is this round's own commit, not the previous tip. Documentation
+  only.
 - **Changed no CSS, no `tools/`, no `docs/`, no `README.md`.** Beyond the restore commit, the only
   files this round writes are `SUMMARY.md` and `AUTOPILOT.md`.
 
@@ -26,20 +27,22 @@ explicitly: if no decision has been answered, check the channels, write `SUMMARY
 and do not invent a substitute. That is exactly what this round is.
 
 **On the tip-ranking one-liner.** Round `_0009`'s `%(committerdate:iso8601)` fix is correct and I
-used it. But its output's first line this round was:
+used it — but I ran it **after** committing the restore, inverting the order the notes prescribe
+(rank → restore). Its first line was therefore my own restore commit:
 
 ```
-2026-08-30 00:19:03 +0700 7c04c70 auto/…/2026-08-30_0018   <- my own branch
+2026-08-30 00:19:03 +0700 7c04c70 auto/…/2026-08-30_0018   <- my own restore commit
 2026-08-30 00:15:37 +0700 3c4a327 origin/auto/…/2026-08-30_0009
 2026-08-30 00:15:37 +0700 3c4a327 auto/…/2026-08-30_0009   <- the tip to restore
 ```
 
-The runner has already committed the contract onto this round's branch, so the current round always
-sorts to the top. **The tip you want is the first entry that is not your own branch** — and because
-the same sha appears once for `refs/heads` and once for `refs/remotes`, seeing it twice is the
-precondition check (local and `origin/` agree) falling out of the same output for free. Worth
-writing down because the fixed command is *more* trustworthy now, which makes "read line 1" a more
-tempting shortcut than it was when the sort was visibly broken.
+Run in the prescribed order this does not happen: before the restore, this round's branch still
+points at `3503537` (2026-08-13) and sinks to the bottom. Either way, **the tip you want is the
+first entry that is not your own branch** — and because the same sha appears once for `refs/heads`
+and once for `refs/remotes`, seeing it twice is the precondition check (local and `origin/` agree)
+falling out of the same output for free. Worth writing down because the fixed command is *more*
+trustworthy now, which makes "read line 1" a more tempting shortcut than it was when the sort was
+visibly broken.
 
 The load-bearing proof that nothing was answered is **not** the greps. `grep -c "| Option | Cost |"`
 = 7 only shows the seven option tables still stand; it is secondary. What closes channel 1 is that
@@ -64,7 +67,10 @@ overwritten an answer committed onto the old branch.
 - `git diff --stat 197f3e6 3c4a327` → `AUTOPILOT.md` + `SUMMARY.md` only (2 files, 93+/43−) — the
   restored tip is a clean no-op commit with no CSS residue behind it.
 - Tip is head in both namespaces: `for-each-ref` printed `3c4a327` for the local branch **and** for
-  `origin/auto/…/2026-08-30_0009`.
+  `origin/auto/…/2026-08-30_0009`. **Order caveat:** I ran this check *after* committing the
+  restore, not before. It is still valid — it proves no owner answer sits on the old branch that the
+  restore could have buried, and the restore is a separate commit that can be reverted — but it is
+  weaker than running it first, which is what the notes prescribe.
 
 **The five channels:**
 
