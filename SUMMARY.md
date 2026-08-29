@@ -1,19 +1,21 @@
-# Round 2026-08-30_0018 — no-op: all five channels checked, still no owner answer
+# Round 2026-08-30_0027 — no-op: all five channels checked, still no owner answer
 
 ## What I did
 
-- **Restored the previous round's tip.** `git log --oneline -1` showed HEAD at `3503537`, the stale
-  base the runner cuts every `auto/*` branch from. Restored `3c4a327`
-  (`auto/deep_dive_AI_Storyboard_Machine/2026-08-30_0009`) with `git checkout 3c4a327 -- .` as its
-  own commit so this round's real diff stays readable.
+- **Restored the previous round's tip before reading anything in the project.** `git log --oneline -1`
+  showed HEAD at `3503537`, the stale base the runner cuts every `auto/*` branch from. Ranked the
+  round tips with the `%(committerdate:iso8601)` one-liner *before* touching the tree, confirmed
+  `6fb8369` (`auto/deep_dive_AI_Storyboard_Machine/2026-08-30_0018`), and restored it with
+  `git checkout 6fb8369 -- .` as its own commit (`a1afa75`) so this round's real diff stays readable.
 - **Checked all five channels an owner answer could arrive through — none has one.** Every number
-  under Verification is from this round's own command output; nothing is copied from a previous
+  under Verification is from this round's own command output; nothing is transcribed from a previous
   SUMMARY.
 - **Ran the full Verify command and all five parity-harness keys.** Every value matches the expected
   table in `AUTOPILOT.md` exactly, including `grep -c "✗ #toast:"` = 0.
-- **Recorded one procedural gotcha in the tip-ranking one-liner** (see Why): run after the restore
-  commit — as I did — its top line is this round's own commit, not the previous tip. Documentation
-  only.
+- **Corrected a discriminator in the round-opening procedure that has quietly gone stale** (see Why):
+  the "is this tip the previous round's own bookkeeping commit, or an owner answer?" check must key
+  on the commit **author**, not on a `chore: round … no-op` **subject**. This round's tip disproves
+  the subject half. Documentation only.
 - **Changed no CSS, no `tools/`, no `docs/`, no `README.md`.** Beyond the restore commit, the only
   files this round writes are `SUMMARY.md` and `AUTOPILOT.md`.
 
@@ -22,128 +24,144 @@
 The seven entries in `README.md → ## Open decisions` block every remaining acceptance criterion, and
 each one either moves pixels or adds a file to the repo — the owner's call, not an agent's. The
 survey work behind them is finished (token tooling 22/22 across six checks, parity table closed at
-11/11 components), so there is no honest fallback task left. The queued Next task says so
-explicitly: if no decision has been answered, check the channels, write `SUMMARY.md`, end the round,
-and do not invent a substitute. That is exactly what this round is.
+11/11 components), so there is no honest fallback task left. The queued Next task says so explicitly:
+if no decision has been answered, check the channels, write `SUMMARY.md`, end the round, and do not
+invent a substitute. That is exactly what this round is — the ninth consecutive no-op.
 
-**On the tip-ranking one-liner.** Round `_0009`'s `%(committerdate:iso8601)` fix is correct and I
-used it — but I ran it **after** committing the restore, inverting the order the notes prescribe
-(rank → restore). Its first line was therefore my own restore commit:
+**On the author-vs-subject discriminator.** The notes say a tip authored by `PHANTOM AUTOPILOT
+<autopilot@phantom.local>` with subject `chore: round … no-op` is the previous round's own
+bookkeeping commit rather than an owner answer committed onto the branch. The subject half of that
+test is now wrong. `git log --format="%h %an %s" 3503537..6fb8369` shows round `_0018` made **three**
+commits and finished on a `docs:` commit:
 
 ```
-2026-08-30 00:19:03 +0700 7c04c70 auto/…/2026-08-30_0018   <- my own restore commit
-2026-08-30 00:15:37 +0700 3c4a327 origin/auto/…/2026-08-30_0009
-2026-08-30 00:15:37 +0700 3c4a327 auto/…/2026-08-30_0009   <- the tip to restore
+6fb8369  docs: correct the round-0018 note on the tip-ranking one-liner
+e31dad9  chore: round 2026-08-30_0018 no-op -- 5 channels checked, no owner answer
+7c04c70  chore: restore round 2026-08-30_0009 tip (3c4a327) onto stale base 3503537
 ```
 
-Run in the prescribed order this does not happen: before the restore, this round's branch still
-points at `3503537` (2026-08-13) and sinks to the bottom. Either way, **the tip you want is the
-first entry that is not your own branch** — and because the same sha appears once for `refs/heads`
-and once for `refs/remotes`, seeing it twice is the precondition check (local and `origin/` agree)
-falling out of the same output for free. Worth writing down because the fixed command is *more*
-trustworthy now, which makes "read line 1" a more tempting shortcut than it was when the sort was
-visibly broken.
+A round that amends its own documentation after writing its no-op commit leaves a tip whose subject
+matches nothing in the expected pattern. Reading that as "an owner committed something" would be a
+false positive on the most consequential check of the round. **The author field is the part that
+carries the weight** — it distinguishes runner from owner regardless of what the round chose to
+commit last. The subject is useful colour, not a test. `AUTOPILOT.md` now says so.
 
-The load-bearing proof that nothing was answered is **not** the greps. `grep -c "| Option | Cost |"`
-= 7 only shows the seven option tables still stand; it is secondary. What closes channel 1 is that
-`git diff --stat 3c4a327 -- .` is **empty** after the restore — so `README.md` is byte-identical to
-the file round `_0009` inspected — combined with the precondition that `3c4a327` is still the live
-head of that branch in **both** `refs/heads` and `refs/remotes`, so restoring it cannot have
-overwritten an answer committed onto the old branch.
+**On the tip-ranking one-liner — this round again did not prove the `iso8601` fix works.** I ran it
+in the correct position (before the restore, so my own branch still sat at `3503537`/2026-08-13 and
+could not float to the top) and it ranked `6fb8369` (`_0018`, 00:24:58) above `3c4a327` (`_0009`,
+00:15:37), agreeing with branch-name order. But both candidates fall on the same calendar day, so
+`%(committerdate:short)` would have tied them and `sort` would have fallen through to comparing sha
+strings — where `6fb8369` beats `3c4a327` anyway. **The old broken formula would have picked the same
+winner here.** The fix is still right; this round is simply not evidence for it, and I am not
+claiming it is.
 
 ## Verification
 
-**Restore preconditions:**
+Ran myself, this round, in this order.
 
-- `git diff --stat HEAD auto/…/2026-08-30_0009` before the restore → 16 files, 2616+/162−, **no
-  `deleted` line** — the one condition that makes path-checkout tree-equivalent to a fast-forward.
-- `git diff --stat auto/…/2026-08-30_0009 -- .` after the restore → **empty** (tree matches every
-  byte). `git status --short` listed exactly the 16 expected paths, 3 of them `A` (`SUMMARY.md`,
-  `docs/btn-parity-proof.mjs`, `tools/check-tokens.mjs`) — the file-level signature of a stale base.
-- `git log -1 --format="%h %an <%ae> %ad %s" 3c4a327` → `PHANTOM AUTOPILOT
-  <autopilot@phantom.local> Sun Aug 30 00:15:37 2026 +0700 chore: round 2026-08-30_0009 no-op -- 5
-  channels checked, no owner answer; fix tip-ranking sort to iso8601` — the previous round's own
-  bookkeeping commit, not an owner answer that happened to become the tip.
-- `git diff --stat 197f3e6 3c4a327` → `AUTOPILOT.md` + `SUMMARY.md` only (2 files, 93+/43−) — the
-  restored tip is a clean no-op commit with no CSS residue behind it.
-- Tip is head in both namespaces: `for-each-ref` printed `3c4a327` for the local branch **and** for
-  `origin/auto/…/2026-08-30_0009`. **Order caveat:** I ran this check *after* committing the
-  restore, not before. It is still valid — it proves no owner answer sits on the old branch that the
-  restore could have buried, and the restore is a separate commit that can be reverted — but it is
-  weaker than running it first, which is what the notes prescribe.
+**Restore preconditions (before touching the tree)**
 
-**The five channels:**
+- `git log --oneline -1` → `3503537` = stale base, restore required.
+- `git branch --show-current` → `auto/deep_dive_AI_Storyboard_Machine/2026-08-30_0027`.
+- `ls tools` → `test.mjs` only (no `check-tokens.mjs`) — the independent tell that the tree was stale.
+- `git for-each-ref --format="%(committerdate:iso8601) %(objectname:short) %(refname:short)"
+  refs/heads | grep "auto/deep_dive" | sort -r | head -6` → `6fb8369` (`_0018`, 00:24:58) first,
+  above `3c4a327` (`_0009`, 00:15:37), `197f3e6` (`_0053`), `921b0a7` (`_0042`), `8f6ac45` (`_0032`),
+  `b68470e` (`_0026`). Agrees with branch-name order.
+- `git log -1 --format="%h %an <%ae> %ad %s" 6fb8369` → `PHANTOM AUTOPILOT
+  <autopilot@phantom.local> Sun Aug 30 00:24:58 2026 +0700 docs: correct the round-0018 note on the
+  tip-ranking one-liner` — runner author, so not an owner commit (see Why re: the subject).
+- `git for-each-ref … refs/remotes | grep 2026-08-30_0018` → `6fb8369
+  origin/auto/…/2026-08-30_0018`. Local and `origin/` on the same sha = the sha has not moved.
+- `git merge-base --is-ancestor 3503537 6fb8369` → `ancestor-ok`; `git diff --stat HEAD 6fb8369` →
+  16 files, 2647 insertions / 162 deletions, **no `deleted` entries** → path-checkout is
+  tree-equivalent to a fast-forward here.
 
-1. `README.md → ## Open decisions` — closed by the empty `git diff --stat 3c4a327 -- .` above.
-   Secondary: `grep -c "| Option | Cost |" README.md` = **7** (an answer replaces the option table,
-   so 7 tables = 0 answers); `grep -c "^### [1-7]\." README.md` = **7**; `grep -c "If you answer:"
-   README.md` = **7**.
-2. `git ls-files | grep -i jspdf` → **no output**; no vendored jsPDF.
-3. `main` → **`ef3220e`** (2026-06-27), unmoved.
-4. `git status --untracked-files=all --short` → **empty**.
-5. Non-`auto/*` refs via `git for-each-ref --format="%(committerdate:iso8601) %(objectname:short)
-   %(refname:short)" refs/heads refs/remotes | grep -v "auto/deep_dive"` →
-   `design-system` + `origin/design-system` = `3503537` (2026-08-13, newest in the group);
-   `main` / `mac/main` / `origin` / `origin/main` = `ef3220e` (2026-06-27);
-   `mac` / `mac/design-system` = `e3a355c` (2026-07-20);
-   `hardening-pass` exists **only** as `origin/hardening-pass` + `mac/hardening-pass` = `592e7c3`
-   (2026-07-20) — no local branch of that name, confirmed in this round's own output.
-   Nothing newer than 2026-08-13, i.e. older than all of this work.
+**Restore**
 
-**Verify command** — `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix
-design-system test`, all three steps green:
+- `git checkout 6fb8369 -- .` then `git diff --stat 6fb8369 -- .` → **empty** = tree matches the tip
+  byte for byte (which is also what closes channel 1 without a grep: `README.md` is unchanged).
+- `git diff --stat 3c4a327 6fb8369` → only `AUTOPILOT.md` (+28/-1) and `SUMMARY.md` (+109/-53) →
+  the restored tip is clean, no stray artifact from an earlier wrong-tree commit.
+- Committed as `a1afa75 chore: restore previous round tip 6fb8369 (branch cut from stale base
+  3503537)`.
 
-- `54 passed, 0 failed`
-- `tokens in sync: 22/22` · `fonts in sync: 4/4` · `no derived-colour literals: 15 CSS source(s)` ·
-  `font weights available: 15 CSS source(s)` · `no radius literals: 15 CSS source(s)` ·
-  `typeface from one source: 15 CSS source(s)` (all six checks)
-- `Test Files 12 passed (12)` · `Tests 31 passed (31)`
+**The five channels**
 
-**Parity harness** — all five keys, sha pairs copied from the Next task block, separated by `;`:
+1. `README.md → ## Open decisions` — unchanged (empty residual diff above, with the local+`origin/`
+   precondition met). Secondary counts: `grep -c "^### [1-7]\."` = **7**, `grep -c "If you answer:"`
+   = **7**, `grep -c "| Option | Cost |"` = **7** → all seven option tables still stand, none
+   replaced by an answer.
+2. jsPDF vendored? `git ls-files | grep -i jspdf` → **no output**.
+3. `main` moved? → `ef3220e` (2026-06-27), unchanged, as are `mac/main` / `origin` / `origin/main`.
+4. Files dropped in untracked? `git status --untracked-files=all --short` → **empty**.
+5. Non-`auto/*` refs: `design-system` / `origin/design-system` = `3503537` (2026-08-13, newest of the
+   group); `mac` / `mac/design-system` = `e3a355c` (2026-07-20); `hardening-pass` exists **only** as
+   `origin/` + `mac/` refs = `592e7c3` (2026-07-20); `main` / `mac/main` / `origin` / `origin/main` =
+   `ef3220e` (2026-06-27). Everything predates the current work → no answer parked on a sibling
+   branch.
 
-| key | pairs / elements | result |
-|---|---|---|
-| `buttons` `2488f2d:index.html 9fab5c9:index.html` | 85 / 17 | PASS |
-| `segmented` `021b966:index.html index.html` | 45 / 9 | PASS |
-| `toast` `bb10dd9:index.html 10e8f39:index.html` | 5 / 1 | PASS |
-| `ds-disabled-hover` `HEAD:…/styles.css …/styles.css` | 15 / 3 | PASS + 1 undecidable rule |
-| `toast-hit` `3d3d5cc:index.html index.html` | 10 / 2 | `FAIL — 5 declaration(s) differ, 0 markup problem(s), 0 unmatched` |
+**Verify command — all three steps green**
 
-`toast-hit`'s FAIL is the expected result, not a regression: round `2026-08-24_0003` deliberately
-added `pointer-events:auto` to `.toast-act`, and the key exists to show exactly that one property
-changing across 5 states. `node docs/btn-parity-proof.mjs toast-hit … | grep -c "✗ #toast:"` = **0**
-proves the app-side `#toast` rule was not touched.
+```
+node tools/test.mjs           -> 54 passed, 0 failed
+node tools/check-tokens.mjs   -> tokens in sync: 22/22 ... identical in index.html
+                                 fonts in sync: 4/4 ... embedded byte-identical
+                                 no derived-colour literals: 15 CSS source(s) scanned
+                                 font weights available: 15 CSS source(s), all in {400,500,700,800}
+                                 no radius literals: 15 CSS source(s), every border-radius reads --r-*
+                                 typeface from one source: 15 CSS source(s), every font-family var(--mono)
+npm --prefix design-system test -> Test Files 12 passed (12) / Tests 31 passed (31)
+```
+
+**Parity harness — all five keys, exactly the expected values**
+
+```
+buttons            2488f2d:index.html 9fab5c9:index.html -> PASS, 85 pairs / 17 elements
+segmented          021b966:index.html index.html         -> PASS, 45 pairs /  9 elements
+toast              bb10dd9:index.html 10e8f39:index.html -> PASS,  5 pairs /  1 element
+ds-disabled-hover  HEAD:design-system/src/styles.css design-system/src/styles.css
+                                                         -> PASS, 15 pairs / 3 elements, 1 undecidable
+toast-hit          3d3d5cc:index.html index.html         -> FAIL - 5 declaration(s) differ,
+                                                            0 markup problems, 0 unmatched;
+                                                            grep -c "✗ #toast:" = 0
+```
+
+`toast-hit`'s FAIL is the expected result — it records an intentional behaviour change from round
+`2026-08-24_0003` — and `✗ #toast:` = 0 is the proof the app side was not touched.
 
 ## What I did NOT do
 
-- **Did not answer, edit, or relocate any of the seven open decisions.** Each moves pixels or adds a
-  file; all seven remain unanswered.
-- **Did not invent a substitute task**, and did not touch anything on the Next task block's
-  forbidden list: no `:last-child`/combinator matching in the harness, no adding the harness to the
-  Verify command, no unilateral application of decisions 2 / 5 / 6 / 7.
-- **Did not touch `tools/` or `docs/`**, and did not add a seventh token check (22/22 tokens are
-  already covered by six checks — nothing left to enforce).
-- **Did not retry the browser MCPs.** Playwright and Chrome-DevTools are *permission*-blocked here,
-  not merely headless; retrying costs a call and cannot succeed until decision 4 is answered.
-- **Did not audit whether earlier same-day rounds restored the wrong sibling tip.** Rounds `_0042`,
-  `_0053` and `_0009` all left this open; it is a separate piece of work and this round is not
-  allowed to pick up a second task.
+- **Did not answer any of the seven open decisions**, and did not implement any option from them.
+  Decisions 2 / 5 / 6 / 7 all move visible pixels; that is the owner's call.
+- **Did not touch `Button.css`, `Menu.css`, `index.html`, `tools/`, or `README.md`.** The Next task
+  block names these explicitly as forbidden while decision 7 is unanswered.
+- **Did not add a seventh token check.** All 22 tokens already have enforcement; there is nothing
+  left to constrain.
+- **Did not invent a substitute task.** The fallback list is genuinely exhausted — token tooling
+  closed at 22/22, parity table closed at 11/11 — and the contract forbids manufacturing work.
+- **Did not audit whether earlier same-day rounds restored the wrong sibling tip.** Still unaudited,
+  as it has been since round `_0042`. It is a separate piece of work and would not fit the one-task
+  rule.
+- **Did not open a browser.** Decision 4 (permission to run Playwright / Chrome DevTools) is still
+  unanswered, so no criterion depending on real-browser verification could move.
 
 ## Risk
 
-- **The wrong-tip trap is fixed going forward but its history is unaudited.** Any round dated the
-  same day as its predecessor could, in principle, have restored a sibling tip instead of the newest
-  one, and **nothing downstream would catch it**: the residual diff would be empty against the wrong
-  tip, and all five harness keys would still match, because no-op rounds touch only `AUTOPILOT.md`
-  and `SUMMARY.md`. A reviewer who wants certainty about the chain has to walk the sibling branches
-  by hand. This round was not a real test of the `iso8601` fix either — `_0009` and `_0018` are
-  15 minutes apart but the day-granular field would have tied them too, and the reason I picked
-  correctly is that I read past my own branch, which is a *procedural* habit, not the sort.
-- **`ds-disabled-hover` reports 1 undecidable rule** (`.pui-menu__item:last-child`, identical in
-  both versions). Its PASS says nothing about that rule. Unchanged from previous rounds.
-- **No browser has ever verified this app.** Every parity and cascade claim in this repo comes from
-  source reading plus the CSS spec. Decision 4 gates that, and it is still unanswered.
-- **The stall will not clear on its own.** Rounds `_0009`, `_0019`, `_0026`, `_0032`, `_0042`,
-  `_0053` (2026-08-29) and `_0009` (2026-08-30) each ended in a no-op commit; this round makes
-  **eight in a row** finding identical state. Each one costs a full round to re-derive the same
-  answer. This needs a person, not another round.
+- **The real risk is not in this round's diff — it is that nine consecutive rounds have now produced
+  nothing but bookkeeping.** Three of the seven acceptance criteria cannot close without an owner
+  decision. Until someone answers in `README.md → ## Open decisions`, every further round will look
+  exactly like this one. A reviewer should read that section, not this file.
+- **This round changes only `SUMMARY.md` and `AUTOPILOT.md`** on top of the restore commit. The
+  restore commit is large (16 files) but is byte-for-byte the previous round's tip, verified by an
+  empty `git diff --stat 6fb8369 -- .`.
+- **The subject-line half of the owner-vs-runner check was wrong and may have been wrong before.** I
+  corrected it in `AUTOPILOT.md`, but I did not go back and re-verify that earlier rounds' tip checks
+  reached the right conclusion. They all also checked the author field, which is the reliable half,
+  so I expect no damage — but I did not prove it.
+- **`git checkout <tip> -- .` cannot delete files.** I checked `git diff --stat HEAD 6fb8369` for
+  `deleted` entries and found none, so the restore is complete here. That check must be repeated
+  every round; it is not a property of the repo.
+- **The five harness keys are not in the Verify command, by design.** Nothing forces a future round
+  to run them, and nothing forces them to stay in sync with the code. They proved the restore was
+  complete this round; they are not a standing guarantee.

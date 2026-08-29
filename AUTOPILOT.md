@@ -342,7 +342,43 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 **ถ้ายังไม่มีคำตอบ — รอบนี้ให้เขียน SUMMARY.md ว่าตรวจแล้วไม่มีอะไรปลดล็อก แล้วจบรอบ
 ห้ามประดิษฐ์งานแทนเด็ดขาด** คราวนี้ต่างจากรอบก่อนๆ ตรงที่ **งานสำรองหมดแล้วจริงๆ**:
 
-> **สถานะล่าสุด: รอบ `2026-08-30_0018` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ (รอบ no-op ที่ 8 ติดกัน)**
+> **สถานะล่าสุด: รอบ `2026-08-30_0027` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ (รอบ no-op ที่ 9 ติดกัน)**
+> (tip ที่ restore คือ `6fb8369` = `_0018`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
+>  `git diff --stat 6fb8369 -- .` ว่างเปล่า = tree ตรงทุก byte
+>  `git diff --stat 3c4a327 6fb8369` ขึ้นแค่ `AUTOPILOT.md` + `SUMMARY.md` = tip สะอาด
+>  `git merge-base --is-ancestor 3503537 6fb8369` → ancestor-ok, `git diff --stat HEAD 6fb8369`
+>  = 16 ไฟล์ 2647+/162- **ไม่มีบรรทัด `deleted`** → path-checkout เทียบเท่า fast-forward
+>  harness ทั้ง 5 key ตรงตารางข้างล่างทุกค่า รวม `✗ #toast:` = 0 และ Verify เขียวครบ 3 ขั้น
+>  `grep -c "| Option | Cost |" README.md` = 7 (หลักฐานรอง; `^### [1-7]\.` = 7, `If you answer:` = 7)
+>  ช่องทางที่ 5: `design-system`/`origin/design-system` = `3503537` (2026-08-13) ใหม่สุดในกลุ่ม,
+>  `main`/`mac/main`/`origin`/`origin/main` = `ef3220e` (2026-06-27),
+>  `mac`/`mac/design-system` = `e3a355c` (2026-07-20),
+>  `hardening-pass` มีแต่ `origin/`+`mac/` = `592e7c3` (2026-07-20))
+>
+> 🔴 **รอบ 0027 แก้ discriminator ที่เอกสารสั่งไว้แล้วใช้ไม่ได้จริง — ให้ดู `%an` อย่าดู subject:**
+>  บันทึกของรอบ `_0026` สั่งไว้ว่า tip ที่ author เป็น `PHANTOM AUTOPILOT
+>  <autopilot@phantom.local>` **และ subject เป็น `chore: round … no-op`** = commit ของรอบก่อน
+>  ไม่ใช่คำตอบที่เจ้าของ commit เข้ามา — **ครึ่งหลังของเงื่อนไขนั้นพังแล้ว**
+>  `git log --format="%h %an %s" 3503537..6fb8369` ของรอบนี้พิมพ์ออกมา **3 commit** และ tip
+>  เป็น commit `docs:` ไม่ใช่ commit `chore: … no-op`:
+> ```
+> 6fb8369  docs: correct the round-0018 note on the tip-ranking one-liner
+> e31dad9  chore: round 2026-08-30_0018 no-op -- 5 channels checked, no owner answer
+> 7c04c70  chore: restore round 2026-08-30_0009 tip (3c4a327) onto stale base 3503537
+> ```
+>  รอบที่แก้เอกสารของตัวเอง*หลัง*เขียน commit no-op จะทิ้ง tip ที่ subject ไม่ match pattern เลย
+>  → ถ้าอ่านว่า "เจ้าของ commit อะไรเข้ามา" คือ **false positive ในเช็คที่สำคัญที่สุดของรอบ**
+>  **`%an`/`%ae` คือครึ่งที่เชื่อได้** เพราะมันแยก runner ออกจากเจ้าของไม่ว่ารอบนั้นจะ commit อะไรท้ายสุด
+>  subject เป็นแค่ข้อมูลประกอบ ไม่ใช่เงื่อนไข (ยังรัน format string เดิมได้ ไม่ต้องเพิ่ม call)
+>
+> ⚠️ **รอบ 0027 ยืนยันอีกครั้งว่า `iso8601` ยังไม่เคยถูกพิสูจน์** — รอบนี้รัน `for-each-ref`
+>  ในตำแหน่งที่ถูก (ก่อน restore → branch ตัวเองยังอยู่ที่ `3503537`/2026-08-13 จึงไม่ลอยขึ้นบนสุด)
+>  และได้ `6fb8369` (`_0018`, 00:24:58) เหนือ `3c4a327` (`_0009`, 00:15:37) ตรงกับลำดับชื่อ branch
+>  **แต่สูตรเก่าก็จะได้คำตอบเดียวกัน**: สองตัวนี้วันเดียวกัน → `:short` เสมอ → `sort` ไปเทียบ sha
+>  → `6fb8369` ชนะ `3c4a327` แบบ lexicographic อยู่ดี **รอบนี้จึงไม่ใช่หลักฐานของการแก้**
+>  (การแก้ยังถูกอยู่ — แค่ยังไม่มีรอบไหนเจอเคสที่แยกสองสูตรออกจากกันได้จริง)
+>
+> **(สถานะของรอบ `_0018` ที่ยังใช้อ้างอิงได้)**
 > (tip ที่ restore คือ `3c4a327` = `_0009`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
 >  `git diff --stat 3c4a327 -- .` ว่างเปล่า = tree ตรงทุก byte
 >  `git diff --stat 197f3e6 3c4a327` ขึ้นแค่ `AUTOPILOT.md` + `SUMMARY.md` = tip สะอาด
