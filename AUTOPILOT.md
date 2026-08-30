@@ -376,7 +376,34 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 >  เพราะไฟล์เหล่านั้นถูกเขียนใหม่มาหลายรอบโดยชอบธรรม — **อย่าอ้างว่า audit นี้ปิดข้อนั้นด้วย**
 >
 
-> **สถานะล่าสุด: รอบ `2026-08-31_0023` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ (รอบที่ 15 ติดกัน)
+> **สถานะล่าสุด: รอบ `2026-08-31_0039` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ (รอบที่ 16 ติดกัน)
+> เป็นรอบ no-op เต็มรูปแบบ: ไม่แตะ `index.html` / `design-system/` / `tools/` / `docs/` เลยสักไบต์**
+> (tip ที่ restore คือ `110911a` = `_0023`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
+>  `git diff --stat 110911a -- .` **ว่างเปล่า** → tree เท่ากันทุก byte = ปิดช่องทางที่ 1 ไปในตัว
+>  `git diff --stat HEAD 110911a` = 16 ไฟล์ 2949+/162- **ไม่มีบรรทัด `deleted`** → path-checkout
+>  เทียบเท่า fast-forward, `merge-base --is-ancestor 3503537 110911a` → ancestor-ok
+>  `git log -1 --format="%h %an <%ae> %ad %s" 110911a` → author `PHANTOM AUTOPILOT
+>  autopilot@phantom.local` = commit ของ runner ไม่ใช่ของเจ้าของ
+>  harness ทั้ง 5 key ตรงตารางข้างล่างทุกค่า (85/17, 45/9, 5/1, 15/3+1 undecidable,
+>  `toast-hit` FAIL-5 โดย `grep -c "✗ #toast:"` = 0) และ Verify เขียวครบ 3 ขั้น
+>  `grep -c "| Option | Cost |" README.md` = **8** (หลักฐานรอง; `^### [1-8]\.` = 8,
+>  `If you answer:` = 8 — ยังไม่ถูกใช้สักอัน), `git ls-files | grep -i jspdf` ว่าง,
+>  `git status --untracked-files=all --short` ว่าง
+>  grep หาคำตอบแบบ inline (`answer|decided|chose|we pick`) → 10 hit เป็น prompt เดิมทั้งหมด
+>  ช่องทางที่ 5: `design-system`/`origin/design-system` = `3503537` (2026-08-13) ใหม่สุดในกลุ่ม,
+>  `mac`/`mac/design-system` = `e3a355c` (2026-07-20),
+>  `hardening-pass` มีแต่ `origin/`+`mac/` = `592e7c3` (2026-07-20),
+>  `main`/`mac/main`/`origin`/`origin/main` = `ef3220e` (2026-06-27))
+>
+> ✅ **รอบ 0039 ยืนยันว่าสองวิธีจัดอันดับ tip ให้คำตอบตรงกัน — ใช้เป็นการ cross-check ได้ฟรี**
+>  `git branch -a --sort=-committerdate | head -30` (native sort เต็มความละเอียด) ให้
+>  `_0023` เป็นกลุ่มบนสุด และสูตร `%(committerdate:iso8601) … | sort -r` ให้ `110911a` (00:37:38)
+>  เหนือ `af85891` (00:21:25) เหนือ `827b37c` (00:11:37) — **ตรงกัน และตรงกับลำดับชื่อ branch ด้วย**
+>  (ทั้งสามวันเดียวกันหมด → สูตร `:short` แบบเก่าจะตกไปเทียบ sha และให้ `af85891` ผิดๆ)
+>  ⚠️ ย้ำว่า `--sort=-committerdate:short` ยังห้ามใช้ — อันตรายอยู่ที่ `:short` ไปอยู่*ใน* sort key
+>
+> **(สถานะของรอบ `_0023` ที่ยังใช้อ้างอิงได้)**
+> **รอบ `2026-08-31_0023` ตรวจครบ 5 ช่องทาง — ไม่มีคำตอบ (รอบที่ 15 ติดกัน)
 > และทำ `retrospective restore audit` จบ → ตอนนี้ decision มี 8 ข้อ ไม่ใช่ 7**
 > (tip ที่ restore คือ `af85891` = `_0014`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
 >  **รอบนี้ใช้หลักฐานที่แข็งกว่า `git diff` ว่าง**: `tree(e9f502a)` = `tree(af85891)` = `fb13d0f`
