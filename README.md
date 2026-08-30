@@ -4,10 +4,10 @@
 
 Generate complete shot breakdowns from a scene description, see each panel rendered as an evocative storyboard thumbnail on `<canvas>`, then export a production-ready PDF. No build tools, no npm, no backend — it's one `index.html` you can open straight in a browser.
 
-> **⚠️ Maintainers — seven decisions are blocking the Phantom UI integration.** They are
-> investigated and written up in [Open decisions](#open-decisions); each one needs an answer
-> from the project owner, not more analysis. Until they're answered the remaining work on that
-> effort cannot move.
+> **⚠️ Maintainers — seven decisions are blocking the Phantom UI integration**, and an eighth
+> asks what to do about a file that was lost from git history. They are investigated and written
+> up in [Open decisions](#open-decisions); each one needs an answer from the project owner, not
+> more analysis. Until they're answered the remaining work on that effort cannot move.
 
 ---
 
