@@ -397,9 +397,9 @@ node docs/btn-parity-proof.mjs segmented 021b966:index.html index.html
 
 ## Open decisions
 
-Seven questions block nearly all remaining Phantom UI integration work. Every one has already
+Eight questions block nearly all remaining Phantom UI integration work. Every one has already
 been investigated to the end — what is missing is a **decision**, not more analysis. Each moves
-pixels or adds a file to the repo, so none is an automated agent's call to make.
+pixels, adds a file to the repo, or rewrites history, so none is an automated agent's call to make.
 
 Three of the seven acceptance criteria in `AUTOPILOT.md` stay unticked until these are answered.
 Each entry below is self-contained: what is blocked, the options, what each costs, and what
@@ -653,6 +653,44 @@ write-up, that is not true — it guards three of five:
 reads `index.html` only — it cannot see `design-system/src/**/*.css`, so any Phantom UI half of
 the change has to be reviewed from the `git diff` directly. Confirming it in a real browser needs
 decision 4 first.
+
+### 8. `docs/design-parity.md` was lost 13 days ago — restore it, or let it go?
+
+**Blocks:** nothing in the build. This is a history question, and the only one here that is about
+work that already existed and no longer does.
+
+The runner cuts **every** `auto/*` round branch from the same commit `3503537`, never from the
+previous round's tip, so each round has to path-restore its predecessor before it can work. A
+full audit of all 72 round branches (round `2026-08-31_0023`) found that this restore was done
+**correctly in every case where it was done at all** — but that **10 rounds skipped it entirely**,
+and one of those skips dropped a file that was never brought back.
+
+`docs/design-parity.md` — **44,376 bytes, 535 lines** — was the written design-parity report for
+button / chip / badge / modal / empty state, created by round `2026-08-14_0023` and carried
+forward through twelve consecutive consolidation rounds. Round `2026-08-19_0022` was cut from
+`3503537`, did not restore, and committed a single doc change on top of the bare base; its
+commit subject — *"token task already done"* — is the tell, because on the stale base the token
+work genuinely does look finished. Every round after it inherited the tree without the file.
+
+It is the **only** loss. Twenty-one distinct paths were touched across the whole 72-branch
+history and all twenty of the others are present in `HEAD` today; the nine other skipped
+restores dropped nothing that was not re-created later.
+
+The report's *findings* were independently re-derived and are not lost — they are the 11/11
+element-parity table in `AUTOPILOT.md` and the [Element parity with Phantom UI](#element-parity-with-phantom-ui)
+section above, both written after the file disappeared. What is gone is the standalone document
+and whatever it said that those two do not.
+
+| Option | Cost |
+|---|---|
+| **Restore it** — `git checkout c3351fc -- docs/design-parity.md` | One command, one commit. But the file is 13 days stale: it predates the radius tokens, the font inlining, the `.btn` base-class refactor and six of the seven open decisions, so it would land already contradicting `AUTOPILOT.md` in places. Someone has to reconcile it. |
+| **Restore it, then reconcile** | The above plus a round spent diffing it against the current parity table and deleting whatever is superseded. Most work; ends with one authoritative parity document instead of two overlapping ones. |
+| **Let it go** | Nothing to do. The findings survive in two other places. The file stays reachable at `c3351fc:docs/design-parity.md` forever — nothing is unrecoverable, it is just not checked out. |
+
+**If you answer:** a round runs the checkout (and the reconciliation, if you ask for it) and
+records the result here. Until then no round should restore it — putting a stale document back
+into the tree is a content decision, and an agent that does it silently is exactly the failure
+this audit was written to find.
 
 ---
 
