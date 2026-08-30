@@ -1,51 +1,57 @@
-# Round 2026-08-31_0039 — no-op: restore, check five channels, stop
+# Round 2026-08-31_0049 — no-op: restore, check five channels, stop
 
 The task named in `AUTOPILOT.md`'s `## Next task` is conditional: read `README.md`'s
 `## Open decisions` first, act on any owner answer found, and if there is none, run the no-op
 cycle — check the five channels an answer could arrive through, write this file, end the round.
-No answer arrived. This is the **16th consecutive** round with all eight decisions open.
+**No answer arrived.** All eight decisions are still open.
 
-Nothing outside `AUTOPILOT.md` and `SUMMARY.md` was modified. `index.html`,
-`design-system/`, `tools/` and `docs/` are byte-identical to the previous round's tip.
+Nothing outside `AUTOPILOT.md` and `SUMMARY.md` was modified. `index.html`, `design-system/`,
+`tools/` and `docs/` are byte-identical to the previous round's tip.
 
 ## What I did
 
-- **Restored the previous round's tip** (`110911a`, branch `…/2026-08-31_0023`) onto this branch,
-  which the runner had again cut from the stale base `3503537` — the 41st time. Kept as its own
-  commit (`eb88ff9`) so this round's real diff stays readable.
+- **Restored the previous round's tip** (`25b89cf`, branch `…/2026-08-31_0039`) onto this branch,
+  which the runner had again cut from the stale base `3503537`. Kept as its own commit (`8c55afa`)
+  so this round's real diff stays readable.
 - **Checked all five channels for an owner answer. Found none**, on any of the eight decisions.
 - **Ran the full Verify command and all five parity-harness keys**; every number reproduces the
   previous round's exactly, which is the independent evidence that the restore was complete.
 - **Updated `AUTOPILOT.md`'s status block** for this round and left `## Next task` pointing at the
   same no-op cycle, since the answer it waits on still has not come.
-- Recorded one new (small) fact in the status block: this round's two independent tip-ranking
-  methods agreed, so they can corroborate each other for free — see Why.
 
 ## Why
 
 **Why the restore comes before reading anything.** The runner cuts every `auto/*` branch from
-`3503537`, but the `AUTOPILOT.md` text it hands the agent is generated from the *previous* round's
-branch. So the contract describes files that are not in the tree. The documented worst failure is
-not forgetting the restore — it is *reading files before* it: on the stale tree `index.html`'s
-`:root` really does match `tokens.css` (11 tokens), so the work looks finished and nothing looks
-wrong. `ls tools` showing only `test.mjs` was the confirming tell here.
+`3503537`, but the `AUTOPILOT.md` text handed to the agent is generated from the *previous* round's
+branch — so the contract describes files that are not in the tree. The documented worst failure is
+not forgetting the restore, it is *reading files before* it: on the stale tree the work looks
+finished and nothing looks wrong (round `2026-08-28_0004` lost a whole round to exactly that, and
+round `2026-08-19_0022` permanently dropped `docs/design-parity.md` the same way).
 
-**Why `git diff --stat 110911a -- .` printing nothing is the real proof for channel 1.** Byte
-identity with the tip means `README.md` cannot contain an answer the tip did not already have.
-The `grep -c` counts are corroboration only — a count of 8 would survive the owner editing prose
-*inside* a decision block, whereas the empty diff would not.
+**Why I checked for deletions separately instead of trusting `--stat | tail`.** `git diff --stat
+HEAD 25b89cf | tail -15` clipped two of the sixteen file rows, and a deletion hiding in a clipped
+row is precisely the condition that makes `git checkout <tip> -- .` *not* equivalent to a
+fast-forward (path-checkout cannot remove a file the tip deleted). `git diff --diff-filter=D
+--name-only HEAD 25b89cf` returned empty, which settles it for the whole diff rather than for the
+rows that happened to print.
 
-**Why the harness ran in a round that changed no CSS.** An empty `git diff` proves bytes match;
-the harness proves *behaviour* matches, because it recomputes each element's cascade-winning
+**Why `git diff --stat 25b89cf -- .` printing nothing is the real proof for channel 1.** Byte
+identity with the tip means `README.md` cannot contain an answer the tip did not already have. The
+`grep -c` count is corroboration only — a count of 8 would survive the owner editing prose *inside*
+a decision block, whereas the empty diff would not.
+
+**Why the harness ran in a round that changed no CSS.** An empty `git diff` proves bytes match; the
+harness proves *behaviour* matches, because it recomputes each element's cascade-winning
 declaration set from the files actually standing. A partial or wrong restore shows up as changed
 pair counts even when `git status` is clean. Round `_0020` skipped these on the "no CSS changed"
-argument and `_0031` reinstated them.
+argument and `_0031` reinstated it.
 
-**Why the two ranking methods are worth cross-checking.** All three `2026-08-31` branches share a
-calendar day, which is exactly the condition under which the old `%(committerdate:short)` key ties
-and `sort` falls through to comparing SHA strings. `git branch -a --sort=-committerdate` (native,
-full precision) and the `%(committerdate:iso8601)` pipeline both put `_0023` on top, and that
-agrees with branch-name order — three independent signals, no tiebreak needed.
+**Why the tip was identified by refname, not by row position.** All four `2026-08-31` branches share
+a calendar day. That is the exact condition under which the old `%(committerdate:short)` key ties
+and `sort` falls through to comparing SHA strings, which has previously ranked an older round above
+a newer one. I used `%(committerdate:iso8601)` (second granularity, a total order) and matched the
+`refname` against this branch's own name. The result also agrees with branch-name order
+(`_0004` < `_0014` < `_0023` < `_0039`), so two independent signals corroborate.
 
 ## Verification
 
@@ -68,7 +74,8 @@ ds-disabled-hover  HEAD:design-system/src/styles.css design-system/src/styles.cs
                                                             1 undecidable rule
                                                             (.pui-menu__item:last-child)
 toast-hit          3d3d5cc:index.html index.html         -> FAIL - 5 declaration(s) differ,
-                                                            0 markup problems, 0 unmatched;
+                                                            0 markup problems, 0 unmatched,
+                                                            10 pairs / 2 elements;
                                                             grep -c "✗ #toast:" = 0
 ```
 
@@ -76,18 +83,18 @@ toast-hit          3d3d5cc:index.html index.html         -> FAIL - 5 declaration
 `2026-08-24_0003` (`.toast-act` gained `pointer-events:auto`). The zero `✗ #toast` lines are the
 proof the app side of that pair was not touched.
 
-Restore correctness: `git diff --stat 110911a -- .` empty; `git diff --stat HEAD 110911a` = 16
-files, 2949+/162−, no `deleted` line, so the path-checkout is tree-equivalent to a fast-forward;
-`git merge-base --is-ancestor 3503537 110911a` → ancestor-ok;
-`git log -1 --format="%h %an <%ae> …" 110911a` → author `PHANTOM AUTOPILOT
-<autopilot@phantom.local>`, i.e. the runner's own commit and not an owner answer committed onto
-the old branch.
+Restore correctness: `git diff --stat 25b89cf -- .` empty; `git diff --stat HEAD 25b89cf` = 16
+files, 2948+/162−; `git diff --diff-filter=D --name-only HEAD 25b89cf` empty, so the path-checkout
+is tree-equivalent to a fast-forward; `git merge-base --is-ancestor 3503537 25b89cf` → ancestor-ok;
+`git log -1 --format="%h %an <%ae> …" 25b89cf` → author `PHANTOM AUTOPILOT
+<autopilot@phantom.local>`, i.e. the runner's own commit and not an owner answer committed onto the
+old branch.
 
 The five channels, and what each returned:
 
 | # | Channel | Result |
 |---|---|---|
-| 1 | `README.md` `## Open decisions` | 8 open; `\| Option \| Cost \|` = 8, `^### [1-8]\.` = 8, `If you answer:` = 8, none consumed. Inline grep `answer\|decided\|chose\|we pick` → 10 hits, all pre-existing prompt text |
+| 1 | `README.md` `## Open decisions` | 8 open; `\| Option \| Cost \|` = 8, none consumed. Closed more strongly by the empty `git diff --stat 25b89cf -- .` |
 | 2 | a vendored jsPDF in the repo | `git ls-files \| grep -i jspdf` → empty |
 | 3 | `main` moved | still `ef3220e` (2026-06-27) |
 | 4 | uncommitted/untracked files left by the owner | `git status --untracked-files=all --short` → empty |
@@ -97,29 +104,36 @@ The five channels, and what each returned:
 
 - **Did not answer, or partially implement, any of the eight open decisions.** Every one of them
   moves pixels or adds a file to the repo; that is the owner's call, and it is the single reason
-  three acceptance criteria stay unticked.
-- **Did not restore `docs/design-parity.md`** (lost at round `2026-08-19_0022`, still reachable at
-  `c3351fc:docs/design-parity.md`). It is decision 8 and remains unanswered.
-- **Did not re-run the retrospective restore audit** — closed in round `_0023`, and the task block
-  forbids repeating it.
-- **Did not invent substitute work.** The code-touching backlog is exhausted and the last
-  read-only item closed last round; `## Next task` explicitly forbids using "nothing to do" as a
-  reason to pick something off the forbidden list.
-- **Did not open a browser.** Still permission-blocked (decision 4), so acceptance criterion 3
-  remains unverified by real rendering, as in every prior round.
+  this round had no code work available.
+- **Did not restore `docs/design-parity.md`** from `c3351fc`. That is decision 8, and the file
+  predates the radius tokens, the font inlining and the `.btn` refactor, so restoring it raw would
+  immediately contradict `AUTOPILOT.md`; reconciling it means judging its content, which is the
+  owner's call.
+- **Did not re-run the retrospective restore audit** — completed in round `2026-08-31_0023` and
+  explicitly marked do-not-repeat.
+- **Did not retry the browser MCPs.** Playwright and Chrome-DevTools are *permission*-blocked here,
+  not merely headless; retrying costs a round and changes nothing (decision 4).
+- **Did not pick up any item from the Next task block's explicitly-forbidden list** (implementing
+  `:last-child`/combinator matching in the harness, adding the harness to Verify, or applying
+  decisions 2/5/6/7 unilaterally).
 
 ## Risk
 
-- **Nothing in this round is new work, so there is little to review — the risk is the opposite
-  one: that a reviewer reads 41 rounds of green Verify as progress.** It is not. The three
-  unticked acceptance criteria have been blocked on owner input for 16 consecutive rounds and no
-  amount of agent work will move them.
-- **Channel 1 detects an answer committed to `README.md`. It cannot detect one delivered any other
-  way** — a comment on a PR, a chat message, an email. If the owner has answered somewhere the
-  repo cannot see, this round (and the fifteen before it) reports "no answer" and is wrong about
-  it.
-- **The harness numbers are a restore check, not a correctness check.** They prove the files
-  standing now compute the same cascade as last round; they say nothing about whether that cascade
-  is what the owner wants, and `ds-disabled-hover` still carries 1 rule
-  (`.pui-menu__item:last-child`) the harness cannot read at all.
-- The underlying runner bug is untouched and will re-cut the next branch from `3503537` again.
+- **The Verify command passes and this round changed no code**, so there is nothing new for a
+  reviewer to check in the tree. The diff is `AUTOPILOT.md` + `SUMMARY.md`, plus the separate
+  restore commit `8c55afa` which reproduces the previous tip exactly.
+- **The consecutive-no-op count is inherited, not re-derived.** The previous round recorded itself
+  as the 16th in a row; I observed that this round is also a no-op but did not verify the running
+  total, because rounds phrase their commits differently and any such tally is not cheaply
+  checkable. Treat the number as narrative, not evidence. The checkable facts are the five channel
+  results above.
+- **`ds-disabled-hover` reports 1 undecidable rule** (`.pui-menu__item:last-child`). Its PASS says
+  nothing about that rule — the harness does not implement `:last-child` matching, so a change
+  confined to it would compute 0 diff. Unchanged from previous rounds, and no CSS moved this round.
+- **The harness does not model inheritance**, which is the mechanism behind the `pointer-events`
+  toast bug it was built to document. That part of the argument rests on source reading and the CSS
+  spec, and has never been confirmed in a real browser (decision 4).
+- **The real risk is structural and not fixable from inside a round:** the runner has never pushed
+  any of this work to `main` (still `ef3220e`, two commits, no design-system). Seventy-plus round
+  branches now stack in parallel, each one reconstructed by path-restoring its predecessor. The
+  work is sound but it is only reachable through the newest `auto/*` branch.

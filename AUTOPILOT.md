@@ -376,8 +376,32 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 >  เพราะไฟล์เหล่านั้นถูกเขียนใหม่มาหลายรอบโดยชอบธรรม — **อย่าอ้างว่า audit นี้ปิดข้อนั้นด้วย**
 >
 
-> **สถานะล่าสุด: รอบ `2026-08-31_0039` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ (รอบที่ 16 ติดกัน)
+> **สถานะล่าสุด: รอบ `2026-08-31_0049` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
 > เป็นรอบ no-op เต็มรูปแบบ: ไม่แตะ `index.html` / `design-system/` / `tools/` / `docs/` เลยสักไบต์**
+> (tip ที่ restore คือ `25b89cf` = `_0039`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
+>  `git diff --stat 25b89cf -- .` **ว่างเปล่า** → tree เท่ากันทุก byte = ปิดช่องทางที่ 1 ไปในตัว
+>  `git diff --stat HEAD 25b89cf` = 16 ไฟล์ 2948+/162−
+>  `git merge-base --is-ancestor 3503537 25b89cf` → ancestor-ok
+>  `git log -1 --format="%h %an <%ae> %ad %s" 25b89cf` → author `PHANTOM AUTOPILOT
+>  autopilot@phantom.local` = commit ของ runner ไม่ใช่ของเจ้าของ
+>  harness ทั้ง 5 key ตรงตารางข้างล่างทุกค่า (85/17, 45/9, 5/1, 15/3+1 undecidable,
+>  `toast-hit` FAIL-5 ที่ 10 pairs/2 elements โดย `grep -c "✗ #toast:"` = 0) และ Verify เขียวครบ 3 ขั้น
+>  `grep -c "| Option | Cost |" README.md` = **8** (หลักฐานรอง), `git ls-files | grep -i jspdf` ว่าง,
+>  `git status --untracked-files=all --short` ว่าง
+>  ช่องทางที่ 5: `design-system`/`origin/design-system` = `3503537` (2026-08-13) ใหม่สุดในกลุ่ม,
+>  `mac`/`mac/design-system` = `e3a355c` (2026-07-20),
+>  `hardening-pass` มีแต่ `origin/`+`mac/` = `592e7c3` (2026-07-20),
+>  `main`/`mac/main`/`origin`/`origin/main` = `ef3220e` (2026-06-27))
+>
+> 🔴 **รอบ `_0049` เจอว่า `git diff --stat HEAD <tip> | tail -15` ตัดแถวไฟล์ทิ้ง 2 แถว**
+>  diff มี 16 ไฟล์ แต่ `tail -15` เหลือที่ให้แค่ 14 แถว + บรรทัดสรุป → **แถวที่ถูกตัดอาจมี
+>  การลบไฟล์ซ่อนอยู่ ซึ่งเป็นเงื่อนไขเดียวที่ทำให้ `git checkout <tip> -- .` ไม่เทียบเท่า
+>  fast-forward** (path-checkout ลบไฟล์ที่ tip ลบไปแล้วไม่ได้)
+>  **ใช้ `git diff --diff-filter=D --name-only HEAD <tip>` แทน** — ตอบทั้ง diff ไม่ใช่แค่แถวที่พิมพ์ออกมา
+>  (รอบนี้ได้ค่าว่าง = ไม่มีการลบ) ถูกกว่าและเด็ดขาดกว่าการไล่อ่าน `--stat` ให้ครบ
+>
+> **(สถานะของรอบ `_0039` ที่ยังใช้อ้างอิงได้)**
+> **รอบ `2026-08-31_0039` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ (รอบที่ 16 ติดกัน)**
 > (tip ที่ restore คือ `110911a` = `_0023`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
 >  `git diff --stat 110911a -- .` **ว่างเปล่า** → tree เท่ากันทุก byte = ปิดช่องทางที่ 1 ไปในตัว
 >  `git diff --stat HEAD 110911a` = 16 ไฟล์ 2949+/162- **ไม่มีบรรทัด `deleted`** → path-checkout
