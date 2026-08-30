@@ -376,8 +376,31 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 >  เพราะไฟล์เหล่านั้นถูกเขียนใหม่มาหลายรอบโดยชอบธรรม — **อย่าอ้างว่า audit นี้ปิดข้อนั้นด้วย**
 >
 
-> **สถานะล่าสุด: รอบ `2026-08-31_0049` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
+> **สถานะล่าสุด: รอบ `2026-08-31_0056` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
 > เป็นรอบ no-op เต็มรูปแบบ: ไม่แตะ `index.html` / `design-system/` / `tools/` / `docs/` เลยสักไบต์**
+> (tip ที่ restore คือ `919574c` = `_0049`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
+>  `git diff --stat 919574c -- .` **ว่างเปล่า** → tree เท่ากันทุก byte = ปิดช่องทางที่ 1 ไปในตัว
+>  `git diff --diff-filter=D --name-only HEAD 919574c` **ว่างเปล่า** → path-checkout เทียบเท่า fast-forward
+>  `git merge-base --is-ancestor 3503537 919574c` → ancestor-ok
+>  `git log -1 --format="%h %an <%ae> %ad %s" 919574c` → author `PHANTOM AUTOPILOT
+>  autopilot@phantom.local` = commit ของ runner ไม่ใช่ของเจ้าของ
+>  harness ทั้ง 5 key ตรงตารางข้างล่างทุกค่า (85/17, 45/9, 5/1, 15/3+1 undecidable,
+>  `toast-hit` FAIL-5 ที่ 10 pairs/2 elements, 0 markup problem, 0 unmatched
+>  โดย `grep -c "✗ #toast:"` = 0) และ Verify เขียวครบ 3 ขั้น (54/54, check-tokens 6/6, 31/31)
+>  `grep -c "| Option | Cost |" README.md` = **8** (หลักฐานรอง), `git ls-files | grep -i jspdf` ว่าง,
+>  `git status --untracked-files=all --short` ว่าง
+>  ช่องทางที่ 5: `design-system`/`origin/design-system` = `3503537` (2026-08-13) ใหม่สุดในกลุ่ม,
+>  `mac`/`mac/design-system` = `e3a355c` (2026-07-20),
+>  `hardening-pass` มีแต่ `origin/`+`mac/` = `592e7c3` (2026-07-20),
+>  `main`/`mac/main`/`origin`/`origin/main` = `ef3220e` (2026-06-27))
+>
+> ✅ **รอบ `_0056` ยืนยันว่าสูตร `:iso8601` จัดอันดับถูกอีกครั้งโดยไม่ต้อง tiebreak**
+>  รันคำสั่ง **ก่อน** restore ได้ `919574c` (`00:54:25`) เหนือ `25b89cf` (`00:45:05`) เหนือ
+>  `110911a` (`00:37:38`) เหนือ `af85891` (`00:21:25`) — **ตรงกับลำดับชื่อ branch ทุกตัว**
+>  branch ของรอบนี้ (`_0056`) ยังชี้ที่ `3503537` (2026-08-13) จึงตกไปอยู่นอก `head -8`
+>  ไม่มีโอกาสถูกหยิบมา restore ทับตัวเอง — แต่ยังเทียบ `refname` ตามกฎ ไม่ได้ดูตำแหน่ง
+>
+> **(สถานะของรอบ `_0049` ที่ยังใช้อ้างอิงได้)**
 > (tip ที่ restore คือ `25b89cf` = `_0039`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
 >  `git diff --stat 25b89cf -- .` **ว่างเปล่า** → tree เท่ากันทุก byte = ปิดช่องทางที่ 1 ไปในตัว
 >  `git diff --stat HEAD 25b89cf` = 16 ไฟล์ 2948+/162−
