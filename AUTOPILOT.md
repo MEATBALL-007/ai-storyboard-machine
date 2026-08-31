@@ -376,8 +376,44 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 >  เพราะไฟล์เหล่านั้นถูกเขียนใหม่มาหลายรอบโดยชอบธรรม — **อย่าอ้างว่า audit นี้ปิดข้อนั้นด้วย**
 >
 
-> **สถานะล่าสุด: รอบ `2026-09-01_0026` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
+> **สถานะล่าสุด: รอบ `2026-09-01_0032` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
 > เป็นรอบ no-op เต็มรูปแบบ: ไม่แตะ `index.html` / `design-system/` / `tools/` / `docs/` เลยสักไบต์**
+> (tip ที่ restore คือ `2bb9777` = `_0026`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
+>  `git diff --stat 2bb9777 -- .` **ว่างเปล่า** → tree เท่ากันทุก byte = ปิดช่องทางที่ 1 ไปในตัว
+>  `git diff --diff-filter=D --name-only HEAD 2bb9777` **ว่างเปล่า** → path-checkout เทียบเท่า fast-forward
+>  (restore stage 13 `M` + 3 `A`, ไม่มี `D`; `git diff --stat HEAD 2bb9777` = 16 ไฟล์ 3149+/162−)
+>  `git merge-base --is-ancestor 3503537 2bb9777` → ancestor-ok
+>  `git log -1 --format="%h %an <%ae> %ad %s" 2bb9777` → author `PHANTOM AUTOPILOT
+>  autopilot@phantom.local` = commit ของ runner ไม่ใช่ของเจ้าของ (subject `chore: round
+>  2026-09-01_0026 no-op -- five channels checked, no owner answer`)
+>  harness ทั้ง 5 key ตรงตารางข้างล่างทุกค่า (85/17 markup 7 gone/5 new, 45/9 markup 0/3,
+>  5/1 markup 0/1, 15/3 + 1 undecidable markup N/A, `toast-hit` FAIL-5 ที่ 10 pairs/2 elements,
+>  0 markup problem, 0 unmatched โดย `grep -c "✗ #toast:"` = 0) และ Verify เขียวครบ 3 ขั้น
+>  (54/54, check-tokens 6/6 ที่ 15 CSS sources, 31/31)
+>  `grep -c "| Option | Cost |" README.md` = **8**, `git ls-files | grep -i jspdf` ว่าง,
+>  `git status --untracked-files=all --short` ว่าง
+>  ช่องทางที่ 5: `design-system`/`origin/design-system` = `3503537` (2026-08-13) ใหม่สุดในกลุ่ม,
+>  `mac`/`mac/design-system` = `e3a355c` (2026-07-20),
+>  `hardening-pass` มีแต่ `origin/`+`mac/` = `592e7c3` (2026-07-20),
+>  `main`/`mac/main`/`origin`/`origin/main` = `ef3220e` (2026-06-27))
+>
+> 🔴 **รอบนี้คือกรณีที่สูตรเก่า `:short` ผิดหนักที่สุดเท่าที่เคยบันทึกมา — และรันเป็น output จริงทั้งสองสูตร**
+>  ตอนนี้ tip **ทั้งสี่ตัว**อยู่วันเดียวกันหมด (`2026-09-01`) → `:short` ผูกกันทั้งสี่ แล้ว `sort -r`
+>  ตกไปเทียบ **sha string** ทำให้ `ec1d48b` (`_0001`, 00:07:20) ขึ้นเป็นอันดับ 1 เพราะ `e` (0x65)
+>  เป็นตัวอักษร hex นำที่ใหญ่สุด — **restore ตามนั้นคือการลบรอบ `_0011`, `_0017` และ `_0026`
+>  ทิ้งพร้อมกันสามรอบ** (ครั้งก่อนที่กับดักนี้ยิงจริง รอบ `_0017` เสียหายแค่รอบเดียว)
+>  ```
+>  :short (สูตรเก่า)              :iso8601 (สูตรที่ใช้จริง)
+>  2026-09-01 ec1d48b _0001  ผิด  2026-09-01 00:30:11 2bb9777 _0026  ถูก
+>  2026-09-01 3e6cb1a _0017       2026-09-01 00:23:58 3e6cb1a _0017
+>  2026-09-01 2bb9777 _0026       2026-09-01 00:17:00 0b082ed _0011
+>  2026-09-01 0b082ed _0011       2026-09-01 00:07:20 ec1d48b _0001
+>  ```
+>  ⚠️ **และจะไม่มีอะไรจับได้เลยเหมือนเดิม** เพราะทั้งสามรอบเป็น no-op ที่แตะแค่
+>  `AUTOPILOT.md`/`SUMMARY.md` → `git diff --stat <tip ผิด> -- .` ก็ยังว่าง, harness ทั้ง 5 key
+>  ก็ยังตรง, Verify ก็ยังเขียวครบ **ยิ่งรอบสะสมในวันเดียวกันมากขึ้น ความเสียหายยิ่งโต**
+>
+> **(สถานะของรอบ `_0026` ที่ยังใช้อ้างอิงได้)**
 > (tip ที่ restore คือ `3e6cb1a` = `_0017`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
 >  `git diff --stat 3e6cb1a -- .` **ว่างเปล่า** → tree เท่ากันทุก byte = ปิดช่องทางที่ 1 ไปในตัว
 >  `git diff --diff-filter=D --name-only HEAD 3e6cb1a` **ว่างเปล่า** → path-checkout เทียบเท่า fast-forward
