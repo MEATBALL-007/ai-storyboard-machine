@@ -1,71 +1,81 @@
-# SUMMARY — round `2026-09-01_0032`
+# SUMMARY — round `2026-09-01_0042`
 
 **No-op round.** All eight owner decisions in `README.md` are still unanswered, so no code work was
 available. The tree was restored from the previous round's tip, every check was re-run, and nothing
 under `index.html` / `design-system/` / `tools/` / `docs/` moved by a single byte.
 
-The one thing worth reading in this round: **all four round tips now share a calendar day, so the
-retired `%(committerdate:short)` key would have ranked `_0001` first and silently reverted three
-rounds at once.** Both formulas were run as live commands this round, so this is a reproduction, not
-an inference. Details under *Why*.
+The one thing worth reading in this round: **a fifth tip landed on `2026-09-01`, and the retired
+`%(committerdate:short)` key now ranks the *oldest* of the five first — restoring it would discard
+four rounds at once.** Both formulas were run as live commands, so this is a reproduction, not an
+inference. Details under *Why*.
 
 ---
 
 ## What I did
 
-- **Restored the previous round's tip** (`2bb9777`, branch `…/2026-09-01_0026`) into the working
-  tree and committed it on its own as `2e23ede`. The runner cut this branch from `3503537` again, so
+- **Restored the previous round's tip** (`42f34bd`, branch `…/2026-09-01_0032`) into the working
+  tree and committed it on its own as `72e24db`. The runner cut this branch from `3503537` again, so
   the tree arrived without any of the design-system integration work.
 - **Checked all five owner-answer channels.** None has been answered — table below.
 - **Ran the contract Verify command in full** — all three stages green.
 - **Ran all five parity-harness keys.** Every count is identical to the previous round, which is the
   independent confirmation that the restore was complete rather than merely byte-equal to a sha I
   picked.
-- **Reproduced the `:short` ranking trap as live output, in its worst recorded form** — this round
-  it would have cost three rounds of work, not one. See *Why*.
+- **Reproduced the `:short` ranking trap as live output, in its worst recorded form yet** — this
+  round it would cost four rounds of work, up from three. See *Why*.
 
 ## Why
 
 - **The restore comes before any Read.** The stale tree does not look broken — it looks *finished*
   (on `3503537` the app's `:root` really is byte-identical to that commit's 11-token `tokens.css`).
   An earlier round read files off the stale base and concluded the token task was already done,
-  wasting the round. The first action here was `git log --oneline -12`; the first repo file read
-  came after the restore commit.
-- **🔴 The retired key would have reverted THREE rounds this time.** All four `2026-09-01` tips now
-  share a date, so `:short` ties every one of them and `sort -r` falls through to comparing sha
-  strings. Both formulas were run as real commands, filtered against this branch's own suffix:
+  wasting the round. The first action here was `git log --oneline -5`; the first repo file read came
+  after the restore commit. Note that `grep -c "| Option | Cost |" README.md` run *before* the
+  restore returns **0**, not 8 — the stale `README.md` has no `## Open decisions` section at all, so
+  channel 1 is only meaningful post-restore. It was re-run afterwards.
+- **🔴 The retired key would now revert FOUR rounds.** All five `2026-09-01` tips share a date, so
+  `:short` ties every one of them and `sort -r` falls through to comparing sha strings — a
+  uniformly random key with no temporal meaning. Both formulas were run as real commands, with this
+  branch's own suffix filtered out:
 
   ```
   :short  (retired key)          :iso8601 (key in use)
-  2026-09-01 ec1d48b  _0001  X   2026-09-01 00:30:11 2bb9777  _0026   <- correct
+  2026-09-01 ec1d48b  _0001  X   2026-09-01 00:37:41 42f34bd  _0032   <- correct
+  2026-09-01 42f34bd  _0032      2026-09-01 00:30:11 2bb9777  _0026
   2026-09-01 3e6cb1a  _0017      2026-09-01 00:23:58 3e6cb1a  _0017
   2026-09-01 2bb9777  _0026      2026-09-01 00:17:00 0b082ed  _0011
   2026-09-01 0b082ed  _0011      2026-09-01 00:07:20 ec1d48b  _0001
   ```
 
-  `ec1d48b` wins the truncated ranking because `e` (0x65) is the highest leading hex digit present —
-  three positions above the real tip. Restoring it would have discarded `_0011`, `_0017` and
-  `_0026` together. **Nothing downstream would have caught it**: all three were no-op rounds
-  touching only `AUTOPILOT.md`/`SUMMARY.md`, so the residual `git diff --stat <wrong-tip> -- .`
-  would be empty, all five harness keys would still match, and all three Verify stages would still
-  be green. The damage from this trap grows as rounds accumulate on one calendar day.
+  `ec1d48b` wins the truncated ranking because `e` (0x65) is the highest leading hex digit present.
+  It is also the **oldest** of the five — the truncated key inverts the ordering completely at the
+  top, not by one position. Restoring it would discard `_0011`, `_0017`, `_0026` and `_0032`
+  together. **Nothing downstream would catch it**: all four were no-op rounds touching only
+  `AUTOPILOT.md`/`SUMMARY.md`, so the residual `git diff --stat <wrong-tip> -- .` would be empty,
+  all five harness keys would still match, and all three Verify stages would still be green.
+- **Running the old formula for real mattered this round.** Looking only at the top two `:iso8601`
+  rows (`42f34bd` 00:37:41 vs `2bb9777` 00:30:11, both `2026-09-01`) would suggest `:short` gets it
+  right, since `4` (0x34) > `2` (0x32) happens to agree with the time order. That inference is
+  wrong — the actual `:short` winner is a row that `head -8` had clipped out of the earlier
+  `:iso8601` output entirely. Reasoning from the `:iso8601` list is not a substitute for running
+  `:short`.
 - **`--diff-filter=D`, not `--stat | tail`.** Path-checkout cannot remove a file the target tip
   deleted, so "the diff deletes nothing" is the precondition that makes `git checkout <tip> -- .`
   tree-equivalent to a fast-forward. `--diff-filter=D --name-only` answers for the whole diff in one
   call, and empty output is the pass.
-- **The winner was matched by `refname`, never by row position.** This branch's own suffix
-  (`2026-09-01_0032`) was filtered out of the ranking pipeline explicitly, so no row could be my own
-  restore commit even after it existed.
-- **The tip's author was checked, not its subject.** `%an`/`%ae` on `2bb9777` reads
+- **The winner was matched by `refname`, never by row position.** This branch (`2026-09-01_0042`)
+  still pointed at `3503537` when the ranking ran, so it fell outside the window; in the
+  two-formula comparison it was filtered out explicitly.
+- **The tip's author was checked, not its subject.** `%an`/`%ae` on `42f34bd` reads
   `PHANTOM AUTOPILOT <autopilot@phantom.local>` — the runner, i.e. the previous round's own commit,
   not an owner answer landing on that branch. A round that amends its docs after its no-op commit
   leaves a subject matching nothing, so the subject is not a reliable test.
 - **The harness was run even though no CSS changed.** An empty `git diff` proves only that bytes
   match the tip I chose. The harness recomputes each element's cascade-winning declaration set from
   the files actually on disk, so a wrong or partial restore shows up as changed counts.
-- **No capture artefact was written.** `toast-hit` exits non-zero by design; redirecting its output
-  to a file was refused by the permission gate anyway, so I ran it twice (once for the result lines,
-  once piped to `grep -c`). Nothing is left behind.
+- **No capture artefact was written.** `toast-hit` exits non-zero by design; I ran it twice (once
+  for the result line, once piped to `grep -c`) rather than redirecting to a file. Nothing is left
+  behind.
 
 ## Verification
 
@@ -108,26 +118,27 @@ the proof the app side of that pair was not touched.
 Restore correctness, from this round's own output:
 
 - `git for-each-ref … %(committerdate:iso8601) … | grep "auto/deep_dive" | sort -r | head -8`
-  (run **before** the restore) ranked `2bb9777` (`2026-09-01 00:30:11`) above `3e6cb1a`
-  (`00:23:58`), `0b082ed` (`00:17:00`) and `ec1d48b` (`00:07:20`) — agreeing with branch-name
+  (run **before** the restore) ranked `42f34bd` (`2026-09-01 00:37:41`) above `2bb9777`
+  (`00:30:11`), `3e6cb1a` (`00:23:58`) and `0b082ed` (`00:17:00`) — agreeing with branch-name
   order. The winner was confirmed by `refname`, not by row number.
-- Local and `origin/` refs both point at `2bb9777`.
-- `git merge-base --is-ancestor 3503537 2bb9777` → `ancestor-ok`.
-- `git diff --diff-filter=D --name-only HEAD 2bb9777` → **empty** (no deletions; restore stage was
-  13 `M` + 3 `A`). `git diff --stat HEAD 2bb9777` = 16 files, 3149+/162−.
-- `git log -1 --format="%h %an <%ae> %ad %s" 2bb9777` → author `PHANTOM AUTOPILOT
-  <autopilot@phantom.local>`, subject `chore: round 2026-09-01_0026 no-op -- five channels checked,
+- Local and `origin/` refs both point at `42f34bd`.
+- `git merge-base --is-ancestor 3503537 42f34bd` → `ancestor-ok`.
+- `git diff --diff-filter=D --name-only HEAD 42f34bd` → **empty** (no deletions; restore stage was
+  13 `M` + 3 `A`).
+- `git log -1 --format="%h %an <%ae> %ad %s" 42f34bd` → author `PHANTOM AUTOPILOT
+  <autopilot@phantom.local>`, subject `chore: round 2026-09-01_0032 no-op -- five channels checked,
   no owner answer`.
-- `git diff --stat 2bb9777 -- .` after the restore → **empty**, i.e. the tree matches the tip byte
+- `git diff --stat 42f34bd -- .` after the restore → **empty**, i.e. the tree matches the tip byte
   for byte. This doubles as channel 1: `README.md` is unchanged from the tip.
 
-Five owner-answer channels, all from this round's output:
+Five owner-answer channels, all from this round's output (channels 1, 2 and 4 re-run **after** the
+restore):
 
 | # | Channel | Result |
 |---|---|---|
-| 1 | `README.md → ## Open decisions` | `grep -c "\| Option \| Cost \|"` = **8** — all eight still unanswered |
+| 1 | `README.md → ## Open decisions` | `grep -c "\| Option \| Cost \|"` = **8**; `If you answer:` = 8; `^### [1-8]\.` = 8 — all eight still unanswered |
 | 2 | `jspdf.umd.min.js` at repo root | `git ls-files \| grep -i jspdf` → empty |
-| 3 | `main` | still `ef3220e` (2026-06-27, *Add README*) |
+| 3 | `main` | still `ef3220e` (2026-06-27) |
 | 4 | uncommitted drop | `git status --untracked-files=all --short` → empty |
 | 5 | non-`auto/*` refs | newest is `design-system`/`origin/design-system` = `3503537` (2026-08-13); `mac`/`mac/design-system` = `e3a355c` (2026-07-20); `hardening-pass` (only `origin/`+`mac/`) = `592e7c3` (2026-07-20); `main`/`mac/main`/`origin`/`origin/main` = `ef3220e` (2026-06-27) — nothing newer than this work |
 
@@ -136,7 +147,7 @@ Five owner-answer channels, all from this round's output:
 - **Did not answer any of the eight open decisions.** Every one moves pixels or adds a file to the
   repo; they are the owner's call, and the contract forbids inventing a substitute task.
 - **Did not touch `index.html`, `design-system/`, `tools/` or `docs/`.** The empty
-  `git diff --stat 2bb9777 -- .` is the proof.
+  `git diff --stat 42f34bd -- .` is the proof.
 - **Did not restore `docs/design-parity.md`** (still reachable at `c3351fc:docs/design-parity.md`).
   That is open decision 8 and blocks no acceptance criterion.
 - **Did not re-run the retrospective restore audit** — completed in round `2026-08-31_0023`, which
@@ -144,14 +155,14 @@ Five owner-answer channels, all from this round's output:
 - **Did not retry the browser MCPs.** Playwright and Chrome-DevTools are *permission*-blocked, not
   merely headless; retrying without a permission change burns the round.
 - **Did not tick any acceptance-criteria box.** Nothing was completed this round.
-- **Did not add a seventh token check.** All 22 tokens already have checker coverage; `AUTOPILOT.md`
-  states there is nothing left to enforce.
+- **Did not trim `AUTOPILOT.md`.** It keeps growing and the previous round flagged it; trimming
+  status history is an owner-sanctioned edit, not something to do unilaterally in a no-op round.
 
 ## Risk
 
-- **The reviewer should confirm the restored tip is the one they expect** (`2bb9777` = `_0026`).
+- **The reviewer should confirm the restored tip is the one they expect** (`42f34bd` = `_0032`).
   If the runner ever cuts branches from a real chain instead of `3503537`, the restore commit
-  becomes redundant and would need removing. It is deliberately a separate commit (`2e23ede`) so it
+  becomes redundant and would need removing. It is deliberately a separate commit (`72e24db`) so it
   can be dropped without touching this round's other work.
 - **`toast-hit` reports FAIL by design.** It is not in the Verify command and does not gate the PR,
   but an automated reader scanning for the word FAIL will trip on it. The `grep -c "✗ #toast:"` = 0
@@ -160,10 +171,12 @@ Five owner-answer channels, all from this round's output:
 - **The `ds-disabled-hover` PASS excludes one rule** (`.pui-menu__item:last-child`) that the harness
   reports as undecidable — it cannot read structural pseudo-classes. A change confined to that rule
   computes zero diff. Unchanged this round, but the PASS says nothing about it.
-- **The `:short` trap is now costlier than it has ever been.** Four tips share `2026-09-01`; a round
-  that regresses to the truncated key would revert three rounds and leave every downstream check
-  green. Any future round must keep using `%(committerdate:iso8601)`.
-- **`AUTOPILOT.md` keeps growing** (now well past 1,100 lines of status history; a plain `Read` of
-  the whole file exceeds the tool's token ceiling). It is still navigable via `Grep` for
-  `^## Next task` plus an offset `Read`, but it is heading toward being unreadable and could use an
-  owner-sanctioned trim of the older per-round status blocks.
+- **The `:short` trap is worse than it has ever been: four rounds of damage, and the top of its
+  ranking is now exactly inverted** (oldest tip first). Any future round must keep using
+  `%(committerdate:iso8601)`, and must not conclude from a favourable-looking top pair that the old
+  key is safe — this round is a live demonstration that the top pair can agree while the actual
+  winner is wrong.
+- **`AUTOPILOT.md` keeps growing** (a plain `Read` of the whole file exceeds the tool's token
+  ceiling; this round it needed `Grep` for `^## Next task` plus an offset `Read` with an explicit
+  `limit`). It is heading toward being unreadable and could use an owner-sanctioned trim of the
+  older per-round status blocks.
