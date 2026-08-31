@@ -376,8 +376,37 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 >  เพราะไฟล์เหล่านั้นถูกเขียนใหม่มาหลายรอบโดยชอบธรรม — **อย่าอ้างว่า audit นี้ปิดข้อนั้นด้วย**
 >
 
-> **สถานะล่าสุด: รอบ `2026-09-01_0017` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
+> **สถานะล่าสุด: รอบ `2026-09-01_0026` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
 > เป็นรอบ no-op เต็มรูปแบบ: ไม่แตะ `index.html` / `design-system/` / `tools/` / `docs/` เลยสักไบต์**
+> (tip ที่ restore คือ `3e6cb1a` = `_0017`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
+>  `git diff --stat 3e6cb1a -- .` **ว่างเปล่า** → tree เท่ากันทุก byte = ปิดช่องทางที่ 1 ไปในตัว
+>  `git diff --diff-filter=D --name-only HEAD 3e6cb1a` **ว่างเปล่า** → path-checkout เทียบเท่า fast-forward
+>  `git merge-base --is-ancestor 3503537 3e6cb1a` → ancestor-ok
+>  `git log -1 --format="%h %an <%ae> %ad %s" 3e6cb1a` → author `PHANTOM AUTOPILOT
+>  autopilot@phantom.local` = commit ของ runner ไม่ใช่ของเจ้าของ (subject `chore: round
+>  2026-09-01_0017 no-op -- five channels checked, no owner answer`)
+>  harness ทั้ง 5 key ตรงตารางข้างล่างทุกค่า (85/17 markup 7 gone/5 new, 45/9 markup 0/3,
+>  5/1 markup 0/1, 15/3 + 1 undecidable markup N/A, `toast-hit` FAIL-5 ที่ 10 pairs/2 elements,
+>  0 markup problem, 0 unmatched โดย `grep -c "✗ #toast:"` = 0) และ Verify เขียวครบ 3 ขั้น
+>  (54/54, check-tokens 6/6 ที่ 15 CSS sources, 31/31)
+>  `grep -c "| Option | Cost |" README.md` = **8**, `git ls-files | grep -i jspdf` ว่าง,
+>  `git status --untracked-files=all --short` ว่าง
+>  ช่องทางที่ 5: `design-system`/`origin/design-system` = `3503537` (2026-08-13) ใหม่สุดในกลุ่ม,
+>  `mac`/`mac/design-system` = `e3a355c` (2026-07-20),
+>  `hardening-pass` มีแต่ `origin/`+`mac/` = `592e7c3` (2026-07-20),
+>  `main`/`mac/main`/`origin`/`origin/main` = `ef3220e` (2026-06-27))
+>
+> ⚠️ **รอบนี้ tip สองอันดับบนก็อยู่วันเดียวกันอีก (`2026-09-01`) แต่สูตรเก่า `:short` "บังเอิญ" ถูก**
+>  `3e6cb1a` (00:23:58) กับ `0b082ed` (00:17:00) ผูกกันภายใต้ `:short` → `sort -r` ตกไปเทียบ sha
+>  แล้ว `3` (0x33) > `0` (0x30) ซึ่ง**บังเอิญ**ตรงกับลำดับเวลา
+>  🔴 **ห้ามอ่านว่า "กับดักหายแล้ว"** — มันเป็นการโยนหัวก้อยที่ตัวอักษร hex ตัวแรกเท่านั้น
+>  รอบ `_0017` คือกรณีที่มันออกก้อย (`e` > `0` → restore ผิดตัว) รอบนี้คือกรณีที่มันออกหัว
+>  `:iso8601` ยังเป็นสูตรเดียวที่ถูกโดยโครงสร้าง ไม่ใช่โดยโชค
+>  และ **tip วันเดียวกันไม่ใช่สัญญาณว่ารอบก่อนๆ restore ผิด** — ต้องดูว่าลำดับ sha ขัดกับเวลาไหม
+>  ⚠️ รอบนี้**ไม่ได้รันสูตรเก่าเป็นคำสั่งจริง** (อ่านจาก output ของ `:iso8601` ที่สองแถวบนวันเดียวกัน)
+>  → หลักฐานอ่อนกว่ารอบ `_0017` ที่รันทั้งสองสูตรมาเทียบกันจริง
+>
+> **(สถานะของรอบ `_0017` ที่ยังใช้อ้างอิงได้)**
 > (tip ที่ restore คือ `0b082ed` = `_0011`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
 >  `git diff --stat 0b082ed -- .` **ว่างเปล่า** → tree เท่ากันทุก byte = ปิดช่องทางที่ 1 ไปในตัว
 >  `git diff --diff-filter=D --name-only HEAD 0b082ed` **ว่างเปล่า** → path-checkout เทียบเท่า fast-forward
