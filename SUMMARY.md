@@ -1,4 +1,4 @@
-# SUMMARY — round `2026-09-01_0001`
+# SUMMARY — round `2026-09-01_0011`
 
 **No-op round.** All eight owner decisions in `README.md` are still unanswered, so no code work was
 available. The tree was restored from the previous round's tip, every check was re-run, and nothing
@@ -8,39 +8,40 @@ under `index.html` / `design-system/` / `tools/` / `docs/` moved by a single byt
 
 ## What I did
 
-- **Restored the previous round's tip** (`e9cf110`, branch `…/2026-08-31_0056`) into the working
-  tree and committed it on its own as `d1fef44`. The runner cut this branch from `3503537` again,
+- **Restored the previous round's tip** (`ec1d48b`, branch `…/2026-09-01_0001`) into the working
+  tree and committed it on its own as `a078ffd`. The runner cut this branch from `3503537` again,
   so the tree arrived without any of the design-system integration work — `tools/` held only
-  `test.mjs`.
+  `test.mjs`, and `docs/` held only `superpowers/`.
 - **Checked all five owner-answer channels.** None has been answered — see the table below.
 - **Ran the contract Verify command in full** — all three stages green.
-- **Ran all five parity-harness keys.** Every count is identical to the previous round, which is
-  the independent confirmation that the restore was complete and not merely byte-equal to a sha I
+- **Ran all five parity-harness keys.** Every count is identical to the previous round, which is the
+  independent confirmation that the restore was complete rather than merely byte-equal to a sha I
   picked.
 - **Updated `## Next task` in `AUTOPILOT.md`** with this round's status block and demoted the
-  `_0056` block to reference status. The queued task is unchanged: check the five channels, and if
+  `_0001` block to reference status. The queued task is unchanged: check the five channels, and if
   still no answer, write SUMMARY and end.
 
 ## Why
 
 - **The restore comes before any Read.** The stale tree does not look broken — it looks *finished*
-  (its `:root` really is byte-identical to the 11-token `tokens.css` of `3503537`). A previous
-  round read files off the stale base and concluded the token task was already done, wasting the
-  round. So the first action was `git log --oneline -1`; `ls tools` showing only `test.mjs`
-  confirmed the stale base in the same call, and the first file read after that came from the
-  restored tree.
-- **This is the first round whose branch name crosses into a new calendar day**, so it is worth
-  recording that the day boundary changes nothing about how the tip is found. What is ranked is the
-  tip's `committerdate` (`2026-08-31 01:01:36` for `e9cf110`), not the branch name's date. The four
-  `2026-08-31` rounds still tie under the old `:short` key; only `:iso8601` orders them.
+  (on `3503537` the app's `:root` really is byte-identical to that commit's 11-token `tokens.css`).
+  A previous round read files off the stale base and concluded the token task was already done,
+  wasting the round. So the first action was `git log --oneline -8`, with `ls tools` in the same
+  call confirming the stale base; the first file read after that came from the restored tree.
+- **This round is *not* evidence for the `:iso8601` ranking formula, and I did not record it as
+  such.** The top two tips fall on different calendar days (`ec1d48b` 2026-09-01 00:07:20 vs
+  `e9cf110` 2026-08-31 01:01:36), so the old truncated `:short` key would have ranked this round
+  correctly too — the two formulas are indistinguishable here. `:iso8601` is still the formula to
+  use, because the four `2026-08-31` tips below the winner do still tie under `:short`; but a
+  reviewer should not read this round as another confirmation.
 - **`--diff-filter=D`, not `--stat | tail`.** Path-checkout cannot remove a file the target tip
   deleted, so "the diff deletes nothing" is the precondition that makes `git checkout <tip> -- .`
   tree-equivalent to a fast-forward. `--stat | tail -15` answers only for the rows that happened to
   print; the diff here is 16 files, so it would clip two. `--diff-filter=D --name-only` answers for
   the whole diff in one call, and empty output is the pass.
-- **The winner was matched by `refname`, never by row position.** A round's own branch can sort
-  either above or below the real tip; here it fell outside `head -8` entirely because it still
-  pointed at `3503537` (2026-08-13).
+- **The winner was matched by `refname`, never by row position.** This branch fell outside `head -8`
+  entirely because it still pointed at `3503537` (2026-08-13) — but the rule applied was the name
+  match, not the absence.
 - **The harness was run even though no CSS changed.** An empty `git diff` proves only that bytes
   match the tip I chose. The harness recomputes each element's cascade-winning declaration set from
   the files actually on disk, so a wrong or partial restore would show up as changed counts.
@@ -60,13 +61,20 @@ npm --prefix design-system test -> Test Files 12 passed (12) / Tests 31 passed (
 Parity harness, all five keys — counts identical to the previous round:
 
 ```
-buttons            2488f2d:index.html 9fab5c9:index.html -> PASS, 85 pairs / 17 elements
-segmented          021b966:index.html index.html         -> PASS, 45 pairs / 9 elements
-toast              bb10dd9:index.html 10e8f39:index.html -> PASS, 5 pairs / 1 element
+buttons            2488f2d:index.html 9fab5c9:index.html -> PASS, 85 pairs / 17 elements,
+                                                            markup coverage OK
+                                                            (7 old class tokens gone,
+                                                             5 new class attributes)
+segmented          021b966:index.html index.html         -> PASS, 45 pairs / 9 elements,
+                                                            markup coverage OK
+                                                            (0 gone, 3 new)
+toast              bb10dd9:index.html 10e8f39:index.html -> PASS, 5 pairs / 1 element,
+                                                            markup coverage OK (0 gone, 1 new)
 ds-disabled-hover  HEAD:design-system/src/styles.css design-system/src/styles.css
                                                          -> PASS, 15 pairs / 3 elements,
                                                             1 undecidable rule
-                                                            (.pui-menu__item:last-child)
+                                                            (.pui-menu__item:last-child),
+                                                            markup coverage N/A (stylesheet)
 toast-hit          3d3d5cc:index.html index.html         -> FAIL - 5 declaration(s) differ,
                                                             0 markup problems, 0 unmatched,
                                                             10 pairs / 2 elements;
@@ -76,30 +84,32 @@ toast-hit          3d3d5cc:index.html index.html         -> FAIL - 5 declaration
 `toast-hit`'s FAIL is the expected, recorded result of the intentional behaviour change made in
 round `2026-08-24_0003` (`.toast-act` gained `pointer-events:auto`). The zero `✗ #toast` lines are
 the proof the app side of that pair was not touched. It exits non-zero by design, so its run was
-separated from the others.
+separated from the others; its output was captured to `.toast-hit.out` inside the repo and deleted
+straight after, with `git status --untracked-files=all` re-run to confirm the tree is clean.
 
 Restore correctness, from this round's own output:
 
 - `git for-each-ref … %(committerdate:iso8601) … | sort -r | head -8` (run **before** the restore)
-  ranked `e9cf110` (`2026-08-31 01:01:36`) above `919574c` (`00:54:25`), `25b89cf` (`00:45:05`) and
-  `110911a` (`00:37:38`) — agreeing with branch-name order. This branch (`2026-09-01_0001`) still
-  pointed at `3503537` (2026-08-13) and so fell outside `head -8` entirely; the winner was confirmed
-  by `refname`, not by row position.
-- Local and `origin/` refs both point at `e9cf110`, with the same tree `30e662a`.
-- `git merge-base --is-ancestor 3503537 e9cf110` → ancestor-ok.
-- `git diff --diff-filter=D --name-only HEAD e9cf110` → empty, so the path-checkout is
-  tree-equivalent to a fast-forward. `git diff --stat HEAD e9cf110` → 16 files, 3011+/162−.
-- `git log -1 --format="%h %an <%ae> %ad %s" e9cf110` → author `PHANTOM AUTOPILOT
-  <autopilot@phantom.local>`, subject `chore: round 2026-08-31_0056 no-op -- five channels checked,
+  ranked `ec1d48b` (`2026-09-01 00:07:20`) above `e9cf110` (`2026-08-31 01:01:36`), `919574c`
+  (`00:54:25`) and `25b89cf` (`00:45:05`) — agreeing with branch-name order. This branch
+  (`2026-09-01_0011`) still pointed at `3503537` (2026-08-13) and so fell outside `head -8`
+  entirely; the winner was confirmed by `refname`, not by row position.
+- Local and `origin/` refs both point at `ec1d48b`.
+- `git merge-base --is-ancestor 3503537 ec1d48b` → `ancestor-ok`.
+- `git diff --diff-filter=D --name-only HEAD ec1d48b` → empty, so the path-checkout is
+  tree-equivalent to a fast-forward. The restore staged 13 `M` + 3 `A` (`SUMMARY.md`,
+  `docs/btn-parity-proof.mjs`, `tools/check-tokens.mjs`), no `D`.
+- `git log -1 --format="%h %an %ae %ad %s" ec1d48b` → author `PHANTOM AUTOPILOT
+  autopilot@phantom.local`, subject `chore: round 2026-09-01_0001 no-op -- five channels checked,
   no owner answer` — the runner's own commit, not an owner answer committed onto the old branch.
-- `git diff --stat e9cf110 -- .` after the checkout → empty, so the restore is total. That also
+- `git diff --stat ec1d48b -- .` after the checkout → empty, so the restore is total. That also
   proves `README.md` is unchanged, which closes channel 1 more strongly than the grep does.
 
 The five channels, and what each returned:
 
 | # | Channel | Result |
 |---|---|---|
-| 1 | `README.md` `## Open decisions` | 8 open; `\| Option \| Cost \|` = 8, `^### [1-8]\.` = 8, `If you answer:` = 8 — none consumed. Closed more strongly by the empty `git diff --stat e9cf110 -- .` |
+| 1 | `README.md` `## Open decisions` | 8 open; `\| Option \| Cost \|` = 8 and `If you answer:` = 8 — none consumed. Closed more strongly by the empty `git diff --stat ec1d48b -- .` |
 | 2 | a vendored jsPDF in the repo | `git ls-files \| grep -i jspdf` → empty |
 | 3 | `main` moved | still `ef3220e` (2026-06-27) |
 | 4 | uncommitted/untracked files left by the owner | `git status --untracked-files=all --short` → empty |
@@ -126,7 +136,11 @@ The five channels, and what each returned:
 
 - **The Verify command passes and this round changed no code**, so there is nothing new for a
   reviewer to check in the tree. The round's own diff is `AUTOPILOT.md` + `SUMMARY.md`, plus the
-  separate restore commit `d1fef44`, which reproduces `e9cf110`'s tree exactly (tree `30e662a`).
+  separate restore commit `a078ffd`, which reproduces `ec1d48b`'s tree exactly.
+- **Do not read this round as a confirmation of the `:iso8601` tip-ranking formula.** Its top two
+  candidates are on different days, so both the old and new formulas agree here. This is stated
+  under *Why* as well, because several previous SUMMARYs did record such a confirmation and those
+  claims get copied forward.
 - **I did not carry forward a "Nth consecutive no-op" tally.** Rounds phrase their commits
   differently, so any such count is not cheaply checkable. The checkable facts are the five channel
   results above.
@@ -141,5 +155,5 @@ The five channels, and what each returned:
   each round branch from `3503537` rather than from the previous tip. Seventy-plus round branches
   now stack in parallel, each reconstructed by path-restoring its predecessor. The work is sound,
   but it is only reachable through the newest `auto/*` branch — and a single round that skips the
-  restore drops everything, which has already happened ten times and cost
-  `docs/design-parity.md` permanently from the tree.
+  restore drops everything, which has already happened ten times and cost `docs/design-parity.md`
+  permanently from the tree.
