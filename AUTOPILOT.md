@@ -376,8 +376,36 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 >  เพราะไฟล์เหล่านั้นถูกเขียนใหม่มาหลายรอบโดยชอบธรรม — **อย่าอ้างว่า audit นี้ปิดข้อนั้นด้วย**
 >
 
-> **สถานะล่าสุด: รอบ `2026-08-31_0056` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
+> **สถานะล่าสุด: รอบ `2026-09-01_0001` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
 > เป็นรอบ no-op เต็มรูปแบบ: ไม่แตะ `index.html` / `design-system/` / `tools/` / `docs/` เลยสักไบต์**
+> (tip ที่ restore คือ `e9cf110` = `_0056`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
+>  `git diff --stat e9cf110 -- .` **ว่างเปล่า** → tree เท่ากันทุก byte = ปิดช่องทางที่ 1 ไปในตัว
+>  `git diff --diff-filter=D --name-only HEAD e9cf110` **ว่างเปล่า** → path-checkout เทียบเท่า fast-forward
+>  `git diff --stat HEAD e9cf110` = 16 ไฟล์ 3011+/162−
+>  `git merge-base --is-ancestor 3503537 e9cf110` → ancestor-ok
+>  `git log -1 --format="%h %an <%ae> %ad %s" e9cf110` → author `PHANTOM AUTOPILOT
+>  autopilot@phantom.local` = commit ของ runner ไม่ใช่ของเจ้าของ (subject `chore: round
+>  2026-08-31_0056 no-op -- five channels checked, no owner answer`)
+>  harness ทั้ง 5 key ตรงตารางข้างล่างทุกค่า (85/17, 45/9, 5/1, 15/3+1 undecidable,
+>  `toast-hit` FAIL-5 ที่ 10 pairs/2 elements, 0 markup problem, 0 unmatched
+>  โดย `grep -c "✗ #toast:"` = 0) และ Verify เขียวครบ 3 ขั้น (54/54, check-tokens 6/6, 31/31)
+>  `grep -c "| Option | Cost |" README.md` = **8** (หลักฐานรอง; `^### [1-8]\.` = 8,
+>  `If you answer:` = 8), `git ls-files | grep -i jspdf` ว่าง,
+>  `git status --untracked-files=all --short` ว่าง
+>  ช่องทางที่ 5: `design-system`/`origin/design-system` = `3503537` (2026-08-13) ใหม่สุดในกลุ่ม,
+>  `mac`/`mac/design-system` = `e3a355c` (2026-07-20),
+>  `hardening-pass` มีแต่ `origin/`+`mac/` = `592e7c3` (2026-07-20),
+>  `main`/`mac/main`/`origin`/`origin/main` = `ef3220e` (2026-06-27))
+>
+> ✅ **รอบ `_0001` (09-01) ยืนยันสูตร `:iso8601` อีกครั้ง และเป็นรอบแรกที่ *ข้ามวัน***
+>  รันคำสั่ง **ก่อน** restore ได้ `e9cf110` (`2026-08-31 01:01:36`) เหนือ `919574c` (`00:54:25`)
+>  เหนือ `25b89cf` (`00:45:05`) เหนือ `110911a` (`00:37:38`) — ตรงกับลำดับชื่อ branch ทุกตัว
+>  branch ของรอบนี้ (`2026-09-01_0001`) ยังชี้ที่ `3503537` (2026-08-13) จึงตกนอก `head -8`
+>  ⚠️ **การข้ามวันไม่ได้ทำให้กับดัก tiebreak หายไป** — `_0056` เป็นรอบเดียวของ `2026-08-31`
+>  ที่อยู่บนสุด ก็จริง แต่ 4 รอบของวันนั้นยังผูกกันหมดถ้าใช้ `:short` เหมือนเดิม
+>  วันที่ของ *branch name* (`2026-09-01`) ไม่เกี่ยวกับ `committerdate` ของ tip ที่ต้อง restore
+>
+> **(สถานะของรอบ `_0056` ที่ยังใช้อ้างอิงได้)**
 > (tip ที่ restore คือ `919574c` = `_0049`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
 >  `git diff --stat 919574c -- .` **ว่างเปล่า** → tree เท่ากันทุก byte = ปิดช่องทางที่ 1 ไปในตัว
 >  `git diff --diff-filter=D --name-only HEAD 919574c` **ว่างเปล่า** → path-checkout เทียบเท่า fast-forward
