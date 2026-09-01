@@ -376,9 +376,45 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 >  เพราะไฟล์เหล่านั้นถูกเขียนใหม่มาหลายรอบโดยชอบธรรม — **อย่าอ้างว่า audit นี้ปิดข้อนั้นด้วย**
 >
 
-> **สถานะล่าสุด: รอบ `2026-09-02_0002` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
+> **สถานะล่าสุด: รอบ `2026-09-02_0015` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
 > เป็นรอบ no-op: ไม่แตะ `index.html` / `design-system/` / `tools/` / `docs/` เลยสักไบต์
 > (แตะแค่ `AUTOPILOT.md` + `SUMMARY.md`)**
+> (tip ที่ restore คือ `98e4380` = `_0002`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
+>  `git diff --stat 98e4380 -- .` **ว่างเปล่า** → tree เท่ากันทุก byte = ปิดช่องทางที่ 1 ไปในตัว
+>  `git diff --diff-filter=D --name-only HEAD 98e4380` **ว่างเปล่า** → path-checkout เทียบเท่า fast-forward
+>  (restore commit `1529f7c` = 13 `M` + 3 `A` ไม่มี `D`; 16 ไฟล์ 3301+/162−)
+>  `git merge-base --is-ancestor 3503537 98e4380` → ancestor-ok
+>  `git log -1 --format="%h %an <%ae> %ad %s" 98e4380` → author `PHANTOM AUTOPILOT
+>  autopilot@phantom.local` = commit ของ runner ไม่ใช่ของเจ้าของ (subject `chore: round
+>  2026-09-02_0002 no-op -- five channels checked, no owner answer`)
+>  harness ทั้ง 5 key ตรงตารางทุกค่า (85/17 markup 7 gone/5 new, 45/9 markup 0/3,
+>  5/1 markup 0/1, 15/3 + 1 undecidable markup N/A, `toast-hit` FAIL-5 ที่ 10 pairs/2 elements,
+>  0 markup problem, 0 unmatched โดย `grep -c "✗ #toast:"` = 0) และ Verify เขียวครบ 3 ขั้น
+>  (54/54, check-tokens 6/6 ที่ 15 CSS sources, 31/31)
+>  `grep -c "| Option | Cost |" README.md` = **8** (รันหลัง restore),
+>  `git ls-files | grep -i jspdf` ว่าง, `ls jspdf.umd.min.js` → No such file,
+>  `git status --untracked-files=all --short` ว่าง
+>  ช่องทางที่ 5: `design-system`/`origin/design-system` = `3503537` (2026-08-13) ใหม่สุดในกลุ่ม,
+>  `mac`/`mac/design-system` = `e3a355c` (2026-07-20),
+>  `hardening-pass` มีแต่ `origin/`+`mac/` = `592e7c3` (2026-07-20),
+>  `main`/`mac/main`/`origin`/`origin/main` = `ef3220e` (2026-06-27))
+>
+> ⚠️ **รอบนี้สูตรเก่า `:short` "บังเอิญถูก" ที่อันดับ 1 เพราะข้ามวัน — ห้ามอ่านว่ากับดักหายแล้ว**
+>  `98e4380` เป็น tip ตัวเดียวที่อยู่ `2026-09-02` → day granularity แยกมันออกได้ก่อนที่ sha
+>  fallback จะทำงาน **แต่กับดักยังอยู่ครบในแถวถัดลงไป** — ในกลุ่ม tip 6 ตัวของ `2026-09-01`
+>  `:short` ยังยก `ec1d48b` (`_0001`, 00:07:20 = **เก่าสุด**) ขึ้นเหนือ `460f6e2` (`_0042`,
+>  00:47:10 = **ใหม่สุด**) เพราะ `e` (0x65) > `4` (0x34) รันจริงทั้งสองสูตรในรอบนี้:
+>  ```
+>  :short (สูตรเก่า)                   :iso8601 (สูตรที่ใช้จริง)
+>  2026-09-02 98e4380 _0002  อันดับ 1  2026-09-02 00:12:43 98e4380 _0002  ถูก
+>  2026-09-01 ec1d48b _0001  สลับผิด   2026-09-01 00:47:10 460f6e2 _0042
+>  2026-09-01 460f6e2 _0042            2026-09-01 00:37:41 42f34bd _0032
+>  2026-09-01 42f34bd _0032            2026-09-01 00:30:11 2bb9777 _0026
+>  ```
+>  🔴 **พอมีรอบที่สองลงวันที่ `2026-09-02` เมื่อไหร่ tie ก็กลับมาทันที** และการที่สองสูตร
+>  ตรงกันในรอบนี้ **ไม่ใช่หลักฐาน**อะไรเลย (กฎเดิม: `:iso8601` ถูกโดยโครงสร้าง ไม่ใช่โดยโชค)
+
+> **(สถานะของรอบ `2026-09-02_0002` ที่ยังใช้อ้างอิงได้)**
 > (tip ที่ restore คือ `460f6e2` = `_0042`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
 >  `git diff --stat 460f6e2 -- .` **ว่างเปล่า** → tree เท่ากันทุก byte = ปิดช่องทางที่ 1 ไปในตัว
 >  `git diff --diff-filter=D --name-only HEAD 460f6e2` **ว่างเปล่า** → path-checkout เทียบเท่า fast-forward
