@@ -1,131 +1,129 @@
-# Round 2026-09-02_0022 — no-op (no owner answer on any of the 8 open decisions)
+# Round 2026-09-02_0029 — SUMMARY
 
 ## What I did
 
-- **Restored the previous round's tree.** The branch was cut from `3503537` again (as every
-  `auto/*` branch is). Ranked tips by `%(committerdate:iso8601)` → `b791ace`
-  (`…/2026-09-02_0015`, 2026-09-02 00:20:38), same sha in `refs/heads` and `origin/`.
-  Restored with `git checkout b791ace -- .` as its own commit (`0ec2f73`, 13 `M` + 3 `A`, no `D`).
-- **Checked all five owner-answer channels — none has been answered.** Details under Verification.
-- **Ran all five `docs/btn-parity-proof.mjs` keys** as an independent check that the restore was
-  complete (an empty `git diff` only proves bytes; the harness recomputes each element's
-  cascade-winning declaration set from the files actually standing). All five match the expected
-  table exactly.
-- **Ran the full Verify command** — all three stages green.
-- **Recorded this round's status in `AUTOPILOT.md`**, including a live reproduction of the
-  retired `:short` ranking formula. `Next task` itself is unchanged: still "check the five
-  channels, write SUMMARY, end the round" until an owner answers.
-
-No byte of `index.html`, `design-system/`, `tools/` or `docs/` was touched this round.
+- **Restored the previous round's tip `3716e2b`** (branch `…/2026-09-02_0022`) onto the stale base
+  `3503537` the runner cut this branch from, as its own commit (`2908ddc`, 13 `M` + 3 `A`, no `D`).
+  `git diff --stat 3716e2b -- .` is empty afterwards → the tree matches byte for byte.
+- **Checked all five owner-answer channels. None has been answered — all 8 open decisions stand.**
+  This is therefore a no-op round: I did not touch `index.html`, `design-system/`, `tools/` or
+  `docs/` by a single byte. Only `AUTOPILOT.md` and `SUMMARY.md` changed.
+- **Ran the full three-stage Verify plus all five `btn-parity-proof.mjs` keys**, every number
+  matching the expected table (details under Verification).
+- **Recorded a new, materially worse instance of the `:short` ranking trap** in `AUTOPILOT.md`:
+  this round the retired formula not only tied at position 1, it resolved **wrongly**, and the real
+  tip sank *two* places rather than one. Both formulas were run as live commands, not inferred.
 
 ## Why
 
-- **Restore first, read second.** Reading `index.html` off the stale `3503537` base does not look
-  broken, it looks *finished* — that mistake cost a whole round once before, and permanently lost
-  `docs/design-parity.md` in round `2026-08-19_0022`. So the first commands of the round were
-  `git log --oneline -5` and the tip ranking, before any Read of a source file.
-- **Ranked by `:iso8601`, not `:short`.** Second granularity makes the sort a total order; day
-  granularity ties same-day rounds and falls through to comparing the **sha string**, which carries
-  no time information.
-- **No substitute task invented.** `AUTOPILOT.md`'s Next task block is explicit that all
-  code-touching fallback work is exhausted (token tooling 22/22 across six checks, parity table
-  closed at 11/11) and that the last read-only fallback — the retrospective restore audit — was
-  completed in round `2026-08-31_0023` and must not be re-run. The remaining work is eight owner
-  decisions, each of which moves pixels or adds a file, so none is an agent's call.
+The queued Next task says plainly: if no owner decision has been answered, check the five channels,
+write SUMMARY, and end the round — do not invent substitute work. Code-touching fallback work was
+exhausted at round `_0102`, and the last read-only fallback (the retrospective restore audit) was
+closed at `2026-08-31_0023`. Every remaining acceptance criterion is gated on a decision that moves
+pixels or adds a file to the repo, which is the owner's call and not an agent's.
+
+The one thing worth writing down this round is the ranking evidence. Earlier rounds observed the
+`:short` tiebreak firing and *happening to agree* with the clock, and warned that this must never be
+read as the trap being gone. This round settles that argument with a counter-example: it fired and
+disagreed. Live output, my own branch filtered out:
+
+```
+:short (retired)                    :iso8601 (used)
+2026-09-02 b791ace _0015   ← wrong  2026-09-02 00:27:22 3716e2b _0022   ← correct
+2026-09-02 98e4380 _0002            2026-09-02 00:20:38 b791ace _0015
+2026-09-02 3716e2b _0022   ← real   2026-09-02 00:12:43 98e4380 _0002
+2026-09-01 ec1d48b _0001      tip   2026-09-01 00:47:10 460f6e2 _0042
+```
+
+Three tips now share `2026-09-02`, so day granularity ties all three and `sort -r` falls through to
+the opaque sha string, where `b`(0x62) and `9`(0x39) both outrank `3`(0x33). Restoring line 1 would
+have reverted round `_0022` — silently, since `_0022` was itself a no-op touching only
+`AUTOPILOT.md`/`SUMMARY.md`, so the residual `git diff --stat` against the wrong tip would be empty
+and all three Verify stages and all five harness keys would still be green.
 
 ## Verification
 
-**Verify command — all three stages green:**
+Verify command (`node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`)
+— **all three stages green**:
 
-```
-node tools/test.mjs            → 54 passed, 0 failed
-node tools/check-tokens.mjs    → tokens 22/22 · fonts 4/4 · no derived-colour literals (15 CSS sources)
-                                 · font weights available · no radius literals · typeface from one source
-npm --prefix design-system test → Test Files 12 passed (12) · Tests 31 passed (31)
-```
+- `54 passed, 0 failed`
+- `check-tokens` 6/6 checks: tokens 22/22 in sync · fonts 4/4 byte-identical · no derived-colour
+  literals · every font-weight one of 400/500/700/800 · every `border-radius` reads a `--r-*` token
+  · every `font-family` reads `var(--mono)` — all at **15 CSS sources**
+- `Test Files 12 passed (12) · Tests 31 passed (31)`
 
-**Restore preconditions (all checked before touching the tree):**
+Harness, sha pairs copied from `AUTOPILOT.md:1318-1322` (never guessed); counts read from **this
+round's own output**, not transcribed:
 
-```
-git merge-base --is-ancestor 3503537 b791ace          → ancestor-ok
-git diff --diff-filter=D --name-only HEAD b791ace     → empty (path-checkout ≡ fast-forward)
-git log -1 --format="%h %an <%ae> %ad %s" b791ace     → PHANTOM AUTOPILOT <autopilot@phantom.local>
-                                                        "chore: round 2026-09-02_0015 no-op -- five
-                                                         channels checked, no owner answer"
-git diff --stat b791ace -- .   (after restore)        → empty (tree identical, every byte)
-```
-
-The author check matters: it distinguishes "the previous round wrote this tip" from "the owner
-committed an answer and that is now the tip". It is the runner, so no answer arrived that way.
-
-**Five owner-answer channels — all negative:**
-
-| # | Channel | Result |
+| key | pair pinning | result |
 |---|---|---|
-| 1 | `grep -c "\| Option \| Cost \|" README.md` (run **after** restore) | `8` — all 8 decisions still hold an unanswered option table |
-| 2 | `git ls-files \| grep -i jspdf` | empty — decision 1's file drop has not happened |
-| 3 | `main` | `ef3220e` (2026-06-27), unmoved |
-| 4 | `git status --untracked-files=all --short` | only the restore's own staged 13 `M` + 3 `A`; no untracked owner drop |
-| 5 | non-`auto/*` refs | newest is `design-system`/`origin/design-system` = `3503537` (2026-08-13); `mac`/`mac/design-system` = `e3a355c`, `origin/hardening-pass`+`mac/hardening-pass` = `592e7c3` (both 2026-07-20); `main`/`mac/main`/`origin`/`origin/main` = `ef3220e` (2026-06-27). Nothing newer than 2026-08-13. |
+| `buttons` | `2488f2d:index.html index.html` | PASS — 85 pairs / 17 elements, markup 7 gone / 5 new |
+| `segmented` | `021b966:index.html index.html` | PASS — 45 / 9, markup 0 gone / 3 new |
+| `toast` | `de07ea8:index.html 10e8f39:index.html` | PASS — 5 / 1, markup 0 / 1 |
+| `toast-hit` | `3d3d5cc:index.html index.html` | `FAIL — 5 declaration(s) differ`, 10 / 2, 0 markup problems, 0 unmatched |
+| `ds-disabled-hover` | `3716e2b:…/styles.css …/styles.css` | PASS — 15 / 3 from 14 assembled files, + 1 undecidable rule |
 
-**`docs/btn-parity-proof.mjs` — all five keys match the expected table:**
+Two of those need reading correctly:
 
-| key | before:after | result |
-|---|---|---|
-| `buttons` | `2488f2d:index.html` → `index.html` | PASS · 85 pairs / 17 elements · markup 7 old tokens gone, 5 new attributes |
-| `segmented` | `021b966:index.html` → `index.html` | PASS · 45 / 9 · markup 0 gone, 3 new |
-| `toast` | `de07ea8:index.html` → `10e8f39:index.html` | PASS · 5 / 1 · markup 0 gone, 1 new |
-| `toast-hit` | `3d3d5cc:index.html` → `index.html` | **FAIL — 5 declaration(s) differ**, 0 markup problems, 0 unmatched · 10 pairs / 2 elements · `grep -c "✗ #toast:"` = **0** |
-| `ds-disabled-hover` | `b791ace:…/styles.css` → `design-system/src/styles.css` | PASS · 15 / 3 · markup N/A (source is a stylesheet) · **1 undecidable rule** (`:last-child` on `.pui-menu__item`) |
+- **`toast-hit`'s FAIL-5 is the expected result, not a regression.** It records the deliberate
+  2026-08-24 `pointer-events:auto` fix. The check that it is still *only* that fix is
+  `grep -c "✗ #toast:"` = **0** — i.e. `#toast` itself shows no diff, proving `pointer-events:none`
+  was never removed from the container. All 5 differing declarations are on `#toastUndo`
+  (`pointer-events (unset) → auto <- .toast-act`) across its 5 states.
+- **`ds-disabled-hover`'s PASS excludes `.pui-menu__item:last-child`**, which the harness reports as
+  undecidable (structural pseudo it cannot read). A change confined to that rule would compute 0
+  diff. Unchanged this round, since no `.css` was touched.
 
-`toast-hit`'s FAIL is the **expected, correct** result — it records the deliberate 2026-08-24
-`pointer-events:auto` fix (`after : auto <- .toast-act`), and the `✗ #toast:` count of 0 is the
-proof that `#toast`'s own `pointer-events:none` was not removed. Do not "fix" it to PASS.
+Restore preconditions, all run before touching the tree:
 
-**Live reproduction of the retired `:short` formula** (own branch filtered out):
+- `git merge-base --is-ancestor 3503537 3716e2b` → `ancestor-ok`
+- `git diff --diff-filter=D --name-only HEAD 3716e2b` → **empty** (path-checkout is equivalent to a
+  fast-forward only when the diff deletes no file)
+- `git log -1 --format="%h %an <%ae> %ad %s" 3716e2b` → author `PHANTOM AUTOPILOT
+  <autopilot@phantom.local>`, subject `chore: round 2026-09-02_0022 no-op -- five channels checked,
+  no owner answer` → the runner wrote this tip, not the owner
+- local and `origin/` both point at `3716e2b`
 
-```
-:short (retired)                 :iso8601 (correct)
-2026-09-02 b791ace _0015  ← lucky 2026-09-02 00:20:38 b791ace _0015  ← correct
-2026-09-02 98e4380 _0002         2026-09-02 00:12:43 98e4380 _0002
-2026-09-01 ec1d48b _0001  ← wrong 2026-09-01 00:47:10 460f6e2 _0042
-2026-09-01 460f6e2 _0042         2026-09-01 00:37:41 42f34bd _0032
-```
+Five channels, all negative:
 
-This is the first round where **two tips share `2026-09-02`**, so the tie the previous round
-predicted has returned at position 1. It resolved *correctly* only by accident — `b` (0x62) >
-`9` (0x39) happens to agree with the clock. Below it the formula is still inverted: `ec1d48b`
-(`_0001`, 00:07:20, oldest of the six `2026-09-01` tips) outranks `460f6e2` (`_0042`, 00:47:10,
-newest).
+1. `grep -c "| Option | Cost |" README.md` = **8** (run *after* the restore) — all 8 decisions still
+   carry their option table, i.e. none answered
+2. `git ls-files | grep -i jspdf` empty; `ls jspdf.umd.min.js` → no such file
+3. `main` = `ef3220e` (2026-06-27), unmoved
+4. `git status --untracked-files=all --short` empty
+5. non-`auto/*` refs: `design-system`/`origin/design-system` = `3503537` (2026-08-13, newest of the
+   group) · `mac`/`mac/design-system` = `e3a355c` (2026-07-20) · `hardening-pass` exists only as
+   `origin/`+`mac/` = `592e7c3` (2026-07-20) · `main`/`mac/main`/`origin`/`origin/main` = `ef3220e`
+   (2026-06-27). Nothing newer than 2026-08-13, i.e. older than all of this work.
 
 ## What I did NOT do
 
-- **Did not answer, or act on, any of the 8 open decisions.** Each moves pixels (2/3/5/6/7),
-  adds a file (1/8), or needs a permission change (4). All are the owner's call.
-- **Did not restore `docs/design-parity.md`** (still reachable at `c3351fc:docs/design-parity.md`).
-  That is decision 8 and is explicitly not an agent's call.
-- **Did not re-run the retrospective restore audit** — completed in round `2026-08-31_0023`,
-  flagged there as not-to-be-repeated.
-- **Did not retry Playwright / Chrome-DevTools MCP.** They are *permission*-blocked, not merely
-  headless; retrying burns a round and changes nothing. Still no browser verification has ever
-  been done on this project.
-- **Did not invent a substitute task**, including the three the Next task block explicitly forbids
-  (implementing `:last-child`/combinator matching in the harness, adding the harness to Verify,
-  applying decisions 2/5/6/7 unilaterally).
+- **Did not answer, reword, reorder or delete any of the 8 open decisions.** Each moves visible
+  pixels or adds a file; that is the owner's call.
+- **Did not restore `docs/design-parity.md`** (still reachable at `c3351fc:docs/design-parity.md`,
+  44,376 bytes). That is decision 8 itself.
+- **Did not re-run the retrospective restore audit** — completed and closed at `2026-08-31_0023`.
+- **Did not touch the three items Next task explicitly forbids**: implementing `:last-child` /
+  combinator matching in the harness, adding the harness to the Verify command, or applying
+  decisions 2/5/6/7 unilaterally.
+- **Did not retry Playwright or Chrome-DevTools MCP.** They are *permission*-blocked, not merely
+  headless-blocked; retrying burns a round and changes nothing. That is decision 4.
 
 ## Risk
 
-- **Nothing in this round changes program behaviour.** The only content changes are `SUMMARY.md`
-  and one status block in `AUTOPILOT.md`. The restore commit is separate and its diff against
-  `b791ace` is empty.
-- **The project is stalled, and no round can clear it.** Eight decisions have gone unanswered
-  across a calendar-month boundary. A reviewer wanting progress should answer one in
-  `README.md → ## Open decisions`; decision 1 additionally needs `jspdf.umd.min.js` dropped into
-  the repo, since this machine has no copy and the network is blocked.
-- **The runner still cuts every round branch from `3503537`.** That is the underlying bug. It has
-  now cost one permanently-lost file and several near-misses, and it makes every round pay a
-  restore. Fixing the runner to branch from the previous tip would remove the whole class of risk.
-- **`ds-disabled-hover` reports 1 undecidable rule** (`:last-child` on `.pui-menu__item`). Its PASS
-  says nothing about that rule; it must still be read by hand if anyone edits `Menu`'s styles.
-- **The harness is not part of Verify**, so nothing forces it to stay in step with the code. Its
-  numbers are evidence about the round that ran it, not a standing guarantee.
+- **Nothing in this round changes what a user sees.** A reviewer should expect the diff to be
+  exactly two files (`AUTOPILOT.md`, `SUMMARY.md`) on top of the restore commit, and should be
+  suspicious if it is not.
+- **The restore commit `2908ddc` is large and is not this round's work** — it is round `_0022`'s
+  tree replayed onto the stale base the runner keeps cutting from. Review the round's *second*
+  commit, not the first.
+- **`toast-hit` exits non-zero by design.** Any automation that treats a non-zero harness exit as a
+  gate will hold this PR back incorrectly. The harness is deliberately *not* part of the Verify
+  command for this reason.
+- **The underlying stall is now a calendar month old and will not clear on its own.** It needs a
+  person to answer at least one decision in `README.md → ## Open decisions`. Rounds will keep
+  producing correct, green, empty results until then.
+- **The `:short` near-miss documented above is the standing hazard in this repo's process**, not a
+  code risk. Any future round that ranks round tips by `%(committerdate:short)` — or picks a tip by
+  *row position* rather than by matching the refname — can silently revert completed work with every
+  downstream check still passing.

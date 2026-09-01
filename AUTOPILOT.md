@@ -376,7 +376,49 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 >  เพราะไฟล์เหล่านั้นถูกเขียนใหม่มาหลายรอบโดยชอบธรรม — **อย่าอ้างว่า audit นี้ปิดข้อนั้นด้วย**
 >
 
-> **สถานะล่าสุด: รอบ `2026-09-02_0022` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
+> **สถานะล่าสุด: รอบ `2026-09-02_0029` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
+> เป็นรอบ no-op: ไม่แตะ `index.html` / `design-system/` / `tools/` / `docs/` เลยสักไบต์
+> (แตะแค่ `AUTOPILOT.md` + `SUMMARY.md`)**
+> (tip ที่ restore คือ `3716e2b` = `_0022`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
+>  `git diff --stat 3716e2b -- .` **ว่างเปล่า** → tree เท่ากันทุก byte = ปิดช่องทางที่ 1 ไปในตัว
+>  `git diff --diff-filter=D --name-only HEAD 3716e2b` **ว่างเปล่า** → path-checkout เทียบเท่า fast-forward
+>  (restore commit `2908ddc` = 13 `M` + 3 `A` ไม่มี `D`)
+>  `git merge-base --is-ancestor 3503537 3716e2b` → ancestor-ok
+>  `git log -1 --format="%h %an <%ae> %ad %s" 3716e2b` → author `PHANTOM AUTOPILOT
+>  autopilot@phantom.local` = commit ของ runner ไม่ใช่ของเจ้าของ (subject `chore: round
+>  2026-09-02_0022 no-op -- five channels checked, no owner answer`)
+>  harness ทั้ง 5 key ตรงตารางทุกค่า (85/17 markup 7 gone/5 new, 45/9 markup 0/3,
+>  5/1 markup 0/1, 15/3 จาก 14 ไฟล์ + 1 undecidable markup N/A, `toast-hit` FAIL-5 ที่ 10 pairs/2 elements,
+>  0 markup problem, 0 unmatched โดย `grep -c "✗ #toast:"` = 0) และ Verify เขียวครบ 3 ขั้น
+>  (54/54, check-tokens 6/6 ที่ 15 CSS sources, 31/31)
+>  `grep -c "| Option | Cost |" README.md` = **8** (รันหลัง restore),
+>  `git ls-files | grep -i jspdf` ว่าง, `ls jspdf.umd.min.js` → No such file,
+>  `git status --untracked-files=all --short` ว่าง
+>  ช่องทางที่ 5: `design-system`/`origin/design-system` = `3503537` (2026-08-13) ใหม่สุดในกลุ่ม,
+>  `mac`/`mac/design-system` = `e3a355c` (2026-07-20),
+>  `hardening-pass` มีแต่ `origin/`+`mac/` = `592e7c3` (2026-07-20),
+>  `main`/`mac/main`/`origin`/`origin/main` = `ef3220e` (2026-06-27))
+>
+> 🔴 **รอบนี้กับดัก `:short` ยิงจริงที่อันดับ 1 *และผลออกผิด* — ครั้งแรกที่ tip ตัวจริงตกไป
+>  ถึงอันดับ 3 (เดิมแย่สุดคือตกไปอันดับ 2)** ตอนนี้มี tip **สามตัว**อยู่ `2026-09-02` → `:short`
+>  ผูกกันทั้งสาม แล้ว sha fallback ยก `b` (0x62) และ `9` (0x39) เหนือ `3` (0x33)
+>  → `b791ace` (`_0015`, 00:20:38) ขึ้นอันดับ 1 แทน `3716e2b` (`_0022`, 00:27:22) ที่เป็นตัวจริง
+>  **restore ตามนั้น = ลบรอบ `_0022` ทิ้ง** และไม่มีอะไรจับได้เลย (`_0022` เป็น no-op ที่แตะแค่
+>  `AUTOPILOT.md`/`SUMMARY.md` → `git diff --stat` เทียบ tip ผิดก็ยังว่าง, harness ครบ 5 key,
+>  Verify เขียวทั้งสามขั้น) รันจริงทั้งสองสูตรในรอบนี้ (กรอง branch ตัวเองด้วย `grep -v "2026-09-02_0029"`):
+>  ```
+>  :short (สูตรเก่า)                   :iso8601 (สูตรที่ใช้จริง)
+>  2026-09-02 b791ace _0015  ผิด       2026-09-02 00:27:22 3716e2b _0022  ถูก
+>  2026-09-02 98e4380 _0002            2026-09-02 00:20:38 b791ace _0015
+>  2026-09-02 3716e2b _0022  ตัวจริง   2026-09-02 00:12:43 98e4380 _0002
+>  2026-09-01 ec1d48b _0001            2026-09-01 00:47:10 460f6e2 _0042
+>  ```
+>  ✅ **นี่คือ counter-example ที่รอบก่อนๆ ยังไม่มี** — รอบ `_0015` และ `_0022` ต่างบันทึกว่า
+>  "tie เกิดแล้วแต่บังเอิญออกหัว ห้ามอ่านว่าสูตรเก่าปลอดภัย" รอบนี้มันออกก้อย จบข้อถกเถียง
+>  และยืนยันกฎเดิม: ความเสียหายโตตามจำนวนรอบที่ลงวันเดียวกัน
+
+> **(สถานะของรอบ `2026-09-02_0022` ที่ยังใช้อ้างอิงได้)**
+> **รอบ `2026-09-02_0022` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
 > เป็นรอบ no-op: ไม่แตะ `index.html` / `design-system/` / `tools/` / `docs/` เลยสักไบต์
 > (แตะแค่ `AUTOPILOT.md` + `SUMMARY.md`)**
 > (tip ที่ restore คือ `b791ace` = `_0015`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
