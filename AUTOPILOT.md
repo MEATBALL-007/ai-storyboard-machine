@@ -376,7 +376,48 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 >  เพราะไฟล์เหล่านั้นถูกเขียนใหม่มาหลายรอบโดยชอบธรรม — **อย่าอ้างว่า audit นี้ปิดข้อนั้นด้วย**
 >
 
-> **สถานะล่าสุด: รอบ `2026-09-02_0036` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
+> **สถานะล่าสุด: รอบ `2026-09-02_0047` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
+> เป็นรอบ no-op: ไม่แตะ `index.html` / `design-system/` / `tools/` / `docs/` เลยสักไบต์
+> (แตะแค่ `AUTOPILOT.md` + `SUMMARY.md`)**
+> (tip ที่ restore คือ `facbf71` = `_0036`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
+>  `git diff --stat facbf71 -- .` **ว่างเปล่า** → tree เท่ากันทุก byte = ปิดช่องทางที่ 1 ไปในตัว
+>  `git diff --diff-filter=D --name-only HEAD facbf71` **ว่างเปล่า** → path-checkout เทียบเท่า fast-forward
+>  (restore commit `79dd843` = 13 `M` + 3 `A` ไม่มี `D`)
+>  `git merge-base --is-ancestor 3503537 facbf71` → ancestor-ok
+>  `git log -1 --format="%h %an <%ae> %ad %s" facbf71` → author `PHANTOM AUTOPILOT
+>  autopilot@phantom.local` = commit ของ runner ไม่ใช่ของเจ้าของ (subject `chore: round
+>  2026-09-02_0036 no-op -- five channels checked, no owner answer`)
+>  harness ทั้ง 5 key ตรงตารางทุกค่า (85/17, 45/9, 5/1 → PASS ไม่มี undecidable,
+>  15/3 → PASS + 1 undecidable `.pui-menu__item:last-child`,
+>  `toast-hit` FAIL-5 ที่ 10 pairs/2 elements, 0 markup problem, 0 unmatched
+>  โดย `grep -c "✗ #toast:"` = 0) และ Verify เขียวครบ 3 ขั้น
+>  (54/54, check-tokens 6/6 ที่ 15 CSS sources, 31/31)
+>  `grep -c "| Option | Cost |" README.md` = **8** (รันหลัง restore),
+>  `git ls-files | grep -i jspdf` ว่าง, `ls jspdf.umd.min.js` → No such file,
+>  `git status --untracked-files=all --short` ว่าง
+>  ช่องทางที่ 5: `design-system`/`origin/design-system` = `3503537` (2026-08-13) ใหม่สุดในกลุ่ม,
+>  `mac`/`mac/design-system` = `e3a355c` (2026-07-20),
+>  `hardening-pass` มีแต่ `origin/`+`mac/` = `592e7c3` (2026-07-20),
+>  `main`/`mac/main`/`origin`/`origin/main` = `ef3220e` (2026-06-27))
+>
+> 🔴 **ข้อสังเกตใหม่ของรอบนี้: `| sort -r | head -8` เริ่ม *ตัด* tip ตัวจริงทิ้งได้แล้ว**
+>  เพราะ `for-each-ref refs/heads refs/remotes` คืน **สองแถวต่อหนึ่ง tip** (local + `origin/`)
+>  → `head -8` = tip ที่มองเห็นแค่ **4 ตัว** ทั้งที่วันที่ `2026-09-02` มี 5 ตัวแล้ว
+>  รอบนี้ปลอดภัยเพราะตัวจริง (`facbf71`) อยู่แถวแรกพอดี **แต่ถ้ารอบไหน restore เสร็จก่อนแล้วค่อยรัน
+>  (branch ตัวเองจะเบียดขึ้นมา 2 แถว) หรือมีรอบลงวันเดียวกันเพิ่มอีก tip ตัวจริงจะหลุดจอเงียบๆ**
+>  → **ใช้ `head -16` ขึ้นไป** หรือกรอง `grep -v "^origin/"` ก่อน ไม่ใช่ `head -8`
+>  (นี่คือกับดักคนละตัวกับ `:short` — `:iso8601` เรียงถูกอยู่แล้ว แต่คำตอบถูก*ถูกตัดออกจากผลลัพธ์*)
+>  ⚠️ **รอบนี้ *ไม่ได้* รันสูตร `:short` สักแบบ** จึงไม่มีข้อมูลใหม่เรื่อง tiebreak
+>  ห้ามอ่านรอบนี้เป็นหลักฐานสนับสนุนหรือค้านสูตรไหน — เลือก tip ด้วย `:iso8601`
+>  แล้วตรวจซ้ำด้วย refname (`_0036` = เลขรอบสูงสุดที่ต่ำกว่า `_0047` ของตัวเอง) สองวิธีตรงกัน
+>
+> ⚠️ **`grep -c "If you answer:" README.md` = 8 แล้ว ไม่ใช่ 7** — decision 8 พามาอีกบรรทัดหนึ่ง
+>  บันทึกเก่าที่เขียนว่า "ตัวเลขนี้ค้างที่ 7" เป็นข้อความก่อนรอบ `2026-08-31_0023`
+>  ตอนนี้ตัวนับสองตัว (`| Option | Cost |` และ `If you answer:`) **ตรงกันที่ 8**
+>  ถ้ารอบไหนเห็นเลขสองตัวนี้ไม่ตรงกัน *นั่น*คือสัญญาณว่ามีคนตอบมาแล้ว
+
+> **(สถานะของรอบ `2026-09-02_0036` ที่ยังใช้อ้างอิงได้)**
+> **รอบ `2026-09-02_0036` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
 > เป็นรอบ no-op: ไม่แตะ `index.html` / `design-system/` / `tools/` / `docs/` เลยสักไบต์
 > (แตะแค่ `AUTOPILOT.md` + `SUMMARY.md`)**
 > (tip ที่ restore คือ `e66cdf6` = `_0029`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
