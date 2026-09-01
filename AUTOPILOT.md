@@ -376,7 +376,48 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 >  เพราะไฟล์เหล่านั้นถูกเขียนใหม่มาหลายรอบโดยชอบธรรม — **อย่าอ้างว่า audit นี้ปิดข้อนั้นด้วย**
 >
 
-> **สถานะล่าสุด: รอบ `2026-09-01_0042` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
+> **สถานะล่าสุด: รอบ `2026-09-02_0002` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
+> เป็นรอบ no-op: ไม่แตะ `index.html` / `design-system/` / `tools/` / `docs/` เลยสักไบต์
+> (แตะแค่ `AUTOPILOT.md` + `SUMMARY.md`)**
+> (tip ที่ restore คือ `460f6e2` = `_0042`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
+>  `git diff --stat 460f6e2 -- .` **ว่างเปล่า** → tree เท่ากันทุก byte = ปิดช่องทางที่ 1 ไปในตัว
+>  `git diff --diff-filter=D --name-only HEAD 460f6e2` **ว่างเปล่า** → path-checkout เทียบเท่า fast-forward
+>  `git merge-base --is-ancestor 3503537 460f6e2` → ancestor-ok
+>  `git log -1 --format="%h %an <%ae> %ad %s" 460f6e2` → author `PHANTOM AUTOPILOT
+>  autopilot@phantom.local` = commit ของ runner ไม่ใช่ของเจ้าของ (subject `chore: round
+>  2026-09-01_0042 no-op -- five channels checked, no owner answer`)
+>  harness ทั้ง 5 key ตรงตารางทุกค่า (85/17 markup 7 gone/5 new, 45/9 markup 0/3,
+>  5/1 markup 0/1, 15/3 + 1 undecidable markup N/A, `toast-hit` FAIL-5 ที่ 10 pairs/2 elements,
+>  0 markup problem, 0 unmatched โดย `grep -c "✗ #toast:"` = 0) และ Verify เขียวครบ 3 ขั้น
+>  (54/54, check-tokens 6/6 ที่ 15 CSS sources, 31/31)
+>  `grep -c "^### [1-8]\." README.md` / `If you answer:` / `| Option | Cost |` = **8 ทั้งสามค่า**,
+>  `git ls-files | grep -i jspdf` ว่าง, `git status --untracked-files=all --short` ว่าง
+>  ช่องทางที่ 5: `design-system`/`origin/design-system` = `3503537` (2026-08-13) ใหม่สุดในกลุ่ม,
+>  `mac`/`mac/design-system` = `e3a355c` (2026-07-20),
+>  `hardening-pass` มีแต่ `origin/`+`mac/` = `592e7c3` (2026-07-20),
+>  `main`/`mac/main`/`origin`/`origin/main` = `ef3220e` (2026-06-27))
+>
+> 🔴 **กับดัก `:short` ทำลายสถิติเดิมอีกครั้ง — รอบนี้จะลบทิ้ง *ห้า* รอบพร้อมกัน (เดิมสูงสุด 4)**
+>  ตอนนี้ tip **ทั้งหกตัว**อยู่วันเดียวกัน (`2026-09-01`) → `:short` ผูกกันทั้งหก แล้ว `sort -r`
+>  ตกไปเทียบ **sha string** ทำให้ `ec1d48b` (`_0001`, 00:07:20) — ตัวที่ **เก่าที่สุด** ในหกตัว —
+>  ขึ้นอันดับ 1 อีกครั้ง เพราะ `e` (0x65) เป็นตัวอักษร hex นำที่ใหญ่สุด
+>  **restore ตามนั้นคือการลบรอบ `_0011`, `_0017`, `_0026`, `_0032` และ `_0042` ทิ้งพร้อมกันห้ารอบ**
+>  รันเป็น output จริงทั้งสองสูตรในรอบนี้ (กรอง branch ตัวเองออกด้วย `grep -v "2026-09-02_0002"`):
+>  ```
+>  :short (สูตรเก่า)              :iso8601 (สูตรที่ใช้จริง)
+>  2026-09-01 ec1d48b _0001  ผิด  2026-09-01 00:47:10 460f6e2 _0042  ถูก
+>  2026-09-01 460f6e2 _0042       2026-09-01 00:37:41 42f34bd _0032
+>  2026-09-01 42f34bd _0032       2026-09-01 00:30:11 2bb9777 _0026
+>  2026-09-01 3e6cb1a _0017       2026-09-01 00:23:58 3e6cb1a _0017
+>  2026-09-01 2bb9777 _0026       2026-09-01 00:17:00 0b082ed _0011
+>  2026-09-01 0b082ed _0011       2026-09-01 00:07:20 ec1d48b _0001
+>  ```
+>  ⚠️ **ตัวถูก (`460f6e2`) ตกไปอยู่อันดับ 2 ของสูตรเก่า** — ใกล้พอที่จะดูเหมือน "เกือบถูก"
+>  แต่การเลือกอันดับ 1 คือการทิ้งงานห้ารอบ **ยิ่งรอบสะสมในวันเดียวกันมากขึ้น ความเสียหายยิ่งโต**
+>  และจะไม่มีอะไรจับได้เลยเหมือนเดิม ทั้งห้ารอบเป็น no-op ที่แตะแค่ `AUTOPILOT.md`/`SUMMARY.md`
+
+> **(สถานะของรอบ `2026-09-01_0042` ที่ยังใช้อ้างอิงได้)**
+> **รอบ `2026-09-01_0042` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
 > เป็นรอบ no-op เต็มรูปแบบ: ไม่แตะ `index.html` / `design-system/` / `tools/` / `docs/` เลยสักไบต์**
 > (tip ที่ restore คือ `42f34bd` = `_0032`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
 >  `git diff --stat 42f34bd -- .` **ว่างเปล่า** → tree เท่ากันทุก byte = ปิดช่องทางที่ 1 ไปในตัว
@@ -1193,6 +1234,25 @@ undecidable rule สักข้อ**, `ds-disabled-hover` (15 / 3) → PASS **�
 `node docs/btn-parity-proof.mjs toast-hit 3d3d5cc:index.html index.html`
 ต้องได้ `FAIL — 5 declaration(s) differ` **เท่าเดิมเป๊ะ** โดย `#toast` ไม่มี diff สักจุด
 ถ้าตัวเลขไม่ใช่ 5 แปลว่ามีคนไปแตะฝั่งแอป
+
+🔴 **รอบ `2026-09-02_0002` เพิ่ม — บล็อกนี้เคยบอก*ตัวเลข*ครบ 5 key แต่บอก*บรรทัดคำสั่ง*แค่ key เดียว
+(`toast-hit`) → รอบไหนเดา ref เอง มีสิทธิ์อ่าน PASS เป็น FAIL แล้วนึกว่าแอป regress**
+ต่อไปนี้คือคำสั่งครบทั้ง 5 บรรทัด รันตามนี้ตรงๆ ได้เลย (รอบนี้รันจริงทั้งหมด ได้ตามตัวเลขข้างบนเป๊ะ):
+```
+node docs/btn-parity-proof.mjs buttons           2488f2d:index.html                    index.html
+node docs/btn-parity-proof.mjs segmented         021b966:index.html                    index.html
+node docs/btn-parity-proof.mjs toast             de07ea8:index.html                    10e8f39:index.html
+node docs/btn-parity-proof.mjs toast-hit         3d3d5cc:index.html                    index.html
+node docs/btn-parity-proof.mjs ds-disabled-hover <tip รอบก่อน>:design-system/src/styles.css design-system/src/styles.css
+```
+⚠️ **`toast` ต้อง pin *ทั้งสองฝั่ง*** — key นี้พิสูจน์ refactor "inline `style=` → `.toast-act`"
+(`de07ea8` → `10e8f39`) แต่**หลังจากนั้น**รอบ `2026-08-24_0003` เติม `pointer-events:auto`
+ซึ่งเป็นการเปลี่ยนพฤติกรรม*ที่ตั้งใจ* → ถ้าปล่อยฝั่ง after เป็น working tree ตามแม่แบบใน
+`README.md:338` (`toast <rev>:index.html index.html`) จะได้ `FAIL — 5 declaration(s) differ`
+**ซึ่งเป็นผลที่ถูกต้องของ `toast-hit` ไม่ใช่ของ `toast`** (เลข 5 เท่ากันพอดี ยิ่งอ่านผิดง่าย)
+รอบนี้รันผิดแบบนั้นมาก่อนแล้วเห็น `after : auto <- .toast-act` จึงรู้ว่าเป็นคนละ delta
+✅ **`buttons` / `segmented` ปล่อยฝั่ง after เป็น working tree ได้** เพราะยังไม่มีรอบไหน
+แตะพื้นที่นั้นอีกเลยหลัง refactor — และ*นั่นคือประโยชน์ของมัน* (จับได้ทันทีถ้ามีคนแตะ)
 
 ⚠️ **ความเสี่ยงที่ต้องรับมือ ไม่ใช่มองข้าม:** **ไม่มีเบราว์เซอร์ให้ verify** (decision 4 ยังไม่ได้รับอนุญาต)
 ถ้ารอบไหนแก้ `<style>` ของ `index.html` → ใช้วิธีเดิม: เพิ่ม refactor ใหม่เข้าไปใน `REFACTORS`

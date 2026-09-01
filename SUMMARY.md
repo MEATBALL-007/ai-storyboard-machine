@@ -1,182 +1,175 @@
-# SUMMARY — round `2026-09-01_0042`
+# SUMMARY — round `2026-09-02_0002`
 
 **No-op round.** All eight owner decisions in `README.md` are still unanswered, so no code work was
 available. The tree was restored from the previous round's tip, every check was re-run, and nothing
 under `index.html` / `design-system/` / `tools/` / `docs/` moved by a single byte.
 
-The one thing worth reading in this round: **a fifth tip landed on `2026-09-01`, and the retired
-`%(committerdate:short)` key now ranks the *oldest* of the five first — restoring it would discard
-four rounds at once.** Both formulas were run as live commands, so this is a reproduction, not an
-inference. Details under *Why*.
+Two things in this round are worth reading:
+
+1. **The parity harness's `toast` key was under-documented in a way that reads as a regression.**
+   `AUTOPILOT.md`'s Verify block listed expected numbers for all five keys but a command line for
+   only one. Running `toast` the way `README.md:338` templates it reports
+   `FAIL — 5 declaration(s) differ` — and `5` is the same number `toast-hit` is *supposed* to
+   report, so the two are easy to confuse. It is not a regression. Fixed in `AUTOPILOT.md`.
+2. **A sixth tip landed on `2026-09-01`, and the retired `%(committerdate:short)` key now ranks the
+   *oldest* of the six first — restoring it would discard five rounds at once**, up from four. Both
+   formulas were run as live commands, so this is a reproduction, not an inference.
 
 ---
 
 ## What I did
 
-- **Restored the previous round's tip** (`42f34bd`, branch `…/2026-09-01_0032`) into the working
-  tree and committed it on its own as `72e24db`. The runner cut this branch from `3503537` again, so
-  the tree arrived without any of the design-system integration work.
+- **Restored the previous round's tip** (`460f6e2`, branch `…/2026-09-01_0042`) into the working
+  tree and committed it on its own as `9788de1`. The runner cut this branch from `3503537` again, so
+  the tree arrived without any of the design-system integration work (16 files, 3248+/162−).
 - **Checked all five owner-answer channels.** None has been answered — table below.
 - **Ran the contract Verify command in full** — all three stages green.
-- **Ran all five parity-harness keys.** Every count is identical to the previous round, which is the
-  independent confirmation that the restore was complete rather than merely byte-equal to a sha I
-  picked.
+- **Ran all five parity-harness keys.** Every count matches the recorded baseline.
+- **Corrected the Verify block in `AUTOPILOT.md`** to carry all five harness command lines verbatim,
+  plus the reason `toast` must have *both* sides pinned. This is the only content change this round.
 - **Reproduced the `:short` ranking trap as live output, in its worst recorded form yet** — this
-  round it would cost four rounds of work, up from three. See *Why*.
+  round it would cost five rounds of work, up from four.
 
 ## Why
 
 - **The restore comes before any Read.** The stale tree does not look broken — it looks *finished*
   (on `3503537` the app's `:root` really is byte-identical to that commit's 11-token `tokens.css`).
-  An earlier round read files off the stale base and concluded the token task was already done,
-  wasting the round. The first action here was `git log --oneline -5`; the first repo file read came
-  after the restore commit. Note that `grep -c "| Option | Cost |" README.md` run *before* the
-  restore returns **0**, not 8 — the stale `README.md` has no `## Open decisions` section at all, so
-  channel 1 is only meaningful post-restore. It was re-run afterwards.
-- **🔴 The retired key would now revert FOUR rounds.** All five `2026-09-01` tips share a date, so
-  `:short` ties every one of them and `sort -r` falls through to comparing sha strings — a
-  uniformly random key with no temporal meaning. Both formulas were run as real commands, with this
-  branch's own suffix filtered out:
+  Round `2026-08-20_0004` was fooled exactly this way and burned a commit. The only trustworthy
+  signal is `git log --oneline -1`; `ls tools` showing just `test.mjs` is the cheap confirmation.
+- **The restore target was picked with `%(committerdate:iso8601)`, never `:short`.** All six
+  candidate tips now share the date `2026-09-01`, so `:short` ties on all six and `sort -r` falls
+  through to comparing the abbreviated **sha as a string**. Both were run as real commands:
 
   ```
-  :short  (retired key)          :iso8601 (key in use)
-  2026-09-01 ec1d48b  _0001  X   2026-09-01 00:37:41 42f34bd  _0032   <- correct
-  2026-09-01 42f34bd  _0032      2026-09-01 00:30:11 2bb9777  _0026
-  2026-09-01 3e6cb1a  _0017      2026-09-01 00:23:58 3e6cb1a  _0017
-  2026-09-01 2bb9777  _0026      2026-09-01 00:17:00 0b082ed  _0011
-  2026-09-01 0b082ed  _0011      2026-09-01 00:07:20 ec1d48b  _0001
+  :short (retired, WRONG)        :iso8601 (used)
+  2026-09-01 ec1d48b _0001  ←ranked 1st   2026-09-01 00:47:10 460f6e2 _0042  ←correct
+  2026-09-01 460f6e2 _0042                2026-09-01 00:37:41 42f34bd _0032
+  2026-09-01 42f34bd _0032                2026-09-01 00:30:11 2bb9777 _0026
+  2026-09-01 3e6cb1a _0017                2026-09-01 00:23:58 3e6cb1a _0017
+  2026-09-01 2bb9777 _0026                2026-09-01 00:17:00 0b082ed _0011
+  2026-09-01 0b082ed _0011                2026-09-01 00:07:20 ec1d48b _0001
   ```
 
-  `ec1d48b` wins the truncated ranking because `e` (0x65) is the highest leading hex digit present.
-  It is also the **oldest** of the five — the truncated key inverts the ordering completely at the
-  top, not by one position. Restoring it would discard `_0011`, `_0017`, `_0026` and `_0032`
-  together. **Nothing downstream would catch it**: all four were no-op rounds touching only
-  `AUTOPILOT.md`/`SUMMARY.md`, so the residual `git diff --stat <wrong-tip> -- .` would be empty,
-  all five harness keys would still match, and all three Verify stages would still be green.
-- **Running the old formula for real mattered this round.** Looking only at the top two `:iso8601`
-  rows (`42f34bd` 00:37:41 vs `2bb9777` 00:30:11, both `2026-09-01`) would suggest `:short` gets it
-  right, since `4` (0x34) > `2` (0x32) happens to agree with the time order. That inference is
-  wrong — the actual `:short` winner is a row that `head -8` had clipped out of the earlier
-  `:iso8601` output entirely. Reasoning from the `:iso8601` list is not a substitute for running
-  `:short`.
-- **`--diff-filter=D`, not `--stat | tail`.** Path-checkout cannot remove a file the target tip
-  deleted, so "the diff deletes nothing" is the precondition that makes `git checkout <tip> -- .`
-  tree-equivalent to a fast-forward. `--diff-filter=D --name-only` answers for the whole diff in one
-  call, and empty output is the pass.
-- **The winner was matched by `refname`, never by row position.** This branch (`2026-09-01_0042`)
-  still pointed at `3503537` when the ranking ran, so it fell outside the window; in the
-  two-formula comparison it was filtered out explicitly.
-- **The tip's author was checked, not its subject.** `%an`/`%ae` on `42f34bd` reads
-  `PHANTOM AUTOPILOT <autopilot@phantom.local>` — the runner, i.e. the previous round's own commit,
-  not an owner answer landing on that branch. A round that amends its docs after its no-op commit
-  leaves a subject matching nothing, so the subject is not a reliable test.
-- **The harness was run even though no CSS changed.** An empty `git diff` proves only that bytes
-  match the tip I chose. The harness recomputes each element's cascade-winning declaration set from
-  the files actually on disk, so a wrong or partial restore shows up as changed counts.
-- **No capture artefact was written.** `toast-hit` exits non-zero by design; I ran it twice (once
-  for the result line, once piped to `grep -c`) rather than redirecting to a file. Nothing is left
-  behind.
+  `ec1d48b` is the **oldest** of the six (00:07:20) and ranks first purely because `e` (0x65) is the
+  largest leading hex digit. Restoring it would silently delete `_0011`, `_0017`, `_0026`, `_0032`
+  and `_0042`. Nothing would catch it: all five are no-ops touching only `AUTOPILOT.md`/`SUMMARY.md`,
+  so the tree diff would still be empty, the harness would still match, and Verify would still be
+  green. Note the correct tip fell to rank 2 under `:short` — close enough to look "nearly right",
+  which is exactly why the formula must not be judged by eyeballing the top row.
+- **Why `toast` must pin both sides.** The `toast` key exists to prove one specific 2026-08-23
+  refactor (inline `style=` inside a JS template string → `class="toast-act"`) moved no pixels:
+  `de07ea8` → `10e8f39`. On **2026-08-24** a *later, deliberate* change added `pointer-events:auto`
+  to `.toast-act` to fix the unclickable Undo button. So leaving the after side as the working tree
+  folds that intentional delta into a key whose whole claim is "nothing moved". I ran it the wrong
+  way first and got `FAIL — 5`, with the harness naming the cause outright (`after : auto <-
+  .toast-act`) — that line is what distinguishes it from `toast-hit`'s identically-sized FAIL.
+  `buttons` and `segmented` *should* keep an open-ended after side: nothing has touched those areas
+  since, so an open comparison is a live regression guard rather than a stale one.
+- **`ds-disabled-hover` has no canonical before-rev**, because it is a 0-diff baseline whose job is
+  to fire when `Button.css`/`Menu.css` change. I used the previous round's tip, which makes it a
+  "nothing moved since last round" guard. I recorded it in `AUTOPILOT.md` as `<tip รอบก่อน>` rather
+  than a fixed sha, since a fixed sha would make the check weaker every round.
+- **I did not answer any decision, and did not do code work in their place.** Decisions 2/5/6/7 all
+  move visible pixels, and decision 8 (recovering `docs/design-parity.md` from `c3351fc`) requires
+  reconciling a 13-day-old file against work that postdates it. Both are owner calls.
 
 ## Verification
 
-```
-node tools/test.mjs             -> 54 passed, 0 failed
-node tools/check-tokens.mjs     -> tokens in sync 22/22 · fonts in sync 4/4 ·
-                                   no derived-colour literals · font weights available
-                                   (400/500/700/800) · no radius literals ·
-                                   typeface from one source
-                                   (15 CSS sources scanned per check)
-npm --prefix design-system test -> Test Files 12 passed (12) / Tests 31 passed (31)
-```
-
-Parity harness, all five keys — every count read from this round's own output:
+**Contract Verify — all three stages green:**
 
 ```
-buttons            2488f2d:index.html 9fab5c9:index.html -> PASS, 85 pairs / 17 elements,
-                                                            markup coverage OK
-                                                            (7 old class tokens gone,
-                                                             5 new class attributes)
-segmented          021b966:index.html index.html         -> PASS, 45 pairs / 9 elements,
-                                                            markup coverage OK (0 gone, 3 new)
-toast              bb10dd9:index.html 10e8f39:index.html -> PASS, 5 pairs / 1 element,
-                                                            markup coverage OK (0 gone, 1 new)
-ds-disabled-hover  HEAD:design-system/src/styles.css design-system/src/styles.css
-                                                         -> PASS, 15 pairs / 3 elements,
-                                                            1 undecidable rule
-                                                            (.pui-menu__item:last-child),
-                                                            markup coverage N/A (stylesheet)
-toast-hit          3d3d5cc:index.html index.html         -> FAIL - 5 declaration(s) differ,
-                                                            0 markup problems, 0 unmatched,
-                                                            10 pairs / 2 elements;
-                                                            grep -c "✗ #toast:" = 0
+node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test
+```
+```
+54 passed, 0 failed
+tokens in sync: 22/22 from design-system/src/tokens.css present and identical in index.html
+fonts in sync: 4/4 from design-system/src/fonts.css embedded byte-identical in index.html
+no derived-colour literals: 15 CSS source(s) scanned, none re-hardcode a tokenised colour
+font weights available: 15 CSS source(s) scanned, every font-weight is one of 400, 500, 700, 800
+no radius literals: 15 CSS source(s) scanned, every border-radius reads a --r-* token
+typeface from one source: 15 CSS source(s) scanned, every font-family reads var(--mono)
+Test Files  12 passed (12)      Tests  31 passed (31)
 ```
 
-`toast-hit`'s FAIL is the expected, recorded result of the intentional behaviour change made in
-round `2026-08-24_0003` (`.toast-act` gained `pointer-events:auto`). The zero `✗ #toast` lines are
-the proof the app side of that pair was not touched.
+**Restore integrity (channel 1 closes itself here):**
 
-Restore correctness, from this round's own output:
+| Check | Result |
+|---|---|
+| `git diff --stat 460f6e2 -- .` | empty → tree identical byte for byte |
+| `git diff --diff-filter=D --name-only HEAD 460f6e2` | empty → path-checkout equivalent to fast-forward |
+| `git merge-base --is-ancestor 3503537 460f6e2` | ancestor-ok |
+| restore stage shape | 13 `M` + 3 `A`, no `D` |
+| `git log -1 460f6e2` author | `PHANTOM AUTOPILOT <autopilot@phantom.local>` — runner, not owner |
 
-- `git for-each-ref … %(committerdate:iso8601) … | grep "auto/deep_dive" | sort -r | head -8`
-  (run **before** the restore) ranked `42f34bd` (`2026-09-01 00:37:41`) above `2bb9777`
-  (`00:30:11`), `3e6cb1a` (`00:23:58`) and `0b082ed` (`00:17:00`) — agreeing with branch-name
-  order. The winner was confirmed by `refname`, not by row number.
-- Local and `origin/` refs both point at `42f34bd`.
-- `git merge-base --is-ancestor 3503537 42f34bd` → `ancestor-ok`.
-- `git diff --diff-filter=D --name-only HEAD 42f34bd` → **empty** (no deletions; restore stage was
-  13 `M` + 3 `A`).
-- `git log -1 --format="%h %an <%ae> %ad %s" 42f34bd` → author `PHANTOM AUTOPILOT
-  <autopilot@phantom.local>`, subject `chore: round 2026-09-01_0032 no-op -- five channels checked,
-  no owner answer`.
-- `git diff --stat 42f34bd -- .` after the restore → **empty**, i.e. the tree matches the tip byte
-  for byte. This doubles as channel 1: `README.md` is unchanged from the tip.
+**Five owner-answer channels — all negative:**
 
-Five owner-answer channels, all from this round's output (channels 1, 2 and 4 re-run **after** the
-restore):
+| # | Channel | Command | Result |
+|---|---|---|---|
+| 1 | Owner edits in the branch tree | `git diff --stat 460f6e2 -- .` | empty |
+| 2 | `README.md` `## Open decisions` | `grep -c "^### [1-8]\."` / `"If you answer:"` / `"\| Option \| Cost \|"` | **8 / 8 / 8** — all still open |
+| 3 | `main` moved | `for-each-ref` | `ef3220e`, unchanged since 2026-06-27 |
+| 4 | Dropped files (e.g. vendored jsPDF) | `git ls-files \| grep -i jspdf`; `git status --untracked-files=all --short` | both empty |
+| 5 | Non-`auto/` refs | `for-each-ref … \| grep -v auto/deep_dive` | newest is `3503537` (2026-08-13), older than all round work |
 
-| # | Channel | Result |
-|---|---|---|
-| 1 | `README.md → ## Open decisions` | `grep -c "\| Option \| Cost \|"` = **8**; `If you answer:` = 8; `^### [1-8]\.` = 8 — all eight still unanswered |
-| 2 | `jspdf.umd.min.js` at repo root | `git ls-files \| grep -i jspdf` → empty |
-| 3 | `main` | still `ef3220e` (2026-06-27) |
-| 4 | uncommitted drop | `git status --untracked-files=all --short` → empty |
-| 5 | non-`auto/*` refs | newest is `design-system`/`origin/design-system` = `3503537` (2026-08-13); `mac`/`mac/design-system` = `e3a355c` (2026-07-20); `hardening-pass` (only `origin/`+`mac/`) = `592e7c3` (2026-07-20); `main`/`mac/main`/`origin`/`origin/main` = `ef3220e` (2026-06-27) — nothing newer than this work |
+Channel 5 in full: `design-system`/`origin/design-system` = `3503537` (2026-08-13);
+`mac`/`mac/design-system` = `e3a355c` (2026-07-20); `hardening-pass` exists only as `origin/`+`mac/`
+= `592e7c3` (2026-07-20); `main`/`mac/main`/`origin`/`origin/main` = `ef3220e` (2026-06-27).
+
+**Parity harness — all five keys, exact commands and results:**
+
+| Key | Command | Pairs / elements | Markup coverage | Result |
+|---|---|---|---|---|
+| `buttons` | `buttons 2488f2d:index.html index.html` | 85 / 17 | 7 gone, 5 new | PASS |
+| `segmented` | `segmented 021b966:index.html index.html` | 45 / 9 | 0 gone, 3 new | PASS |
+| `toast` | `toast de07ea8:index.html 10e8f39:index.html` | 5 / 1 | 0 gone, 1 new | PASS |
+| `ds-disabled-hover` | `ds-disabled-hover 460f6e2:…/styles.css …/styles.css` | 15 / 3 | N/A (stylesheet) | PASS + 1 undecidable |
+| `toast-hit` | `toast-hit 3d3d5cc:index.html index.html` | 10 / 2 | 0 problems | **FAIL — 5 declaration(s) differ (expected)** |
+
+`toast-hit`'s FAIL is the contract-specified correct result: it documents the deliberate
+`pointer-events:auto` fix. `grep -c "✗ #toast:"` = **0**, confirming the app-side `#toast` rule was
+not touched — the 5 differing declarations are all on `#toastUndo`. `ds-disabled-hover` assembled its
+stylesheet from **14 files in `@import` order**; its 1 undecidable rule is
+`.pui-menu__item:last-child` (structural pseudo), identical in both versions.
+
+**Final tree state:** `git status --untracked-files=all --short` empty; only `AUTOPILOT.md` and
+`SUMMARY.md` differ from `460f6e2`.
 
 ## What I did NOT do
 
-- **Did not answer any of the eight open decisions.** Every one moves pixels or adds a file to the
-  repo; they are the owner's call, and the contract forbids inventing a substitute task.
-- **Did not touch `index.html`, `design-system/`, `tools/` or `docs/`.** The empty
-  `git diff --stat 42f34bd -- .` is the proof.
-- **Did not restore `docs/design-parity.md`** (still reachable at `c3351fc:docs/design-parity.md`).
-  That is open decision 8 and blocks no acceptance criterion.
-- **Did not re-run the retrospective restore audit** — completed in round `2026-08-31_0023`, which
-  explicitly forbids repeating it.
-- **Did not retry the browser MCPs.** Playwright and Chrome-DevTools are *permission*-blocked, not
-  merely headless; retrying without a permission change burns the round.
-- **Did not tick any acceptance-criteria box.** Nothing was completed this round.
-- **Did not trim `AUTOPILOT.md`.** It keeps growing and the previous round flagged it; trimming
-  status history is an owner-sanctioned edit, not something to do unilaterally in a no-op round.
+- **Did not answer, or act on, any of the eight owner decisions.** Decisions 2 (chip padding), 5
+  (segmented padding), 6 (input sizes) and 7 (`:disabled:hover` leaks) each move pixels a user sees;
+  decision 8 (recovering `docs/design-parity.md`) means reconciling stale content. Owner's call.
+- **Did not touch `index.html`, `design-system/`, `tools/` or `docs/`** — not one byte.
+- **Did not add a 7th token checker.** The contract records that all 22 tokens are covered by the 6
+  existing checks and that there is nothing left to enforce.
+- **Did not add the harness to the Verify command.** It is a per-round instrument, not a check that
+  must stay green — `toast-hit` is *designed* to FAIL.
+- **Did not re-run the retrospective restore audit** (closed in `2026-08-31_0023`).
+- **Did not retry Playwright / Chrome-DevTools MCP.** Both are permission-blocked, not merely
+  headless; decision 4 has not been granted. Retrying wastes a round.
 
 ## Risk
 
-- **The reviewer should confirm the restored tip is the one they expect** (`42f34bd` = `_0032`).
-  If the runner ever cuts branches from a real chain instead of `3503537`, the restore commit
-  becomes redundant and would need removing. It is deliberately a separate commit (`72e24db`) so it
-  can be dropped without touching this round's other work.
-- **`toast-hit` reports FAIL by design.** It is not in the Verify command and does not gate the PR,
-  but an automated reader scanning for the word FAIL will trip on it. The `grep -c "✗ #toast:"` = 0
-  line is the discriminator: it proves the app side of that pair is untouched and only the
-  intentional `#toastUndo` `pointer-events` change shows.
-- **The `ds-disabled-hover` PASS excludes one rule** (`.pui-menu__item:last-child`) that the harness
-  reports as undecidable — it cannot read structural pseudo-classes. A change confined to that rule
-  computes zero diff. Unchanged this round, but the PASS says nothing about it.
-- **The `:short` trap is worse than it has ever been: four rounds of damage, and the top of its
-  ranking is now exactly inverted** (oldest tip first). Any future round must keep using
-  `%(committerdate:iso8601)`, and must not conclude from a favourable-looking top pair that the old
-  key is safe — this round is a live demonstration that the top pair can agree while the actual
-  winner is wrong.
-- **`AUTOPILOT.md` keeps growing** (a plain `Read` of the whole file exceeds the tool's token
-  ceiling; this round it needed `Grep` for `^## Next task` plus an offset `Read` with an explicit
-  `limit`). It is heading toward being unreadable and could use an owner-sanctioned trim of the
-  older per-round status blocks.
+- **The `AUTOPILOT.md` Verify-block edit is the only judgement call in this round.** A strict reading
+  of "no-op round: check five channels, write SUMMARY, stop" would have left it alone. I made the
+  change because I had just been misled by the gap myself, it is confined to documentation of the
+  round's own verification procedure, and every command in it was executed in this round. It changes
+  no CSS and no checker. A reviewer who disagrees can drop that hunk with no other effect.
+- **`ds-disabled-hover` was run against the previous round's tip, so it is a weak proof this round.**
+  I restored that tip, so a 0-diff result is nearly tautological. It would only have caught a
+  mid-round edit of mine. Its real value arrives when `Button.css`/`Menu.css` genuinely change.
+- **The harness models no inheritance and no hit testing, and nothing in Verify evaluates `:hover`.**
+  If a future round quietly changed a hover colour, all three Verify stages and all five harness keys
+  would stay green. This is precisely why decisions 2/5/6/7 must wait for an answer rather than be
+  "tried out" — the safety net people assume exists does not.
+- **Still never opened in a real browser.** Every claim about rendering and hit testing rests on
+  reading source plus the CSS spec. Unchanged for the whole project; flagged again because it is the
+  largest standing gap.
+- **This is the 25th consecutive round with no owner answer.** The contract's own tally stops at
+  **#16** (`2026-08-31_0039`); since then `_0049`, `_0056`, `_0001`, `_0011`, `_0017`, `_0026`,
+  `_0032`, `_0042` were all recorded no-ops, making this #25. (`grep -c "no-op -- five channels
+  checked"` returns only **9** — earlier rounds used different commit subjects, so the git count is a
+  floor, not the tally.) The mechanical part is healthy — restores
+  are correct, checks are green — but no acceptance criterion can advance without the owner. If
+  these rounds are meant to make progress, the bottleneck is `README.md` `## Open decisions`, not
+  the agent.
