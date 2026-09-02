@@ -345,6 +345,13 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 **ถ้ายังไม่มีคำตอบ — รอบหน้าเป็น *no-op* ตามเดิม: restore tip รอบก่อน (เลือกด้วย `:iso8601` +
 `head -16` + ตรวจซ้ำด้วย refname **ห้ามใช้หมายเลขแถว**), ตรวจ 5 ช่องทาง, รัน Verify 3 ขั้น +
 harness ครบ 5 key, เขียน SUMMARY แล้วจบรอบ ห้ามประดิษฐ์งานอื่นเด็ดขาด**
+✅ **แก้ความเข้าใจผิดเรื่อง `:short` แล้ว รอบ `2026-09-03_0025` (รัน A/B จริง) — อ่านให้ครบก่อนเชื่อบล็อกเก่า:**
+ อันตรายอยู่ที่การใช้วันที่ตัดสั้นเป็น **sort key ใน shell pipeline** (`… | sort -r`) เท่านั้น
+ **ไม่ใช่ตัว token `:short` เอง** — `git for-each-ref --sort=-committerdate` เรียงด้วย
+ **ค่า timestamp จริงเต็มความละเอียด** ส่วน `:short` ใน `--format` แค่ตัดสิ่งที่*พิมพ์ออกมา*
+ → `--sort=-committerdate --format='%(committerdate:short) …'` **แม่นยำ ใช้ได้ ปลอดภัย**
+ → `--format='%(committerdate:short) …' | sort -r` **คือกับดัก** (ผูก tie แล้วตกไปเรียงตาม sha)
+ ยังต้องตรวจซ้ำด้วย refname เสมอ เพราะ pipeline แบบหลังยังพังเงียบอยู่ถ้ารอบไหนเผลอใช้
 ⚠️ `ds-disabled-hover` ใช้ **tip ของรอบก่อนหน้ารอบนั้น** เป็นฝั่ง before ไม่ใช่ sha ตายตัว —
 อ่านจาก `git for-each-ref` เสมอ ห้ามลอก sha จากบล็อกสถานะเก่า มันค้างทุกรอบ งานสำรองที่**แตะโค้ด**หมดแล้วจริงๆ **และงาน read-only ก้อนสุดท้าย
 (`retrospective restore audit`) ก็ปิดจบแล้วในรอบ `2026-08-31_0023`:
@@ -379,7 +386,50 @@ harness ครบ 5 key, เขียน SUMMARY แล้วจบรอบ ห
 >  เพราะไฟล์เหล่านั้นถูกเขียนใหม่มาหลายรอบโดยชอบธรรม — **อย่าอ้างว่า audit นี้ปิดข้อนั้นด้วย**
 >
 
-> **สถานะล่าสุด: รอบ `2026-09-03_0017` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
+> **สถานะล่าสุด: รอบ `2026-09-03_0025` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
+> เป็นรอบ no-op: ไม่แตะ `index.html` / `design-system/` / `tools/` / `docs/` เลยสักไบต์
+> (แตะแค่ `AUTOPILOT.md` + `SUMMARY.md`)**
+> (tip ที่ restore คือ `8cc03f4` = `_0017`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
+>  `git diff --stat 8cc03f4` **ว่างเปล่า** → tree เท่ากันทุก byte = ปิดช่องทางที่ 1 ไปในตัว
+>  `git diff --name-status HEAD 8cc03f4` → 13 `M` + 3 `A` **ไม่มี `D`** → path-checkout เทียบเท่า fast-forward
+>  (restore commit = `bf994c1`)
+>  `git merge-base --is-ancestor 3503537 8cc03f4` → ancestor-ok
+>  subject ของ `8cc03f4` = `chore: round 2026-09-03_0017 no-op …` = commit ของ runner ไม่ใช่ของเจ้าของ
+>  harness ทั้ง 5 key ตรงตารางทุกค่า (85/17, 45/9, 5/1 → PASS,
+>  15/3 → PASS + 1 undecidable `.pui-menu__item:last-child`,
+>  `toast-hit` FAIL-5 ที่ 10 pairs/2 elements, 0 markup problem, 0 unmatched
+>  โดย `grep -c "✗ #toast:"` = 0) และ Verify เขียวครบ 3 ขั้น
+>  (54/54, check-tokens 6/6 ที่ 15 CSS sources, 31/31)
+>  ⚠️ ฝั่ง before ของ `ds-disabled-hover` รอบนี้อ่านจาก tip ที่ restore จริง (`8cc03f4`)
+>  ไม่ได้ลอก sha จากบล็อกเก่า — รอบหน้าต้องเปลี่ยนเป็น tip ที่ตัวเอง restore เช่นกัน
+>  `grep -c "| Option | Cost |" README.md` = **8** (รันหลัง restore) และ
+>  `grep -c "If you answer:" README.md` = **8** → ตัวนับสองตัว**ตรงกัน** = ยังไม่มีใครตอบ
+>  หัวข้อ `### 1.` … `### 8.` ยังอยู่ครบและไม่ถูกแก้
+>  `git ls-files | grep -i jspdf` ว่าง, `git status --untracked-files=all --short` ว่าง
+>  ช่องทางที่ 5: `design-system`/`origin/design-system` = `3503537` (2026-08-13) ใหม่สุดในกลุ่ม,
+>  `mac`/`mac/design-system` = `e3a355c` (2026-07-20),
+>  `mac/hardening-pass`/`origin/hardening-pass` = `592e7c3` (2026-07-20),
+>  `main`/`mac/main`/`origin`/`origin/main` = `ef3220e` (2026-06-27))
+>
+> ✅ **รอบนี้ปิดประเด็น `:short` ด้วยการรัน A/B จริง — คำเตือน 🔴 ของรอบก่อน "ถูกอาการ ผิดสาเหตุ"**
+>  การกลับหัว 5 อันดับของ `2026-09-02` **มีจริง** แต่เกิดจาก **pipeline `| sort -r`** ไม่ใช่ `:short`
+>  (รันโดยตัด branch ตัวเองออก เพื่อจำลองสภาพ *ก่อน* restore)
+>  ```
+>  A: --sort=-committerdate + :short เป็น display   B: --format=:short | sort -r
+>  2026-09-03 8cc03f4 _0017  ✓                      2026-09-03 8cc03f4 _0017
+>  2026-09-02 75f48e3 _0047  ✓ ตัวจริงของวันนั้น      2026-09-02 facbf71 _0036
+>  2026-09-02 facbf71 _0036                         2026-09-02 e66cdf6 _0029
+>  2026-09-02 e66cdf6 _0029                         2026-09-02 b791ace _0015
+>  2026-09-02 3716e2b _0022                         2026-09-02 98e4380 _0002
+>  2026-09-02 b791ace _0015                         2026-09-02 75f48e3 _0047 ← ตก 5 อันดับ
+>  ```
+>  **A ถูกทุกแถว** เพราะ git เรียงจากค่า timestamp จริง `:short` แค่ตัดตอนพิมพ์
+>  **B คือกับดัก** เพราะ string ที่ตัดแล้ว*กลายเป็น sort key* → ผูก tie 6 ตัว → ตกไปเรียงตาม sha
+>  ⚠️ รอบนี้ทั้ง A และ B ชี้ `_0017` ที่อันดับ 1 เหมือนกัน แต่ของ B เป็น**ความบังเอิญของ sha**
+>  (`8` > `2`) ไม่ใช่การข้ามวันอีกแล้ว — ตามที่รอบก่อนทำนายไว้ว่า masking จะหมดฤทธิ์
+>  ⚠️ **หลัง restore commit branch ของรอบตัวเองจะขึ้นแถวบนสุดทั้ง A และ B** → ยิ่งห้ามเลือกด้วยหมายเลขแถว
+>
+> **สถานะรอบก่อน: รอบ `2026-09-03_0017` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
 > เป็นรอบ no-op: ไม่แตะ `index.html` / `design-system/` / `tools/` / `docs/` เลยสักไบต์
 > (แตะแค่ `AUTOPILOT.md` + `SUMMARY.md`)**
 > (tip ที่ restore คือ `2eda89e` = `_0007`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
