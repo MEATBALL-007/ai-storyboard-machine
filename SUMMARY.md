@@ -1,17 +1,17 @@
-# Round 2026-09-03_0051 — no-op (five channels checked, no owner answer)
+# Round 2026-09-04_0001 — no-op (five channels checked, no owner answer)
 
 ## What I did
 
-- **Restored the previous round's tip `373f7c8` (`_0043`) onto the stale base `3503537`** as its own
-  commit (`3cf12aa`), before reading any project file. The runner cut this branch from `3503537`
-  again — the 60th round in a row.
+- **Restored the previous round's tip `c4ab074` (`_0051`) onto the stale base `3503537`** as its own
+  commit (`1b16f21`), before reading any project file. The runner cut this branch from `3503537`
+  again.
 - **Checked all five owner-answer channels. None has been answered; all 8 decisions still open.**
 - **Ran the full Verify command (3 stages) and all 5 harness keys.** Every number matches the
   expected table exactly.
-- **Recorded the round in `AUTOPILOT.md`** as a new `สถานะล่าสุด` block, rotating the four existing
-  status labels down one step. No round history was deleted.
-- **Touched no code**: `index.html`, `design-system/`, `tools/` and `docs/` are byte-identical to
-  the restored tip. Only `AUTOPILOT.md` and `SUMMARY.md` changed.
+- **Recorded the round in `AUTOPILOT.md`** as a new `สถานะล่าสุด` block, rotating the existing status
+  labels down one step. No round history was deleted.
+- **Touched no code**: `index.html`, `design-system/`, `tools/` and `docs/` are byte-identical to the
+  restored tip. Only `AUTOPILOT.md` and `SUMMARY.md` changed.
 
 ## Why
 
@@ -23,108 +23,122 @@ each is the owner's call. Code-touching and read-only fallback work are both exh
 
 Two selection details I did not take on trust:
 
-- **Tip chosen with `%(committerdate:iso8601)`, then cross-checked by refname.** `2026-09-03` now
-  holds **five** tips (`373f7c8`/`844900e`/`adcae8b`/`8cc03f4`/`2eda89e`), so day-granularity keys
-  separate nothing at the top of the list; `_0043` is both the newest by full-precision timestamp
-  and the highest round number below my own `_0051`. I never picked by row number.
+- **Tip chosen with `%(committerdate:iso8601)`, then cross-checked by refname.** `2026-09-03` holds
+  **six** tips (`c4ab074`/`373f7c8`/`844900e`/`adcae8b`/`8cc03f4`/`2eda89e`), so day-granularity keys
+  separate nothing at the top of the list; `_0051` is both the newest by full-precision timestamp and
+  the highest round number below my own `_0001` of the following day. I never picked by row number.
+  Note this round crossed a calendar day (`2026-09-04` vs the tip's `2026-09-03`) — that is normal
+  and is **not** a signal; ranking is by the tip's committerdate, never by the branch-name date.
 - **Verified the tip is a runner commit, not an owner commit**, with `%an`/`%ae` — author
-  `PHANTOM AUTOPILOT <autopilot@phantom.local>`. A tip written by the owner would mean a decision
-  was answered, and the subject line alone does not settle that.
+  `PHANTOM AUTOPILOT <autopilot@phantom.local>`. A tip written by the owner would mean a decision was
+  answered, and the subject line alone does not settle that.
 
 ## Verification
 
 Restore preconditions (all before touching the tree):
 
 ```
-git merge-base --is-ancestor 3503537 373f7c8   → ancestor-ok
-git diff --diff-filter=D --name-only HEAD 373f7c8 → empty (no deletions; path-checkout ≡ fast-forward)
-git log -1 --format="%h %an <%ae> %ad %s" 373f7c8
-  → 373f7c8 PHANTOM AUTOPILOT <autopilot@phantom.local> Thu Sep 3 00:49:48 2026 +0700
-    chore: round 2026-09-03_0043 no-op -- five channels checked, no owner answer
+git merge-base --is-ancestor 3503537 c4ab074      → ancestor-ok
+git diff --diff-filter=D --name-only HEAD c4ab074 → empty (no deletions; path-checkout ≡ fast-forward)
+git log -1 --format="%h %an <%ae> %ad %s" c4ab074
+  → c4ab074 PHANTOM AUTOPILOT <autopilot@phantom.local> Thu Sep 3 00:57:19 2026 +0700
+    chore: round 2026-09-03_0051 no-op -- five channels checked, no owner answer
 ```
 
-Restore completeness — two independent checks:
+After `git checkout c4ab074 -- .` + commit `1b16f21`:
 
 ```
-git diff --stat 373f7c8 -- .   → empty
-restore commit tree = aba5abf  = tree of 373f7c8   (exact match)
+git diff --stat c4ab074 -- .   → empty (tree matches the tip byte for byte)
 ```
 
-Verify command, all three stages green:
+Verify command — all three stages green:
 
 ```
 node tools/test.mjs                → 54 passed, 0 failed
-node tools/check-tokens.mjs        → 6/6 checks pass:
-    tokens in sync: 22/22 ... identical in index.html
-    fonts in sync: 4/4 ... byte-identical
-    no derived-colour literals: 15 CSS source(s)
-    font weights available: 15 CSS source(s), every weight one of 400/500/700/800
-    no radius literals: 15 CSS source(s), every border-radius reads a --r-* token
-    typeface from one source: 15 CSS source(s), every font-family reads var(--mono)
+node tools/check-tokens.mjs        → tokens 22/22 · fonts 4/4 · no derived-colour literals ·
+                                     font weights available · no radius literals ·
+                                     typeface from one source   (6/6 checks, 15 CSS sources)
 npm --prefix design-system test    → 12 files, 31 passed
 ```
 
-Harness, all 5 keys (`ds-disabled-hover`'s before side read from the tip I actually restored):
+All five harness keys, expected values in parentheses:
 
 ```
-buttons           2488f2d:index.html index.html      → PASS, 85 pairs / 17 elements, 0 undecidable
-                                                       markup: 7 old class tokens gone, 5 new attrs
-segmented         021b966:index.html index.html      → PASS, 45 pairs / 9 elements, 0 undecidable
-toast             de07ea8:index.html 10e8f39:index.html → PASS, 5 pairs / 1 element, 0 undecidable
-ds-disabled-hover 373f7c8:…/styles.css …/styles.css  → PASS, 15 pairs / 3 elements
-                                                       + 1 undecidable: .pui-menu__item:last-child
-                                                       (structural pseudo :last-child)
-toast-hit         3d3d5cc:index.html index.html      → FAIL — 5 declaration(s) differ,
-                                                       10 pairs / 2 elements, 0 markup problems,
-                                                       0 unmatched  ← expected result for this key
+buttons           2488f2d:index.html index.html
+  → markup coverage OK (7 old class tokens gone, 5 new class attributes)
+    compared 85 pairs across 17 elements (85/17) · PASS · no undecidable rule
+segmented         021b966:index.html index.html
+  → markup coverage OK (0 gone, 3 new) · 45 pairs / 9 elements (45/9) · PASS · no undecidable rule
+toast             de07ea8:index.html 10e8f39:index.html
+  → markup coverage OK (0 gone, 1 new) · 5 pairs / 1 element (5/1) · PASS · no undecidable rule
+ds-disabled-hover c4ab074:design-system/src/styles.css design-system/src/styles.css
+  → markup coverage N/A (stylesheet) · 15 pairs / 3 elements (15/3) · PASS
+    + 1 undecidable rule: .pui-menu__item:last-child (structural pseudo :last-child)
+toast-hit         3d3d5cc:index.html index.html
+  → markup coverage OK (0 gone, 0 new) · 10 pairs / 2 elements
+    FAIL — 5 declaration(s) differ, 0 markup problem(s), 0 unmatched element(s)
 ```
 
-`toast-hit`'s FAIL-5 is the **correct** outcome: round `2026-08-24_0003` deliberately added
-`pointer-events:auto` to `.toast-act`. I read all five `✗` rows rather than using the
-`grep -c "✗ #toast:"` shortcut that round `_0043` retired — all five are `#toastUndo`
-(`(base)`, `:hover`, `:disabled`, `:disabled:hover`, `:focus`) and **no row is `#toast`**, which is
-what proves nobody removed `#toast`'s `pointer-events:none`.
+`toast-hit`'s FAIL-5 is the **expected** result for that key, not a regression: it pins the
+deliberate 2026-08-24 `pointer-events:auto` fix on `.toast-act`. I confirmed it the corrected way —
+`grep "✗"` and read **all five rows**, which are `#toastUndo (base)`, `:hover`, `:disabled`,
+`:disabled:hover`, `:focus`. **No row is `#toast`**, i.e. the app side was not touched. I did not use
+`grep -c "✗ #toast:"`; that pattern has a blind spot (the base row prints `✗ #toast (base)`, no
+colon) and returns 0 even in the regression it exists to catch.
 
-Five channels:
+`ds-disabled-hover`'s before side is `c4ab074` — the tip **this round actually restored**, read from
+`git for-each-ref`, not copied from a status block.
+
+Five channels (channel 1 run **after** the restore, since the stale tree has no `## Open decisions`):
 
 ```
-1. grep -c "| Option | Cost |" README.md  → 8   (run AFTER the restore)
-   grep -c "If you answer:" README.md     → 8   → the two counters agree = nobody answered
-2. git ls-files | grep -i jspdf           → empty
+1. grep -c "| Option | Cost |" README.md  → 8
+   grep -c "If you answer:" README.md     → 8      counters agree ⇒ nobody answered
+2. git ls-files | grep -i jspdf           → empty  (decision 1's artefact absent)
 3. main / mac/main / origin / origin/main = ef3220e (2026-06-27) — unmoved
-4. git status --porcelain --untracked-files=all → empty
+4. git status --untracked-files=all --short → empty
 5. non-auto refs: design-system + origin/design-system = 3503537 (2026-08-13, newest of the group);
    mac + mac/design-system = e3a355c (2026-07-20);
    mac/hardening-pass + origin/hardening-pass = 592e7c3 (2026-07-20)
-   → nothing newer than 2026-08-13, so no owner activity anywhere
+   — nothing newer than 2026-08-13, so no owner activity anywhere
 ```
 
 ## What I did NOT do
 
-- **Did not answer any open decision.** All 8 move pixels or add a file to the repo; each is the
-  owner's call, and answering one is explicitly forbidden.
-- **Did not touch `tools/`** or add a seventh token check — all 22 tokens already have checkers.
-- **Did not restore `docs/design-parity.md`** (still reachable at `c3351fc:docs/design-parity.md`).
-  That is decision 8 and blocks no acceptance criterion.
-- **Did not re-run the retrospective restore audit** — completed in round `2026-08-31_0023`.
-- **Did not retry the browser MCPs.** They are permission-blocked, not merely headless (decision 4);
-  retrying burns a round and changes nothing.
-- **Did not trim `AUTOPILOT.md`** (now 1,773 lines, ~30 status blocks). Its size is why the contract
-  text reaches the agent truncated with an empty `## Next task`, but deleting round history is an
-  owner decision, not an agent's.
+- **Did not answer, edit, reorder or delete any of the 8 open decisions.** Every one moves pixels or
+  adds a file to the repo; that is the owner's call, and answering one would be indistinguishable
+  from progress while actually being a unilateral design change.
+- **Did not invent substitute work.** Specifically, I did not implement `:last-child`/combinator
+  matching in the harness, did not add the harness to the Verify command, did not add a seventh
+  token check (22/22 tokens are already covered), and did not apply decisions 2/5/6/7 unilaterally —
+  all four are explicitly forbidden in the Next task block.
+- **Did not restore `docs/design-parity.md`** (`c3351fc:docs/design-parity.md`, 44,376 bytes). That
+  is decision 8 and is unanswered.
+- **Did not re-run the retrospective restore audit** — completed in round `2026-08-31_0023` and
+  marked do-not-repeat.
+- **Did not trim `AUTOPILOT.md`** despite it now exceeding 1,500 lines, which is why the contract
+  text reaches the agent truncated with an empty `## Next task`. Deleting round history is discarding
+  evidence and is an owner decision, not an agent's.
+- **Did not retry the browser MCPs** (Playwright / Chrome-DevTools) — they are *permission*-blocked,
+  not merely headless, so retrying only burns a round. That is decision 4.
 
 ## Risk
 
-- **Nothing in this round changes app or library behaviour.** The one thing a reviewer should
-  confirm is that the restore picked the *right* tip: `373f7c8`, cross-checked two independent ways
-  (newest `:iso8601` timestamp, and highest round number below `_0051`). A wrong tip here is the
-  repo's one genuinely silent failure mode — it would leave `git diff --stat` empty against the
-  wrong sha, all five harness keys matching, and all three Verify stages green.
-- **`toast-hit` exits non-zero by design.** A runner that treats any non-zero harness exit as a
-  broken build will misread this round. The Verify command itself does not include the harness and
-  exits 0.
-- **The stall is now 3+ weeks old and cannot clear on its own** — it needs a person to answer a
-  decision in `README.md`, not another round. Every future round is a no-op until then.
-- **No browser has ever verified this app** (decision 4). All parity claims in this repo rest on
-  source analysis plus the cascade harness, which does not model inheritance and does no hit
-  testing.
+Reviewer-relevant, honestly stated:
+
+- **This round changes no code, so its Verify green proves the restore was faithful — nothing more.**
+  It is not evidence that any acceptance criterion advanced. None did.
+- **`index.html` has still never been opened in a real browser** (decision 4). Every parity claim in
+  this repo rests on source reading, the cascade harness and CSS spec reasoning. The harness in
+  particular **does not model inheritance**, which was the entire mechanism of the toast-Undo bug —
+  so a similar inherited-property bug elsewhere would not be caught by anything currently running.
+- **Nothing in the repo watches `:hover` state, and jsdom does no hit testing.** A round that
+  silently changed a hover colour would still show three green Verify stages. This is why decisions
+  2/5/6/7 must wait for a person rather than being "tried".
+- **The stale-base runner bug is unfixed and has now survived four calendar-day rollovers**
+  (`2026-09-01` → `09-02` → `09-03` → `09-04`). Every future round must restore before reading, or it
+  will read the `3503537` tree — which does not look broken, it looks *finished*. That failure mode
+  has already destroyed a file once (round `2026-08-19_0022`).
+- **The offline claim in acceptance criterion 3 is still false in one place**: jsPDF is loaded from
+  `cdnjs.cloudflare.com` at `index.html:7`, so PDF export breaks under `file://`. Unfixable from
+  here — there is no jsPDF copy on the machine and the network is blocked (decision 1).
