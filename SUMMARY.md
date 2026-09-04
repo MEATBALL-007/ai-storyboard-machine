@@ -1,4 +1,4 @@
-# Round 2026-09-05_0020 — SUMMARY
+# Round 2026-09-05_0027 — SUMMARY
 
 **Result: no-op round.** All eight owner decisions in `README.md → ## Open decisions` are still
 unanswered, so there was no unblocked work to do. Not a single byte of `index.html`,
@@ -6,8 +6,8 @@ unanswered, so there was no unblocked work to do. Not a single byte of `index.ht
 
 ## What I did
 
-- **Restored the previous round's tip** (`0b1e5a0` = branch `…/2026-09-05_0013`) onto the stale
-  base `3503537` the runner cut this branch from. Restore commit `7286818`.
+- **Restored the previous round's tip** (`ba6baa6` = branch `…/2026-09-05_0020`) onto the stale
+  base `3503537` the runner cut this branch from. Restore commit `6943125`.
 - **Checked all five owner-answer channels.** None has moved:
   1. `README.md → ## Open decisions` — 8 option tables, 8 `If you answer:` lines, counters agree
   2. no `jspdf` file anywhere in the index
@@ -17,6 +17,8 @@ unanswered, so there was no unblocked work to do. Not a single byte of `index.ht
 - **Ran the full three-stage Verify** and **all five `btn-parity-proof` harness keys**; every
   number matches the expected table.
 - Recorded this round's status block in `AUTOPILOT.md` and demoted the three previous labels.
+- **Corrected a prediction the previous round left in the file** — see Verification below. The
+  `:short` trap comes up *heads* today, not tails as `_0020` forecast.
 
 ## Why
 
@@ -36,19 +38,19 @@ the files actually standing, so a wrong or partial restore shows up as changed c
 
 ## Verification
 
-Tip selection — `:iso8601` + `head -16`, cross-checked by refname (`_0013` is the highest round
-number below my own `_0020`; both methods agree). 16 rows = 8 distinct tips, the real tip in
+Tip selection — `:iso8601` + `head -16`, cross-checked by refname (`_0020` is the highest round
+number below my own `_0027`; both methods agree). 16 rows = 8 distinct tips, the real tip in
 rows 1–2, nothing clipped.
 
 Restore preconditions, all run before touching the tree:
 
 ```
-git merge-base --is-ancestor 3503537 0b1e5a0   → ancestor-ok
-git diff --diff-filter=D --name-only HEAD 0b1e5a0  → empty (path-checkout == fast-forward)
-git log -1 --format="%h %an <%ae> %ad %s" 0b1e5a0
-  → PHANTOM AUTOPILOT <autopilot@phantom.local> Sat Sep 5 00:19:22 2026 +0700
-    chore: round 2026-09-05_0013 no-op -- five channels checked, no owner answer
-git diff --stat 0b1e5a0 -- .                   → empty (tree byte-identical to the tip)
+git merge-base --is-ancestor 3503537 ba6baa6       → ancestor-ok
+git diff --diff-filter=D --name-only HEAD ba6baa6  → empty (path-checkout == fast-forward)
+git log -1 --format="%h %an <%ae> %ad %s" ba6baa6
+  → PHANTOM AUTOPILOT <autopilot@phantom.local> Sat Sep 5 00:26:01 2026 +0700
+    chore: round 2026-09-05_0020 no-op -- five channels checked, no owner answer
+git diff --stat ba6baa6 -- .                       → empty (tree byte-identical to the tip)
 ```
 
 Verify command — green on all three stages:
@@ -71,7 +73,7 @@ node docs/btn-parity-proof.mjs segmented         021b966:index.html  index.html
   → PASS, 45 pairs / 9 elements, markup coverage OK (0 old, 3 new)
 node docs/btn-parity-proof.mjs toast             de07ea8:index.html  10e8f39:index.html
   → PASS, 5 pairs / 1 element, no undecidable block
-node docs/btn-parity-proof.mjs ds-disabled-hover 0b1e5a0:design-system/src/styles.css design-system/src/styles.css
+node docs/btn-parity-proof.mjs ds-disabled-hover ba6baa6:design-system/src/styles.css design-system/src/styles.css
   → PASS, 15 pairs / 3 elements, + 1 undecidable rule `.pui-menu__item:last-child`
     (structural pseudo :last-child; subject matches .pui-menu__item, .pui-menu__item--danger)
 node docs/btn-parity-proof.mjs toast-hit         3d3d5cc:index.html  index.html
@@ -90,6 +92,18 @@ fix. What matters is *which* rows print: I read all five `✗` rows and every on
 The `ds-disabled-hover` before-side sha is the tip **this round actually restored**, read from
 `git for-each-ref`, not copied from an older status block.
 
+**Correction to the previous round's prediction.** Round `_0020` recorded that the retired
+`:short` pipeline would today pick `304cd2d` and silently revert a round. That was reasoned from a
+two-tip day and no longer holds, because `_0020`'s own commit added a third tip. `2026-09-05` now
+holds `ba6baa6` (`_0020`, 00:26:01), `0b1e5a0` (`_0013`, 00:19:22) and `304cd2d` (`_0003`,
+00:09:30); all three tie at day granularity, so the sha fallback ranks `b` (0x62) > `3` (0x33) >
+`0` (0x30) and puts the **real tip first**. So the trap would come up *heads* at row 1 this round.
+That is luck on one hex digit, not a reprieve — rows 2–3 are still genuinely inverted (`_0003`
+ranked above `_0013` despite being 9 minutes older), and a next tip starting `0`–`a` flips row 1
+straight back to wrong. **I did not run `:short` live** (lines 355–356 of `AUTOPILOT.md` instruct
+later rounds not to re-run the A/B), so this is inference from the `:iso8601` output, not a
+measurement — do not cite it as a reproduction.
+
 ## What I did NOT do
 
 - **Did not answer, reword, reorder or delete any of the eight open decisions.** Each one moves
@@ -100,23 +114,19 @@ The `ds-disabled-hover` before-side sha is the tip **this round actually restore
 - **Did not retry Playwright / Chrome-DevTools MCP.** They are *permission*-blocked, not merely
   headless; retrying burns a round and changes nothing (decision 4).
 - **Did not restore `docs/design-parity.md`** from `c3351fc` — that is decision 8, unanswered.
-- Did not trim `AUTOPILOT.md`, now 2,163 lines (`wc -l`, after this round's block). Deleting round history is discarding evidence and
-  is an owner decision; it is deliberately not a ninth open decision because it blocks no
-  acceptance criterion.
+- Did not trim `AUTOPILOT.md`, now 2,214 lines (`wc -l`, after this round's block). Deleting round
+  history is discarding evidence and is an owner decision; it is deliberately not a ninth open
+  decision because it blocks no acceptance criterion.
 
 ## Risk
 
 - **Nothing in this round changes program behaviour.** The only files touched are `AUTOPILOT.md`
   and `SUMMARY.md`. A reviewer should confirm exactly that with
-  `git diff --stat 7286818 HEAD` — anything beyond those two files would be a mistake.
-- 🔴 **The `:short` tie-break trap is live again today, exactly as round `_0013` predicted.**
-  `2026-09-05` now holds two tips (`0b1e5a0` = `_0013` at 00:19:22, `304cd2d` = `_0003` at
-  00:09:30). They tie at day granularity, so the retired pipeline form
-  `--format='%(committerdate:short) …' | sort -r` falls through to sha-descending, and `3` (0x33)
-  beats `0` (0x30) — it would pick `304cd2d` and silently revert a whole round. **I did not run
-  `:short` live**, so this is inference from the `:iso8601` output, *not* a measurement; do not
-  cite it as a reproduction. Round `_0042` showed the `:short` winner can be a row `head` already
-  clipped, invisible from the other list.
+  `git diff --stat 6943125 HEAD` — anything beyond those two files would be a mistake.
+- ⚠️ **Do not read "the `:short` trap picked the right tip today" as the trap being retired.** It
+  is a coin flip on the leading hex digit of the newest sha, and it has landed wrong in several
+  recorded rounds. Keep using `:iso8601` + refname cross-check. The correction above supersedes
+  `_0020`'s forecast only in its *outcome*; the underlying hazard is unchanged.
 - The `ds-disabled-hover` undecidable rule (`.pui-menu__item:last-child`) is unchanged and still
   outside the harness's diff. A change confined to that rule would compute 0 diff. It has to be
   read by hand; I did not modify it, but the harness cannot vouch for it either way.
