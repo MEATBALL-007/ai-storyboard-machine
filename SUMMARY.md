@@ -1,17 +1,17 @@
-# Round 2026-09-05_0003 — SUMMARY
+# Round 2026-09-05_0013 — SUMMARY
 
 ## What I did
 
 - **Restored the previous round's tip.** The branch was cut from the stale base `3503537`
-  again (`git log --oneline -1` was the very first call, before any Read/Grep). Restored
-  `be204b9` = branch `…/2026-09-04_0048` with `git checkout be204b9 -- .` as its own commit
-  (`e067de7`), so this round's real diff stays readable.
+  again (`git log --oneline -1` was the very first call, before any Read/Grep of repo files).
+  Restored `304cd2d` = branch `…/2026-09-05_0003` with `git checkout 304cd2d -- .` as its own
+  commit (`235be04`), so this round's real diff stays readable.
 - **Checked all five owner-answer channels — no answer on any of the 8 open decisions.**
   So this is a no-op round by the contract's own queued instruction, not by my choice.
 - **Ran the full three-stage Verify and all five `docs/btn-parity-proof.mjs` keys.** Every
-  number matches the table recorded in `AUTOPILOT.md`.
-- **Updated `AUTOPILOT.md`:** inserted this round's status block and cascaded the status tier
-  labels below it (`ล่าสุด` → `รอบก่อน` → `ก่อนหน้านั้น` → `เก่ากว่านั้น`).
+  number matches the table recorded in `AUTOPILOT.md`'s `**Verify:**` block.
+- **Updated `AUTOPILOT.md`:** inserted this round's status block and cascaded the tier labels
+  below it (`ล่าสุด` → `รอบก่อน` → `ก่อนหน้านั้น` → `เก่ากว่านั้น`).
 - **Touched no code.** `index.html`, `design-system/`, `tools/` and `docs/` are byte-identical
   to the restored tip. Only `AUTOPILOT.md` and `SUMMARY.md` changed.
 
@@ -26,15 +26,15 @@ channels, verify, write SUMMARY, end the round. Inventing a substitute task here
 creep, and every remaining candidate is a design decision in disguise.
 
 I picked the tip with `%(committerdate:iso8601)` (full precision) and **cross-checked by refname**
-— `_0048` is the highest round number below my own `_0003` of the next day. Both methods agree,
-and local and `origin/` point at the same sha. I ran `for-each-ref` *before* the restore, so my
-own branch still sat at `3503537` (committerdate `2026-08-13`) and sank to the bottom of the list
-rather than eating rows in `head -16`. I never selected by row number.
+— `_0003` is the highest round number below my own `_0013`. Both methods agree, and local and
+`origin/` point at the same sha. I ran `for-each-ref` *before* the restore, so my own branch still
+sat at `3503537` (committerdate `2026-08-13`) and sank to the bottom of the list rather than eating
+rows in `head -16`. I never selected by row number.
 
 **I did not re-run the `:short` A/B, deliberately.** `AUTOPILOT.md` (lines 355–356) records that
 round `_0048` measured it live and caught a real inversion at rows 3–4, and concludes the evidence
-is sufficient — future rounds should use `:iso8601` + refname and move on. Re-running it would
-burn a call to reproduce a settled result. This is a documented decision, not an omission.
+is sufficient — future rounds should use `:iso8601` + refname and move on. This is a documented
+decision, not an omission.
 
 ## Verification
 
@@ -52,29 +52,28 @@ npm --prefix design-system test  → 12 files, 31 passed
 Restore preconditions, all run before touching the tree:
 
 ```
-git log -1 --format="%h %an <%ae> %ad %s" be204b9
-  → be204b9 PHANTOM AUTOPILOT <autopilot@phantom.local> Fri Sep 4 00:54:42 2026 +0700
-    chore: round 2026-09-04_0048 no-op -- five channels checked, no owner answer
+git log -1 --format="%h %an <%ae> %ad %s" 304cd2d
+  → 304cd2d PHANTOM AUTOPILOT <autopilot@phantom.local> Sat Sep 5 00:09:30 2026 +0700
+    chore: round 2026-09-05_0003 no-op -- five channels checked, no owner answer
     = the runner's own commit, NOT an owner answer committed onto that branch
-git merge-base --is-ancestor 3503537 be204b9          → ancestor-ok
-git diff --diff-filter=D --name-only HEAD be204b9     → empty (no deletions)
+git merge-base --is-ancestor 3503537 304cd2d          → ancestor-ok
+git diff --diff-filter=D --name-only HEAD 304cd2d     → empty (no deletions)
                                                          = path-checkout is fast-forward-equivalent
-git diff --stat HEAD be204b9 | tail -3                → 16 files, 4019 insertions, 162 deletions
-git diff --stat be204b9 -- .   (after restore)        → EMPTY = tree matches the tip byte for byte
+git diff --stat 304cd2d -- .   (after restore)        → EMPTY = tree matches the tip byte for byte
 ```
 
 Tip selection, `:iso8601` + `head -16` (16 rows = 8 distinct tips, local + `origin/` per tip;
 the real tip sat in rows 1–2, nothing relevant clipped):
 
 ```
-2026-09-04 00:54:42 be204b9  _0048  ← restored (highest round number below my own)
+2026-09-05 00:09:30 304cd2d  _0003  ← restored (highest round number below my own)
+2026-09-04 00:54:42 be204b9  _0048
 2026-09-04 00:46:51 632b673  _0040
 2026-09-04 00:38:29 5b48c0f  _0032
 2026-09-04 00:26:37 17fa9c0  _0019
 2026-09-04 00:17:44 30cb3af  _0011
 2026-09-04 00:06:35 0c86d72  _0001
 2026-09-03 00:57:19 c4ab074  _0051
-2026-09-03 00:49:56 373f7c8  _0043
 ```
 
 All five harness keys, run with the sha pairs pinned in `AUTOPILOT.md`'s `**Verify:**` block
@@ -88,7 +87,7 @@ segmented         021b966:index.html → index.html
   → markup coverage OK (0 old gone, 3 new), 45 pairs / 9 elements, PASS, no undecidable
 toast             de07ea8:index.html → 10e8f39:index.html   (BOTH sides pinned)
   → markup coverage OK (0 old gone, 1 new), 5 pairs / 1 element, PASS, no undecidable
-ds-disabled-hover be204b9:…/styles.css → …/styles.css
+ds-disabled-hover 304cd2d:…/styles.css → …/styles.css
   → 14 files assembled in @import order, markup coverage N/A (source is a stylesheet)
     15 pairs / 3 elements, PASS + exactly 1 undecidable rule:
     `.pui-menu__item:last-child` — unreadable because: structural pseudo :last-child
@@ -136,7 +135,7 @@ Five owner-answer channels:
   That is open decision 8.
 - **Did not retry the browser MCPs.** Playwright and Chrome-DevTools MCP are *permission*-blocked,
   not merely headless — retrying costs a round and changes nothing (decision 4).
-- **Did not trim `AUTOPILOT.md`** despite it now being 2,024 lines, which is *why* the contract
+- **Did not trim `AUTOPILOT.md`** despite it now being 2,114 lines (`wc -l`), which is *why* the contract
   text reaches the agent truncated with an empty `## Next task`. Deleting round history is
   discarding evidence and is an owner decision.
 
@@ -144,9 +143,10 @@ Five owner-answer channels:
 
 - **`toast-hit` reports `FAIL — 5 declaration(s) differ`, and that is the correct, expected
   result — do not "fix" it.** It pins the deliberate 2026-08-24 `pointer-events:auto` fix on
-  `.toast-act`. ⚠️ A genuine `toast` regression reports the **same count of 5**, so the number
-  alone cannot tell them apart. The discriminator is the harness line `after : auto <- .toast-act`,
-  which this round observed. Anyone reading this as a regression will revert a real bug fix.
+  `.toast-act`. ⚠️ A misrun `toast` key (after-side left as the working tree) reports the **same
+  count of 5**, so the number alone cannot tell them apart. The discriminator is the harness line
+  `after : auto <- .toast-act`, which this round observed. Anyone reading this as a regression
+  will revert a real bug fix.
 - **The harness does not model inheritance.** `#toast`'s `pointer-events:none` never appears in a
   child's table, yet inheritance *is* the entire mechanism of the Undo-button bug that fix
   addressed. That part rests on source reading + CSS spec, never on a green check.
@@ -158,7 +158,11 @@ Five owner-answer channels:
 - **This round's `markup coverage` for `toast-hit` is `0 old class tokens gone, 0 new class
   attributes`** — i.e. that phase proved nothing this round, because no class moved. Do not cite
   it as evidence of anything.
-- **The stale-base bug is unfixed after ~70 rounds** and survived four day-rollovers plus the
+- **At my selection time `2026-09-05` held only ONE tip, so the retired `:short` pipeline would
+  have been accidentally correct at row 1.** I did **not** run it, so that is construction, not
+  measurement — do not cite it either way. The masking expires immediately: this round's own
+  commit makes `2026-09-05` hold two tips, and the six `2026-09-04` tips below still tie.
+- **The stale-base bug is unfixed after ~70 rounds** and survived five day-rollovers plus the
   month boundary. Assume it recurs. The one-call tell is `ls tools` showing only `test.mjs`.
 - **The stall is now 3+ weeks old and will not clear on its own** — it needs a person to answer a
   decision, not another round. Every future round is a no-op until then.

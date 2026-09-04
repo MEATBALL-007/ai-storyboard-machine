@@ -388,7 +388,51 @@ harness ครบ 5 key, เขียน SUMMARY แล้วจบรอบ ห
 >  เพราะไฟล์เหล่านั้นถูกเขียนใหม่มาหลายรอบโดยชอบธรรม — **อย่าอ้างว่า audit นี้ปิดข้อนั้นด้วย**
 >
 
-> **สถานะล่าสุด: รอบ `2026-09-05_0003` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
+> **สถานะล่าสุด: รอบ `2026-09-05_0013` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
+> เป็นรอบ no-op: ไม่แตะ `index.html` / `design-system/` / `tools/` / `docs/` เลยสักไบต์
+> (แตะแค่ `AUTOPILOT.md` + `SUMMARY.md`)**
+> (tip ที่ restore คือ `304cd2d` = `_0003`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
+>  เลือกด้วย `:iso8601` + `head -16` **แล้วตรวจซ้ำด้วย refname** — `_0003` คือหมายเลขรอบสูงสุด
+>  ที่ต่ำกว่า `_0013` ของตัวเอง สองวิธีตรงกัน
+>  ✅ **รอบนี้ *ไม่ได้* รัน A/B ของ `:short` และนั่นเป็นการทำตามคำสั่งของไฟล์นี้เอง ไม่ใช่การข้าม**
+>  บรรทัด 355–356 สรุปไว้แล้วว่ารอบ `_0048` วัดสดจนจับการสลับที่ได้จริงที่แถว 3–4 → หลักฐานพอแล้ว
+>  ⚠️ **ตอนเลือก tip วันนี้ (`2026-09-05`) มี tip ตัวเดียว** (`304cd2d`) → day granularity แยกมันออกได้
+>  แปลว่า `:short` จะ "บังเอิญถูก" ที่แถว 1 รอบนี้ **แต่รอบนี้ไม่ได้รันมันจริง จึงเป็นการอนุมาน
+>  ไม่ใช่การวัด — ห้ามอ้างเป็นหลักฐาน** และ 6 tip ของ `2026-09-04` ที่อยู่ถัดลงไปยังผูกกันอยู่เหมือนเดิม
+>  🔴 **และการบังเอิญถูกนี้จะหมดอายุทันทีในรอบหน้า** เพราะ commit ของรอบนี้ทำให้ `2026-09-05`
+>  มี tip สองตัว (`304cd2d` = `_0003` และ tip ของ `_0013` เอง) → กลับไปผูกกันตามเดิม
+>  ⚠️ **รอบนี้รัน `for-each-ref` *ก่อน* restore** → branch ตัวเองยังอยู่ที่ `3503537`
+>  (committerdate `2026-08-13`) จมอยู่ท้ายลิสต์ ไม่กินแถวใน `head -16` — ไม่ต้อง `grep -v` ตัวเอง
+>  (16 แถว = 8 tip เพราะแต่ละ tip โผล่ทั้ง local และ `origin/`; tip จริงอยู่แถว 1–2 ไม่มีอะไรโดนตัด)
+>  `git diff --stat 304cd2d -- .` **ว่างเปล่า** → tree เท่ากันทุก byte = ปิดช่องทางที่ 1 ไปในตัว
+>  `git diff --diff-filter=D --name-only HEAD 304cd2d` **ว่างเปล่า** → path-checkout เทียบเท่า fast-forward
+>  (restore commit = `235be04`; ขาเข้า 16 files ตาม `git status --short` หลัง checkout)
+>  `git merge-base --is-ancestor 3503537 304cd2d` → ancestor-ok
+>  `git log -1 --format="%h %an <%ae> %ad %s" 304cd2d` → author `PHANTOM AUTOPILOT
+>  autopilot@phantom.local` = commit ของ runner ไม่ใช่ของเจ้าของ (subject `chore: round
+>  2026-09-05_0003 no-op -- five channels checked, no owner answer`)
+>  harness ทั้ง 5 key ตรงตารางทุกค่า (85/17, 45/9, 5/1 → PASS **และไม่มี undecidable**,
+>  15/3 → PASS + 1 undecidable `.pui-menu__item:last-child` = `structural pseudo :last-child`
+>  (subject matches `.pui-menu__item`, `.pui-menu__item--danger`),
+>  `toast-hit` FAIL-5 ที่ 10 pairs/2 elements, 0 markup problem, 0 unmatched
+>  โดยอ่านแถว `✗` **ครบทั้ง 5 แถว** เป็น `#toastUndo` ล้วน ไม่มี `#toast` สักแถว
+>  (`(base)` / `:hover` / `:disabled` / `:disabled:hover` / `:focus`) ทุกแถวเป็น
+>  `before: (unset)` → `after : auto <- .toast-act`
+>  — ใช้ `grep "✗"` ตามที่รอบ `_0043` แก้ไว้ ไม่ใช่ `grep -c "✗ #toast:"` ที่มีจุดบอด
+>  อ่าน output **เต็ม** ของทั้งสามคีย์ (ไม่ได้ `tail`) จึงยืนยันได้ตรงๆ ว่าไม่มีบล็อก undecidable โผล่)
+>  และ Verify เขียวครบ 3 ขั้น (54/54, check-tokens 6/6 ที่ 15 CSS sources, 31/31)
+>  ⚠️ ฝั่ง before ของ `ds-disabled-hover` รอบนี้อ่านจาก tip ที่ restore จริง (`304cd2d`)
+>  ไม่ได้ลอก sha จากบล็อกเก่า — **รอบหน้าต้องใช้ tip ที่ตัวเอง restore เช่นกัน**
+>  `grep -c "| Option | Cost |" README.md` = **8** (รันหลัง restore) และ
+>  `grep -c "If you answer:" README.md` = **8** → ตัวนับสองตัว**ตรงกัน** = ยังไม่มีใครตอบ
+>  `git ls-files | grep -i jspdf` ว่าง, `git status --untracked-files=all --short` ว่าง
+>  ช่องทางที่ 5: `design-system`/`origin/design-system` = `3503537` (2026-08-13) ใหม่สุดในกลุ่ม,
+>  `mac`/`mac/design-system` = `e3a355c` (2026-07-20),
+>  `mac/hardening-pass`/`origin/hardening-pass` = `592e7c3` (2026-07-20),
+>  `main`/`mac/main`/`origin`/`origin/main` = `ef3220e` (2026-06-27) — ไม่ขยับเลย
+>  🔴 **การหยุดชะงักนี้ข้ามเดือนมาแล้วและตอนนี้เกิน 3 สัปดาห์** — มันไม่คลายเอง ต้องมีคนตอบ)
+>
+> **สถานะรอบก่อน: รอบ `2026-09-05_0003` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
 > เป็นรอบ no-op: ไม่แตะ `index.html` / `design-system/` / `tools/` / `docs/` เลยสักไบต์
 > (แตะแค่ `AUTOPILOT.md` + `SUMMARY.md`)**
 > (tip ที่ restore คือ `be204b9` = `_0048`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
@@ -434,7 +478,7 @@ harness ครบ 5 key, เขียน SUMMARY แล้วจบรอบ ห
 >  `main`/`mac/main`/`origin`/`origin/main` = `ef3220e` (2026-06-27) — ไม่ขยับเลย
 >  🔴 **การหยุดชะงักนี้ข้ามเดือนมาแล้วและตอนนี้เกิน 3 สัปดาห์** — มันไม่คลายเอง ต้องมีคนตอบ)
 >
-> **สถานะรอบก่อน: รอบ `2026-09-04_0048` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
+> **สถานะก่อนหน้านั้น: รอบ `2026-09-04_0048` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
 > เป็นรอบ no-op: ไม่แตะ `index.html` / `design-system/` / `tools/` / `docs/` เลยสักไบต์
 > (แตะแค่ `AUTOPILOT.md` + `SUMMARY.md`)**
 > (tip ที่ restore คือ `632b673` = `_0040`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
@@ -489,7 +533,7 @@ harness ครบ 5 key, เขียน SUMMARY แล้วจบรอบ ห
 >  `mac/hardening-pass`/`origin/hardening-pass` = `592e7c3` (2026-07-20),
 >  `main`/`mac/main`/`origin`/`origin/main` = `ef3220e` (2026-06-27) — ไม่ขยับเลย)
 >
-> **สถานะก่อนหน้านั้น: รอบ `2026-09-04_0040` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
+> **สถานะเก่ากว่านั้น: รอบ `2026-09-04_0040` ตรวจครบ 5 ช่องทางแล้ว — ยังไม่มีคำตอบสักข้อ ทั้ง 8 ข้อ
 > เป็นรอบ no-op: ไม่แตะ `index.html` / `design-system/` / `tools/` / `docs/` เลยสักไบต์
 > (แตะแค่ `AUTOPILOT.md` + `SUMMARY.md`)**
 > (tip ที่ restore คือ `5b48c0f` = `_0032`; local กับ `origin/` ชี้ที่ sha เดียวกันทั้งคู่
