@@ -1,142 +1,149 @@
-# Round 2026-09-06_0045 — SUMMARY
+# Round 2026-09-07_0000 — SUMMARY
 
 ## What I did
 
 - **Restored the previous round's tip before reading anything.** `git log --oneline -1` showed
-  `3503537` (the stale base the runner cuts every `auto/*` branch from), so the working tree did
-  not contain `tools/check-tokens.mjs`, `docs/btn-parity-proof.mjs`, the token/radius/font work,
-  or `README.md`'s `## Open decisions`. Restored `e057051` (branch `…/2026-09-06_0036`) with
-  `git checkout e057051 -- .` as its own commit (`3a4d5ff`) so this round's real diff stays readable.
+  `3503537` — the stale base the runner cuts every `auto/*` branch from — so the working tree had
+  no `tools/check-tokens.mjs`, no `docs/btn-parity-proof.mjs`, no token/radius/font work, and no
+  `## Open decisions` in `README.md`. Restored `49b333d` (branch `…/2026-09-06_0045`) via
+  `git checkout 49b333d -- .` as its own commit (`cd1cf97`) so this round's real diff stays readable.
 - **Checked all five owner-answer channels. None has been answered — still 8 open decisions.**
-  This is a no-op round: `index.html`, `design-system/`, `tools/` and `docs/` were not touched by
-  a single byte. Only `AUTOPILOT.md` and `SUMMARY.md` changed.
+  This is a no-op round: `index.html`, `design-system/`, `tools/` and `docs/` were not touched by a
+  single byte. Only `AUTOPILOT.md` and `SUMMARY.md` changed.
 - **Ran the full three-stage Verify plus all five parity-harness keys** — every number matches the
   expected table, which is the independent confirmation that the restore was byte-correct.
-- **Resolved round `_0036`'s conditional forecast about the `:short` ranking trap: HEADS.** Its
-  closing sha is `e057051`, leading `e`, inside the `b`–`f` branch it wrote. Recorded in
-  `AUTOPILOT.md` along with a fresh conditional forecast for the next round.
+- **Corrected a rule the contract has recorded wrongly for several rounds, with a real A/B run.**
+  The tip-selection trap is *not* the `:short` token and *not* "ties fall through to the sha". It is
+  the **field order** in `--format`: `sort -r` compares the whole line, so a tied truncated date
+  breaks on whichever field is printed next. Printing the refname before the sha is safe *by
+  construction*; printing the sha first is the actual hazard. Written into `AUTOPILOT.md`.
+- **Resolved round `_0045`'s conditional forecast: TAILS — the first round where the damage would
+  have been real** rather than avoided by luck. Recorded, with a structurally-argued forecast for
+  the next round.
 
 ## Why
 
 - **The restore comes first, before any Read.** The stale tree does not look broken — it looks
-  *done*: on `3503537` the app's `:root` really is byte-identical to `tokens.css` (11 tokens), so
-  a round that reads before restoring concludes the token work is finished and wastes itself.
-  That has actually happened here (round `2026-08-28_0004`), and once (`2026-08-19_0022`) it
-  permanently dropped `docs/design-parity.md` from the tree.
-- **Tip selected with `%(committerdate:iso8601)`, never the `:short` pipeline form.** With five
-  tips already sharing `2026-09-06`, day-granularity keys tie and `sort -r` silently falls through
-  to comparing the sha *string*. Cross-checked by refname (`_0036` is the highest round number
-  below my own `_0045`); both methods agreed. **I did not pick by row number** — a round's own
-  branch can land above or below the real tip depending on one hex digit.
-- **No substitute task was invented.** The design-system integration is finished except for the
-  eight owner decisions in `README.md`; the survey work is genuinely complete (parity table closed
-  at 11/11, token tooling at 22/22 with six checks). What is missing is a decision, not more
-  analysis. Ending with only a SUMMARY is the contract's defined success for this state.
+  *done*: on `3503537` the app's `:root` really is byte-identical to `tokens.css` (11 tokens), so a
+  round that reads before restoring concludes the token work is finished and wastes itself. That has
+  actually happened here (round `2026-08-28_0004`), and once (`2026-08-19_0022`) it permanently
+  dropped `docs/design-parity.md` from the tree.
+- **Why I re-ran the A/B the contract said was settled.** Line 356 said the evidence was sufficient
+  and the next round need not repeat it. I ran it anyway because it is read-only, costs two commands,
+  and this was the first round where the recorded forecast predicted *actual* damage — a claim worth
+  confirming by execution rather than inheriting. That is what surfaced the error in the rule. I did
+  not act on the corrected rule beyond documenting it; my tip selection used full-precision
+  `--sort=-committerdate` plus a refname cross-check, as instructed.
+- **Why the correction matters and is not pedantry.** As written, the rule condemns
+  `'%(committerdate:short) …' | sort -r` wholesale. A future round following that literally would
+  believe it must avoid `:short` entirely, while the genuinely dangerous variant — sha printed before
+  refname — is not what the rule names. The two differ by field order alone and produce a six-row
+  displacement on today's data.
 
 ## Verification
+
+Restore correctness, by the method the contract prescribes (tree equality, not diff shape):
+
+```
+git diff --stat 49b333d -- .                            → (empty)  tree byte-identical
+git diff --diff-filter=D --name-only 3503537 49b333d    → (empty)  no deletions missed by path-checkout
+git merge-base --is-ancestor 3503537 49b333d            → ancestor-ok
+git log -1 --format="%h %an <%ae> %ad %s" 49b333d
+  → 49b333d PHANTOM AUTOPILOT <autopilot@phantom.local> Sun Sep 6 00:51:05 2026 +0700
+    chore: round 2026-09-06_0045 no-op -- five channels checked, no owner answer
+```
 
 Verify command, all three stages green:
 
 ```
-node tools/test.mjs         → 54 passed, 0 failed
-node tools/check-tokens.mjs → tokens in sync: 22/22 … identical in index.html
-                              fonts in sync: 4/4 … byte-identical in index.html
-                              no derived-colour literals: 15 CSS source(s) scanned
-                              font weights available: 15 CSS source(s), every weight in 400/500/700/800
-                              no radius literals: 15 CSS source(s), every border-radius reads a --r-* token
-                              typeface from one source: 15 CSS source(s), every font-family reads var(--mono)
-npm --prefix design-system test → 12 test files, 31 passed (31)
+node tools/test.mjs              → 54 passed, 0 failed
+node tools/check-tokens.mjs      → 6/6 checks pass:
+    tokens in sync 22/22 · fonts in sync 4/4 · no derived-colour literals (15 CSS sources)
+    font weights available · no radius literals · typeface from one source
+npm --prefix design-system test  → 12 test files, 31 passed
 ```
 
-Parity harness, all five keys (before-side shas copied from `AUTOPILOT.md`'s `**Verify:**` block,
-never guessed; `ds-disabled-hover` uses the tip *this* round restored):
+All five harness keys, matching the expected table exactly:
 
 ```
-buttons           2488f2d:index.html index.html
-  → 85 pairs / 17 elements, markup OK (7 old class tokens gone, 5 new) — PASS
-segmented         021b966:index.html index.html
-  → 45 pairs / 9 elements,  markup OK (0 gone, 3 new)                  — PASS
-toast             de07ea8:index.html 10e8f39:index.html
-  → 5 pairs / 1 element,    markup OK (0 gone, 1 new)                  — PASS, no undecidable
-ds-disabled-hover e057051:design-system/src/styles.css design-system/src/styles.css
-  → 15 pairs / 3 elements, markup "N/A — the source is a stylesheet"   — PASS
-    + 1 undecidable: .pui-menu__item:last-child (structural pseudo :last-child;
-      subject matches .pui-menu__item, .pui-menu__item--danger)
-toast-hit         3d3d5cc:index.html index.html
-  → 10 pairs / 2 elements, 0 markup problems, 0 unmatched
-  → FAIL — 5 declaration(s) differ   ← EXPECTED, not a regression
+buttons           2488f2d:index.html  index.html   → PASS  85 pairs / 17 elements, markup 7 gone / 5 new
+segmented         021b966:index.html  index.html   → PASS  45 pairs / 9 elements,  markup 0 gone / 3 new
+toast             de07ea8:  10e8f39:index.html     → PASS   5 pairs / 1 element,   markup 0 gone / 1 new, no undecidable
+ds-disabled-hover 49b333d:styles.css  styles.css   → PASS  15 pairs / 3 elements, markup N/A (stylesheet)
+                                                      + 1 undecidable rule (.pui-menu__item:last-child)
+toast-hit         3d3d5cc:index.html  index.html   → FAIL — 5 declaration(s) differ  ← expected result
 ```
 
-`toast-hit`'s FAIL is the designed output: it pins the deliberate 2026-08-24 `pointer-events:auto`
-fix on `.toast-act`. I read **all five `✗` rows** with `grep -E "✗|…"` rather than
-`grep -c "✗ #toast:"`, which has a documented blind spot (the base-state row prints
-`✗ #toast (base)` with no colon, so that pattern returns 0 even when `#toast` regresses). All five
-rows are `#toastUndo` — `(base)`, `:hover`, `:disabled`, `:disabled:hover`, `:focus` — and **no row
-is `#toast`**, which is the proof `#toast` still carries its `pointer-events:none`.
+`toast-hit`'s FAIL is the correct, documented outcome of that key: it records the deliberate
+`pointer-events:auto` behaviour change from round `2026-08-24_0003`. I read **all five** `✗` rows
+rather than `grep -c "✗ #toast:"` (blind-spotted per round `_0043`); all five are `#toastUndo`
+(`(base)` / `:hover` / `:disabled` / `:disabled:hover` / `:focus`) and none is `#toast`, which is the
+evidence that the app side was not touched.
 
-Restore preconditions, each run before touching the tree:
+`ds-disabled-hover`'s "before" side reads the tip I actually restored (`49b333d`), not a sha copied
+from an old status block.
+
+The A/B, run after restore with `grep -v 2026-09-07_0000` to exclude my own branch and reproduce the
+pre-restore condition:
 
 ```
-git log -1 --format="%h %an <%ae> %ad %s" e057051
-  → PHANTOM AUTOPILOT <autopilot@phantom.local> … "chore: round 2026-09-06_0036 no-op …"
-    (author = the runner, so this tip is the previous round's own commit, not an owner answer)
-git merge-base --is-ancestor 3503537 e057051     → ancestor-ok
-git diff --diff-filter=D --name-only HEAD e057051 → empty (path-checkout ≡ fast-forward)
-git diff --stat e057051 -- .  (after restore)     → empty (tree matches the tip byte for byte)
+'%(committerdate:short) %(refname:short) %(objectname:short)' | sort -r
+  → _0045  _0036  _0028  _0020  _0012  _0002        every row correctly ordered
+
+'%(committerdate:short) %(objectname:short) %(refname:short)' | sort -r
+  → _0036  _0028  _0002  _0020  _0012  _0045        real tip 49b333d sunk to row 6
 ```
 
-Five channels, all checked **after** the restore where it matters:
+Row 3 of the second listing (`8def8f7` = `_0002`, the *oldest* tip of the day, sitting above `_0020`
+and `_0012`) reproduces exactly what round `_0045` recorded observing — which is what identifies the
+sha-first form as the one earlier rounds were running.
 
-1. `grep -c "| Option | Cost |" README.md` = **8**; `grep -c "If you answer:" README.md` = **8**.
-   The two counters agree, which is itself the signal that nobody answered — README states an
-   answer *replaces* the option table, so a disagreement is what an answer looks like.
-2. `git ls-files | grep -i jspdf` → empty (decision 1's artefact is a file drop, not README text).
-3. `main` / `mac/main` / `origin` / `origin/main` = `ef3220e` (2026-06-27) — unmoved.
-4. `git status --untracked-files=all --short` → empty.
-5. Non-`auto/*` refs: `design-system` / `origin/design-system` = `3503537` (2026-08-13, newest of
-   the group), `mac` / `mac/design-system` = `e3a355c` (2026-07-20), `mac/hardening-pass` /
-   `origin/hardening-pass` = `592e7c3` (2026-07-20). Nothing newer than 2026-08-13.
+Five channels, all dry:
+
+```
+grep -c "| Option | Cost |" README.md   → 8      two independent counters agree
+grep -c "If you answer:"    README.md   → 8      ⇒ no decision answered
+git ls-files | grep -i jspdf            → (empty)  jsPDF still not vendored
+git status --untracked-files=all --short → (empty)  no owner-dropped files
+non-autopilot branches: design-system/origin/design-system = 3503537 (2026-08-13);
+  mac, mac/design-system = e3a355c (2026-07-20); mac/hardening-pass, origin/hardening-pass = 592e7c3
+  (2026-07-20); main, mac/main, origin, origin/main = ef3220e (2026-06-27) — none moved
+```
 
 ## What I did NOT do
 
-- **Did not answer, edit, delete or relocate any of the eight open decisions.** Each moves pixels
-  or adds a file to the repo; all eight are the owner's call. Decisions 2, 5 and 6 are the last
-  three gaps in the element-parity criterion; 1 and 4 each gate one further criterion.
-- **Did not re-run the `:short` A/B.** `AUTOPILOT.md:355–356` records that round `2026-09-04_0048`
-  measured it live and caught a real inversion at rows 3–4; the evidence is sufficient and the file
-  explicitly says future rounds need not repeat it. This is a deliberate skip, not an omission.
-- **Did not re-run the retrospective restore audit** (completed round `2026-08-31_0023`, all 72
-  branches by tree-sha identity) and **did not restore `docs/design-parity.md`** — that is
-  decision 8, still unanswered.
-- **Did not trim `AUTOPILOT.md`.** It is now 2,601 lines / 345,275 bytes before this round's edit,
-  and that size is exactly why `## Next task` reaches the agent truncated to empty. Deleting round
-  history is discarding evidence and is an owner decision, not an agent's.
-- **Did not touch `index.html`, `design-system/`, `tools/` or `docs/`.** No CSS moved, so no
-  pixel moved.
-- **Did not open a browser.** Playwright and Chrome-DevTools MCP are *permission*-blocked here, not
-  merely headless; retrying them without a permission change (decision 4) burns a round.
+- **Did not touch `index.html`, `design-system/`, `tools/` or `docs/`.** All eight owner decisions
+  are still open; every remaining path to the acceptance criteria moves pixels or is an owner's call.
+  `git status` for this round shows `AUTOPILOT.md` and `SUMMARY.md` only.
+- **Did not invent substitute work.** Backlog work that touches code is genuinely exhausted, and the
+  last read-only item (`retrospective restore audit`) closed in round `2026-08-31_0023`.
+- **Did not act on the corrected sort rule beyond documenting it** — no tooling was changed to
+  enforce it, because nothing in the repo runs that pipeline; it is a hazard for future rounds
+  reading the contract, and the contract is where the fix belongs.
+- **Did not recover `docs/design-parity.md`** (still retrievable at `c3351fc:docs/design-parity.md`).
+  That is decision 8 and remains the owner's call.
+- **Did not verify anything in a browser** — decision 4 has not been granted, and Playwright and
+  Chrome-DevTools MCP are both permission-blocked, not merely headless.
 
 ## Risk
 
-- 🔴 **The `toast-hit` key reports `FAIL — 5 declaration(s) differ`, and a reviewer skimming for a
-  green wall will read that as a broken build.** It is the intended, load-bearing output of that
-  key. Tell a real regression from this one by the harness line `after : auto <- .toast-act` and
-  by every `✗` row naming `#toastUndo`; a genuine regression would put `#toast` on one of them.
-- 🔴 **The runner bug that causes all of this is still unfixed after 70+ rounds.** Every round
-  branch is cut from `3503537` rather than the previous tip, so each round spends effort restoring
-  before it can start. It has survived six day rollovers and a month boundary. No round can fix it.
-- ⚠️ **`:short`'s row 1 was accidentally correct again this round — two heads in a row, both by
-  luck.** Rows 3–5 of the same ordering are genuinely inverted (`8def8f7`/`_0002`, the *oldest* tip
-  of the day, ranks above both `_0020` and `_0012`), so the trap fired; it just fired somewhere
-  harmless. Do not read that as retired.
-- ⚠️ **The forecast in `AUTOPILOT.md` is inference from `:iso8601` output, not a live A/B.** I did
-  not run the `:short` pipeline form this round. It must not be cited as a measurement.
-- ⚠️ **The `ds-disabled-hover` PASS says nothing about `.pui-menu__item:last-child`** — the harness
-  reports it as undecidable (structural pseudo). A change confined to that rule computes 0 diff.
-  Read it by hand if it ever matters.
-- ⚠️ **The restore audit was file-level only.** If a round that skipped its restore dropped
-  individual *lines* from a file that still exists, no check here would see it, and it is no longer
-  provable retroactively.
-- ⚠️ **Nothing in this repo has ever been merged.** `main` is still `ef3220e` (2 commits, no
-  design-system) while 70+ `auto/*` branches stack in parallel. The work is real and verified, but
-  it lives only on sibling branches.
+- **The corrected sort rule is the one new claim in this round; it rests on a run I did, on today's
+  ref set.** The two listings above are the whole evidence. The reasoning that refname-ordering is
+  safe "by construction" holds only while round numbers stay zero-padded to equal width and share a
+  common prefix — if the runner ever changes the branch naming scheme, that guarantee lapses. Using
+  `--sort=-committerdate` does not depend on naming at all, which is why the instruction I left says
+  to use it rather than to rely on field order.
+- **The forecast for the next round says risk is temporarily zero.** That is because this round's tip
+  is the only tip dated `2026-09-07`, so no tie exists at row 1 for any formula. It stops being true
+  the moment a second round closes on the same date, and it is an argument about ref topology, not a
+  check I could run against a future that does not exist yet. Treat it as a prediction.
+- **`toast-hit` reports FAIL by design.** A reviewer scanning for green will misread this. The
+  meaningful assertion is the composition of the failure — five rows, all `#toastUndo`, zero `#toast`
+  — not the exit status.
+- **The underlying runner bug is still unfixed and is the real cost here.** Every round spends its
+  opening on a restore, and the stalemate now exceeds three weeks and has crossed a month boundary.
+  No round can fix this from inside the repo; it needs the owner.
+- **`AUTOPILOT.md` was 2,663 lines / 354,310 bytes before this round's edit and grew again.** This is
+  why `## Next task` arrives empty in the runner's prompt — the file is truncated before it reaches
+  me. Trimming it is an owner decision, so I left it and read the section from the file after
+  restoring instead.
