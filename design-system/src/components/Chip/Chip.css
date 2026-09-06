@@ -1,5 +1,5 @@
 .pui-chip{
-  background:var(--surface); border:1px solid var(--line); border-radius:3px;
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md);
   padding:6px 10px; text-align:center; font-size:10px; color:var(--muted);
   transition:.1s; user-select:none; cursor:pointer; font-family:var(--mono);
 }
