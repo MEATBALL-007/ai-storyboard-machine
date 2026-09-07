@@ -1,127 +1,148 @@
-# Round 2026-09-08_0016 — SUMMARY
+# Round 2026-09-08_0026 — no-op (no owner answer)
 
 ## What I did
 
 - **Restored the previous round's tip.** `git log --oneline -1` showed HEAD at `3503537` (the stale
-  base the runner cuts every `auto/*` branch from), so the working tree lacked every round of work
-  since 2026-08-21. Ranked the round tips with
-  `git for-each-ref --format="%(committerdate:iso8601) %(objectname:short) %(refname:short)" refs/heads refs/remotes | grep auto/deep_dive | grep -v 2026-09-08_0016 | sort -r | head -20`
-  → newest is `81af905` = `2026-09-08_0006`. Restored with `git checkout 81af905 -- .` as its own
-  commit so this round's real diff stays readable.
-- **Checked all five owner-answer channels — no answer on any of the 8 open decisions.** This round
-  is therefore a **no-op**: `index.html`, `design-system/`, `tools/` and `docs/` were not touched by
-  a single byte. Only `AUTOPILOT.md` and `SUMMARY.md` changed.
-- **Ran the full Verify chain and all five harness keys.** Every number matches the expected table.
-- **Updated only the `## Next task` forecast block in `AUTOPILOT.md`** (per the convention started by
-  round `_0035`): resolved `_0006`'s prediction, wrote this round's, and corrected the "next tip to
-  restore" pointer to `2026-09-08_0016`. No new `> **สถานะล่าสุด …` block was appended.
+  base the runner cuts every branch from), so before reading a single file I ranked the round tips
+  date-major and restored `775deb2` (`_0016`) as its own commit. Residual `git diff --stat 775deb2 -- .`
+  is **empty**, and `ls tools` shows `check-tokens.mjs` present — the one-call tell that the tree is
+  the real one and not the stale base.
+- **Checked all five owner-answer channels — none has been answered.** Details below.
+- **Ran the full three-stage Verify plus all five harness keys.** All green / all at expected counts.
+- **Resolved round `_0016`'s ranking forecast as TAILS** from this round's own `for-each-ref` output,
+  and wrote the next forecast (damage case now **2 rounds**) into `AUTOPILOT.md`'s Next task block.
+- **Touched no code.** `index.html`, `design-system/`, `tools/` and `docs/` are byte-identical to
+  `775deb2`; the only files this round changes are `AUTOPILOT.md` and `SUMMARY.md`.
 
 ## Why
 
-- **Restore before reading anything.** The stale tree does not look broken, it looks *finished* —
-  on `3503537` the app's `:root` really is byte-identical to `tokens.css`. Round `2026-08-28_0004`
-  read files first and burned a whole round concluding work already shipped was still to do.
-- **Ranking is date-major, refname as cross-check only.** Two independent traps make any other
-  formula silently wrong: a truncated date key falls through to the random sha, and — new as of
-  yesterday's rollover — **the round number went DOWN across the day boundary** (`_0006`/`_0016`
-  today vs `_0041` yesterday), so any ranking keyed on the refname alone now picks yesterday's
-  `_0041` as "latest" forever. Both were checked here and agree on `81af905`.
-- **`_0006`'s forecast resolved HEADS, structurally.** It predicted zero risk because its tip would
-  be the only one dated `2026-09-08`. Confirmed live from this round's own `for-each-ref`: exactly
-  one tip on that date, all six rows below it on `2026-09-07`. I deliberately did **not** re-run the
-  `:short` A/B — on a single-tip day the two formulas are indistinguishable and their agreement
-  proves nothing. That ends a four-round "tails" streak, and it ends it by construction, not luck.
-- **No substitute task was invented.** The contract's Next task says a round with no owner answer is
-  a no-op, and every code-touching fallback is exhausted. Three of the eight decisions block the
-  remaining acceptance criteria directly (chip padding / segmented padding / input sizes); all three
-  move visible pixels, which is the owner's call, not an agent's.
+The queued Next task says explicitly: if no owner decision has been answered, do a no-op round —
+restore, check five channels, run Verify + the five harness keys, write SUMMARY, stop, and **do not
+invent other work**. All eight decisions in `README.md → ## Open decisions` are still unanswered, so
+that is the whole round. Fallback work that touches code is genuinely exhausted (token tooling is
+22/22 across six checks, the parity table is closed at 11/11), and the remaining items each move
+pixels or add a file — owner calls, not an agent's.
+
+**Tip selection, and why the method matters.** Ranking was `%(committerdate:iso8601)` (full second
+precision), cross-checked by refname. Both agree on `775deb2`. Two independent traps were live:
+
+- `2026-09-08` now holds **two** tips, so a `--format='%(committerdate:short) %(objectname:short) …' | sort -r`
+  pipeline ties them and falls through to the **sha string** — where `8` (`81af905`, `_0006`) beats
+  `7` (`775deb2`, `_0016`) and silently restores one round stale.
+- The round number went **down** across the day boundary (`_0006`/`_0016`/`_0026` today vs `_0041`
+  yesterday), so any ranking that is not date-major picks yesterday's `_0041` forever.
+
+Both failures are undetectable downstream — the residual diff against the wrong tip is empty and
+every check still passes — which is why the selection is done by construction rather than checked
+after the fact.
 
 ## Verification
 
-Verify command, all three stages green:
+Restore preconditions, before touching the tree:
+
+```
+git merge-base --is-ancestor 3503537 775deb2   → ancestor-ok
+git diff --diff-filter=D --name-only HEAD 775deb2 → (empty; no deletions, so path-checkout == fast-forward)
+git log -1 --format="%h %an <%ae> %ad %s" 775deb2
+  → 775deb2 PHANTOM AUTOPILOT <autopilot@phantom.local> Tue Sep 8 00:22:35 2026 +0700
+    chore: round 2026-09-08_0016 no-op -- five channels checked, no owner answer
+```
+
+Author is the runner, not the owner — so the tip is the previous round's own commit, not a
+committed answer. After `git checkout 775deb2 -- .` + commit: `git diff --stat 775deb2 -- .` empty.
+
+**Verify command — all three stages green:**
 
 ```
 node tools/test.mjs        → 54 passed, 0 failed
-node tools/check-tokens.mjs → tokens 22/22 · fonts 4/4 · no derived-colour literals ·
-                              font weights available · no radius literals ·
-                              typeface from one source   (6/6 checks, 15 CSS sources)
-npm --prefix design-system test → 12 test files, 31 passed (31)
+node tools/check-tokens.mjs → tokens in sync: 22/22 ... identical in index.html
+                              fonts in sync: 4/4 ... byte-identical in index.html
+                              no derived-colour literals: 15 CSS source(s) scanned
+                              font weights available: 15 CSS source(s) scanned (400/500/700/800)
+                              no radius literals: 15 CSS source(s), every border-radius reads --r-*
+                              typeface from one source: 15 CSS source(s), every font-family var(--mono)
+npm --prefix design-system test → 12 test files, 31 passed
 ```
 
-All five `docs/btn-parity-proof.mjs` keys, matching the expected table exactly:
+**All five harness keys, at their expected counts** (independent evidence the restore was complete —
+an empty diff only proves bytes match, whereas the harness recomputes each element's cascade-winning
+declaration set from the files actually standing):
 
-| key | result | markup coverage |
+```
+node docs/btn-parity-proof.mjs buttons           2488f2d:index.html index.html
+  → PASS, compared 85 (element,state) pairs across 17 elements; markup 7 old tokens gone, 5 new
+node docs/btn-parity-proof.mjs segmented         021b966:index.html index.html
+  → PASS, compared 45 pairs across 9 elements
+node docs/btn-parity-proof.mjs toast             de07ea8:index.html 10e8f39:index.html
+  → PASS, compared 5 pairs across 1 element      (both sides pinned — required for this key)
+node docs/btn-parity-proof.mjs ds-disabled-hover 775deb2:design-system/src/styles.css design-system/src/styles.css
+  → PASS, compared 15 pairs across 3 elements, + 1 undecidable rule (.pui-menu__item:last-child)
+node docs/btn-parity-proof.mjs toast-hit         3d3d5cc:index.html index.html
+  → FAIL — 5 declaration(s) differ, 0 markup problems, 0 unmatched   ← the CORRECT result for this key
+```
+
+`toast-hit` is **supposed** to fail: its before-side is pinned prior to the deliberate
+`pointer-events:auto` fix on `.toast-act`, so 5 differing declarations is the fix being visible.
+Read it by the `✗` rows, not the exit code — all five are `#toastUndo` (`(base)`, `:hover`,
+`:disabled`, `:disabled:hover`, `:focus`) and **none is `#toast`**, which is what proves `#toast`
+still carries `pointer-events:none`. (Do not confirm this with `grep -c "✗ #toast:"`; the base row
+prints `✗ #toast (base)` with no colon, so that pattern returns 0 in exactly the regression case it
+exists to catch.)
+
+**Five channels, all negative:**
+
+| # | Channel | Result |
 |---|---|---|
-| `buttons 2488f2d:index.html index.html` | PASS — 85 pairs / 17 elements | 7 old gone, 5 new |
-| `segmented 021b966:index.html index.html` | PASS — 45 pairs / 9 elements | 0 old gone, 3 new |
-| `toast de07ea8:index.html 10e8f39:index.html` | PASS — 5 pairs / 1 element, no undecidable | 0 old gone, 1 new |
-| `ds-disabled-hover 81af905:…/styles.css …/styles.css` | PASS — 15 pairs / 3 elements, **+1 undecidable** | N/A — source is a stylesheet |
-| `toast-hit 3d3d5cc:index.html index.html` | **FAIL — 5 declarations differ**, 10 pairs / 2 elements, 0 markup problems, 0 unmatched | 0 old gone, 0 new |
+| 1 | `README.md → ## Open decisions` | `grep -c "\| Option \| Cost \|"` = **8**, `grep -c "If you answer:"` = **8** — agree, so no answer appended |
+| 2 | `jspdf.umd.min.js` at repo root | `git ls-files \| grep -i jspdf` → empty |
+| 3 | `main` | still `ef3220e` (2026-06-27), unmoved |
+| 4 | uncommitted drop | `git status --untracked-files=all --short` → empty |
+| 5 | non-`auto/*` refs | newest is `design-system`/`origin/design-system` at `3503537`, **2026-08-13** — older than all this work; `mac/*`, `hardening-pass`, `main` older still |
 
-`toast-hit`'s FAIL is its **correct** result — it exists to display the deliberate behaviour change
-from round `2026-08-24_0003`, not to pass. Read with
-`grep -E "✗|compared|PASS|FAIL|markup|unmatched|undecidable"` per round `_0043`'s instruction: all
-five `✗` rows are `#toastUndo` (`(base)`, `:hover`, `:disabled`, `:disabled:hover`, `:focus`) and
-**none is `#toast`** — that is the proof `pointer-events:none` was not stripped from the container.
-(`grep -c "✗ #toast:"` would return 0 here even in the regression case, because the base-state row
-prints without a colon. Do not use it.)
-
-Restore preconditions, all checked before touching the tree:
-
-```
-git log -1 --format="%h %an <%ae> %ad %s" 81af905
-  → PHANTOM AUTOPILOT <autopilot@phantom.local> Tue Sep 8 00:12:58 2026
-    "chore: round 2026-09-08_0006 no-op -- five channels checked, no owner answer"
-    = the runner's own commit, not an owner answer
-git merge-base --is-ancestor 3503537 81af905      → ancestor-ok
-git diff --diff-filter=D --name-only HEAD 81af905 → empty (no deletions ⇒ path-checkout ≡ fast-forward)
-git diff --stat 81af905 -- .   (after checkout)   → empty (tree matches tip byte for byte)
-```
-
-Five channels, all silent:
-
-1. `grep -c "| Option | Cost |" README.md` = **8**, `grep -c "If you answer:" README.md` = **8** —
-   the two counters agree, so all 8 decisions are still unanswered.
-2. `git ls-files | grep -i jspdf` → empty. The owner has not vendored jsPDF, so the last external
-   reference cannot be inlined yet.
-3. `git status --untracked-files=all --short` → empty. Nothing dropped into the tree by hand.
-4. Non-`auto/*` refs unmoved: `design-system`/`origin/design-system` = `3503537` (2026-08-13),
-   `mac`/`mac/design-system` = `e3a355c` (2026-07-20), `mac/hardening-pass`/`origin/hardening-pass`
-   = `592e7c3` (2026-07-20), `main`/`mac/main`/`origin`/`origin/main` = `ef3220e` (**2026-06-27**).
-5. `AUTOPILOT.md` measured before editing: **2,944 lines / 395,971 bytes**.
+Channel 1 was run **after** the restore (on the stale base that section does not exist and the count
+returns 0, which would misread as "the owner deleted it").
 
 ## What I did NOT do
 
-- **No code change of any kind.** No byte of `index.html`, `design-system/`, `tools/` or `docs/`.
-- **Did not answer any of the 8 open decisions.** Three of them (chip padding, segmented padding,
-  input sizes) are the only things still standing between the repo and the remaining acceptance
-  criteria, and every option under each moves visible pixels.
-- **Did not re-run the `:short` A/B.** Evidence has been sufficient since `2026-09-04_0048`, and this
-  round's single-tip day makes the two formulas indistinguishable anyway — running it would have
-  produced agreement that proves nothing and risks being cited later as "the trap retired".
-- **Did not trim `AUTOPILOT.md`,** even though its size is precisely why `## Next task` arrives empty
-  in the prompt. Deleting round history is an owner decision. I only *stopped adding* to it: no new
-  status block this round, and the forecast block was rewritten in place at roughly constant length.
-- **Did not attempt `git push`, `gh`, `git merge --ff-only`, or a browser.** The first two are denied
-  by contract, `merge --ff-only` is permission-blocked here (rounds `_0010` and `_0027` both burned a
-  call confirming it), and both browser MCPs are permission-blocked, not merely headless.
-- **Did not restore `docs/design-parity.md`** (lost by round `2026-08-19_0022`, still reachable at
-  `c3351fc:docs/design-parity.md`). That is open decision 8.
+- **Did not answer any of the eight open decisions.** Each moves pixels or adds a file to the repo.
+  Decisions 2/5/6 are the last three gaps in the element-parity criterion, 1 and 4 each gate another
+  criterion, and 7 would change visible hover colours in both `Button.css` and the app's own
+  `.menu-pop button.danger:hover`. All owner calls.
+- **Did not restore `docs/design-parity.md`** (decision 8). Still reachable at
+  `c3351fc:docs/design-parity.md`; it blocks no acceptance criterion.
+- **Did not re-run the `:short` vs `:iso8601` A/B.** `2026-09-04_0048` measured it live and
+  `AUTOPILOT.md` records that the evidence is sufficient. Re-running on a day whose tips do not
+  separate proves nothing.
+- **Did not re-run the retrospective restore audit** (completed and closed in `2026-08-31_0023`).
+- **Did not retry the browser MCPs.** Playwright and Chrome-DevTools are *permission*-blocked, not
+  merely headless; retrying without a permission change burns the round.
+- **Did not append a `> **สถานะล่าสุด …` block to `AUTOPILOT.md`.** Per the convention started in
+  `_0035`, a no-op round edits only the Next task block — the file is ~2,920 lines / ~392 KB and its
+  size *is* why `## Next task` reaches the prompt empty. Nothing was deleted; trimming old blocks
+  remains an owner decision, and per-round history survives in `git log` of `SUMMARY.md`.
+- **Did not trim, reorder or delete anything in `README.md`.**
 
 ## Risk
 
-- 🔴 **The runner bug is now ~3.5 weeks old and nothing in this repo can fix it.** Every `auto/*`
-  branch is still cut from `3503537` and `main` is still `ef3220e` (2026-06-27) — **83 rounds of work
-  have never been merged anywhere.** A reviewer should look at the branch topology before the diff.
-- 🔴 **This round's own tip will be the second on `2026-09-08`, so the ranking tie returns next
-  round.** With `81af905` (leading `8`) as the incumbent, a sha-first ranking is accidentally right
-  only for a closing sha leading `9`–`f`; `0`–`7` discards this entire round, silently — empty
-  residual diff, five matching harness keys, three green Verify stages. The forecast is written into
-  `AUTOPILOT.md`; the fix is `--sort=-committerdate`, not hoping the hex digit falls right.
-- ⚠️ **`ds-disabled-hover` reports 1 undecidable rule** (`.pui-menu__item:last-child`, identical in
-  both versions). The PASS says nothing about it. This is expected and unchanged, not new.
-- ⚠️ **Nothing here was verified in a real browser** — that has never happened in any round, and it
-  is open decision 4. Every claim about rendering rests on source reading and the CSS cascade
-  simulation in `docs/btn-parity-proof.mjs`, which notably does **not** model inheritance.
-- ⚠️ **This SUMMARY's numbers all come from this round's own command output**, not transcribed from
-  the previous SUMMARY. Errors in these files have historically propagated by copy-forward.
+- **Nothing in the repo changed except two docs files**, so functional risk this round is nil. The
+  reviewable question is only whether the tip selection was right — see below.
+- 🔴 **The wrong-tip trap is now a 2-round damage case, and it is silent.** After this round
+  `2026-09-08` holds three tips. If a future round ranks with a `| sort -r` pipeline whose second
+  printed field is the sha, it will pick `81af905` (`_0006`) and discard **both** `_0016` and this
+  round at once — and every downstream check stays green, because no-op rounds touch only
+  `AUTOPILOT.md`/`SUMMARY.md`, so the residual diff against the wrong tip is empty and all five
+  harness keys still match. `--sort=-committerdate` (or `:iso8601` + refname cross-check) is immune.
+- 🔴 **Round `_0016`'s forecast resolved TAILS** — its sha `775deb2` leads `7`, inside its own
+  `0`–`7` damage branch, confirmed live from this round's `for-each-ref`. That is 5 tails out of the
+  last 6 resolutions. A round that observes the two ranking formulas *agreeing* must not read that
+  as the trap being retired; agreement is a coin flip on one hex digit.
+- ⚠️ **The `ds-disabled-hover` PASS says nothing about `.pui-menu__item:last-child`** — the harness
+  reports it as undecidable (structural pseudo, no DOM). A change confined to that rule computes
+  0 diff. It is unchanged this round, but the blind spot is permanent and must be read by hand.
+- ⚠️ **No browser has ever verified this app.** Every parity claim in `AUTOPILOT.md` rests on source
+  reading plus CSS-spec reasoning, not on a rendered page. That is decision 4, still unanswered.
+- ⚠️ **`index.html` still loads jsPDF from `cdnjs.cloudflare.com` (line 7)**, so the
+  "works from `file://`" criterion is not met for PDF export. No copy of jsPDF exists on this
+  machine and the network is blocked — it needs the owner to vendor the file (decision 1).
+- The stall is now **3+ weeks and 84 rounds** across two month boundaries. It will not clear on its
+  own; it needs a person, not another round.
