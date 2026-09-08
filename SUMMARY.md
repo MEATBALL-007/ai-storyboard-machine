@@ -138,9 +138,16 @@ npm --prefix design-system test → 12 files, 31 passed
   keys recomputing their cascades from the files actually standing and reporting unchanged counts.
 - 🔴 **The next round's tip selection is where the accumulated work is actually at risk, and the
   odds just got much worse.** `2026-09-09` will hold **three** tips, tied at day granularity. A
-  sha-first pipeline must beat both `c4bebe6` (`c`) and `0e6ad77` (`0`), so it survives only if this
-  round's closing sha starts with `d`/`e`/`f` (~3/16); otherwise it restores `_0011` and silently
-  discards this round. Use `--sort=-committerdate` regardless of what the shas look like.
+  sha-first pipeline must beat both `c4bebe6` and `0e6ad77` **lexically over the whole string**, so
+  it survives on a leading `d`/`e`/`f` (~3/16), is undecided on a leading `c` until the next digit is
+  compared against `4bebe6…` (~1/16), and loses on `0`–`b` (~12/16) — in which case it restores
+  `_0011` and silently discards this round. Use `--sort=-committerdate` regardless of the shas.
+- ⚠️ **I corrected my own forecast after committing it, and the correction matters.** The first
+  version stated the threshold as a first-hex-digit test, which every prior round could get away
+  with because their comparands (`0e6ad77`, `e057051`) were decided at digit one. `c4bebe6` is the
+  first comparand that admits a tie there — and this round's closing sha does land in that branch —
+  so a next round resolving the forecast on the first digit alone would record the **wrong** result
+  and corrupt the running heads/tails statistics. The committed block now says to compare in full.
 - ⚠️ **Do not read last round's clean result as the trap weakening.** `_0011` came out HEADS purely
   because `c` > `0`. The dangerous state is *agreement*, and it just occurred.
 - 🔴 **The runner bug is unfixed after ~4 weeks** (85+ branches cut from `3503537`; `main` still
