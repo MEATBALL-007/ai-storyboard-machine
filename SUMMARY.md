@@ -1,42 +1,44 @@
-# Round 2026-09-13_0027 — no-op (no owner answer)
+# Round 2026-09-13_0037 — no-op (no owner answer)
 
 ## What I did
 
-- **Restored the previous round's tip `6b787ea` (`…/2026-09-13_0016`) onto the stale base.**
+- **Restored the previous round's tip `459dd24` (`…/2026-09-13_0027`) onto the stale base.**
   `git log --oneline -1` showed `3503537` — the round-1 contract commit — so the runner still cuts
-  every `auto/*` branch from the contract rather than from the last tip. Restored as its own forward
-  commit (`136ecdd`). **Proof:** `git rev-parse HEAD^{tree}` and `git rev-parse 6b787ea^{tree}` both
-  return `e937f0b51558ca49dcaff4a8b77b5f568bd64b76` — the trees are the *same object*, so the restore
-  is byte-identical across every path, not merely "diff looks empty".
+  every `auto/*` branch from the contract commit rather than from the last tip. Restored as its own
+  forward commit (`0f34ca7`). **Proof:** `git rev-parse HEAD^{tree}` and `git rev-parse 459dd24^{tree}`
+  both return `128672efca9ab627fdbadc7789a8acba4ca4d4dc` — the same tree *object*, so the snapshot
+  matches on every path at once, not merely "the rows that printed looked equal".
 - **Checked all five owner-answer channels — every one is silent.** Details under Verification.
 - **Ran the full three-stage Verify plus all five harness keys.** Every number matches the documented
   expectation exactly, including `toast-hit`'s intended FAIL.
-- **Resolved round `_0016`'s tip-selection forecast with a live A/B: it came up *tails*, the forecast
-  was correct, and this is the second round where the bug would have destroyed real work** (see Risk).
+- **Resolved round `_0027`'s tip-selection forecast with a live A/B: *tails*, forecast correct, and
+  the damage case has grown to two whole rounds** (see Risk).
 - Did **not** append a `> **สถานะล่าสุด …` block, following the convention started at round `_0035`.
-  Only the `## Next task` block was edited.
+  Only the `## Next task` block of `AUTOPILOT.md` was edited (28 lines added, 1 line changed).
 
 ## Why
 
-- **The no-op really is the contract's instruction, not a fallback I picked.** `## Next task`
-  (line 340 of the restored `AUTOPILOT.md`) says: if no open decision has been answered, restore the
-  previous tip, check the five channels, run Verify plus all five harness keys, write SUMMARY, end
-  the round — and explicitly forbids inventing other work (`ห้ามประดิษฐ์งานอื่นเด็ดขาด`). All eight
-  decisions in `README.md` are still unanswered.
+- **The no-op is the contract's instruction, not a fallback I chose.** `## Next task` (line 340 of
+  the restored `AUTOPILOT.md`) says: if no open decision has been answered, restore the previous tip,
+  check the five channels, run Verify plus all five harness keys, write SUMMARY, end the round — and
+  explicitly forbids inventing other work (`ห้ามประดิษฐ์งานอื่นเด็ดขาด`). All eight decisions in
+  `README.md` are still unanswered.
 - **`## Next task` arrived empty in the prompt again**, for the same structural reason: the section
-  starts at line 340 of a ~3,100-line `AUTOPILOT.md`, so it is truncated away. The copy of
-  `AUTOPILOT.md` on the stale base is round 1's, whose Next task reads "add tokens to `index.html`" —
-  work finished over three weeks ago that the contract's own acceptance criteria already mark done.
-  Acting on the prompt's visible contract would have redone finished work. I read the real task out
-  of the **restored** file by grepping for `## Next task` (line 340) and reading at that offset.
-- **`git checkout <tip> -- .` + commit, not `merge --ff-only` or `reset --hard`.** I confirmed
-  `git status` afterwards showed only `M`/`A` rows and **no `D` rows** — path-checkout never deletes,
-  so a file removed in the tip would otherwise have survived as a resurrected file and the tree would
-  silently disagree. The matching tree hashes are what closes that hole conclusively.
-- **The `ds-disabled-hover` before-side reads `6b787ea`, the tip I restored this round** — not a sha
+  begins at line 340 of a ~3,130-line `AUTOPILOT.md`, so the prompt truncates it away. The copy of
+  `AUTOPILOT.md` sitting on the stale base is round 1's, whose Next task reads "add tokens to
+  `index.html`" — work finished over three weeks ago that the contract's own acceptance criteria
+  already mark done. Acting on the prompt's visible contract would have redone finished work. I read
+  the real task out of the **restored** file (Grep for `## Next task` → line 340 → Read at that
+  offset; the file is 422 KB, so a whole-file Read is refused).
+- **`git checkout <tip> -- .` + a plain commit, not `merge --ff-only` / `reset --hard` / `restore
+  --source=`** — the others are all permission-blocked here. `git status --short` after the checkout
+  showed only `M`/`A` rows and **no `D` rows**, which is the precondition that makes a path-checkout
+  equivalent to a fast-forward; the matching tree hashes then close the hole conclusively.
+- **The `ds-disabled-hover` before-side reads `459dd24`, the tip I restored this round** — not a sha
   copied out of an older block, which the contract explicitly warns against.
 - **Tip chosen with `--sort=-committerdate` plus a date-major refname cross-check**, never
-  `%(committerdate:short) | sort -r`. This round that choice was load-bearing, not ceremonial.
+  `%(committerdate:short) | sort -r`. This round that choice was load-bearing, not ceremonial: the
+  two forms disagree at row 1 (see Risk).
 
 ## Verification
 
@@ -54,86 +56,69 @@
 |---|---|---|
 | `buttons` (`2488f2d:index.html` → worktree) | 85 / 17 | PASS |
 | `segmented` (`021b966:index.html` → worktree) | 45 / 9 | PASS |
-| `toast` (`de07ea8` → `10e8f39`, **both sides pinned**) | 5 / 1 | PASS, **0** undecidable |
-| `ds-disabled-hover` (`6b787ea:…/styles.css` → worktree) | 15 / 3 | PASS + **1 undecidable** |
+| `toast` (`de07ea8` → `10e8f39`, **both sides pinned**) | 5 / 1 | PASS |
+| `ds-disabled-hover` (`459dd24:…/styles.css` → worktree) | 15 / 3 | PASS + **1 undecidable** |
 | `toast-hit` (`3d3d5cc:index.html` → worktree) | 10 / 2 | **FAIL — 5** (intended) |
 
-- `ds-disabled-hover`'s single undecidable rule is `.pui-menu__item:last-child`
-  (`unreadable because: structural pseudo :last-child`, subject matches `.pui-menu__item` and
-  `.pui-menu__item--danger`) — the expected one.
-- `toast-hit` reports `FAIL — 5 declaration(s) differ, 0 markup problem(s), 0 unmatched element(s)`.
-  Read with `grep "✗"` (**not** the blind-spotted `grep -c "✗ #toast:"`), all five rows are
-  `#toastUndo`: `(base)`, `:hover`, `:disabled`, `:disabled:hover`, `:focus`. **No `#toast` row
-  appears** — that absence is the evidence that `pointer-events:none` was never stripped from the
-  toast container.
+`toast-hit` was read by eye across all five `✗` rows, not with `grep -c "✗ #toast:"` (that pattern
+has a blind spot: the base-state row prints `✗ #toast (base)`, with no colon). All five rows are
+`#toastUndo` — `(base)`, `:hover`, `:disabled`, `:disabled:hover`, `:focus` — and none is `#toast`,
+which is the evidence that `#toast` still carries its `pointer-events:none`. The single
+`ds-disabled-hover` undecidable is the known `.pui-menu__item:last-child` rule (structural pseudo).
 
 **Five owner-answer channels — all silent:**
 
-1. Restored tip `6b787ea` is authored by `PHANTOM AUTOPILOT <autopilot@phantom.local>`, subject
-   `chore: round 2026-09-13_0016 no-op -- five channels checked, no owner answer` — a runner commit,
-   not the owner's.
-2. `| Option | Cost |` in `README.md` = **8** and `If you answer:` = **8**. Counted **separately**,
-   not as one combined pattern — a combined count of 16 could mask a 9/7 split. The counters
-   **agree**, so no decision block has been resolved.
-3. `git ls-files | grep -ci jspdf` = **0**. Owner has not vendored jsPDF (blocks decision 1).
-4. `git status --untracked-files=all --short` — **empty**. Nothing dropped into the tree.
-5. Non-`auto/*` tips have not moved at all: `design-system`/`origin/design-system` = `3503537`
-   (2026-08-13), `mac`/`mac/design-system` = `e3a355c` (2026-07-20),
-   `mac/hardening-pass`/`origin/hardening-pass` = `592e7c3` (2026-07-20),
-   `main`/`mac/main`/`origin/main` = **`ef3220e` (2026-06-27)**.
+| # | Channel | Result |
+|---|---|---|
+| 1 | `README.md → ## Open decisions` | `grep -c "\| Option \| Cost \|"` = **8**, `grep -c "If you answer:"` = **8** — both counters agree, so nothing was answered. Run **after** the restore; on the stale tree it returns 0. |
+| 2 | `jspdf.umd.min.js` in the repo | `git ls-files \| grep -i jspdf` → no output (decision 1 still unanswered) |
+| 3 | `main` | still `ef3220e` (2026-06-27) |
+| 4 | untracked drop | `git status --untracked-files=all --short` → clean before the restore |
+| 5 | non-`auto/*` refs | newest is `3503537` / `design-system` (2026-08-13); `mac*` refs at 2026-07-20, `main` at 2026-06-27 — nothing newer than this work |
 
-**Tip-selection A/B — run live this round, own branch excluded to simulate pre-restore conditions:**
+**Tip selection, measured live (own branch filtered out):**
 
-- Wrong formula (`%(committerdate:short)`, `| sort -r`) → row 1 = `e693761` = `_0006` = **WRONG tip**
-- Right formula (`--sort=-committerdate`) → row 1 = `6b787ea` = `_0016` = **correct**
-- The two formulas **disagree** ⇒ round `_0016`'s forecast resolved **tails**, exactly as predicted
-  at ~90.1%. Damage = **0** because this round used the right formula.
-- **This is the second round on record where the bug would have destroyed real work.** Had I used the
-  wrong formula I would have restored `_0006`'s tip — one round older — silently discarding all of
-  `_0016`'s output (`AUTOPILOT.md` Next-task update + `SUMMARY.md`).
-- The bug is **also** still visible one row down: the wrong formula's `2026-09-12` group puts
-  `e3bbed5` (`_0021`) at the head, while that day's real tip is `588852a` (`_0031`), which lands
-  **last** in that group instead of first.
+```
+correct  --sort=-committerdate          → row 1 = 459dd24  _0027  ✓ (restored)
+wrong    %(committerdate:short)|sort -r → row 1 = e693761  _0006  ✗ (two rounds stale)
+```
 
 ## What I did NOT do
 
-- **Did not touch `index.html`, `design-system/`, `tools/`, or `docs/`** — not one byte. Beyond the
-  restore commit, only `AUTOPILOT.md` and `SUMMARY.md` changed.
-- **Did not answer any of the eight open decisions.** Each moves pixels, adds a file to the repo, or
-  rewrites history. All eight are already investigated to the end; what is missing is a decision.
-- **Did not shrink or prune `AUTOPILOT.md`** even though its size is the direct cause of the empty
-  `## Next task`. Trimming it is the owner's call — it is itself one of the open decisions.
-- **Did not "fix" `toast-hit`'s FAIL.** That FAIL is the correct output of the round that made
-  `#toastUndo` clickable; turning it green would mean reverting a real bug fix.
-- **Did not verify anything in a real browser.** Playwright and Chrome-DevTools MCP are both
-  permission-blocked here (not merely headless), and decision 4 has not been granted.
+- **Did not answer any open decision.** Each of the eight moves pixels or adds a file to the repo,
+  so each is the owner's call; the contract forbids an agent deciding them.
+- **Did not touch `index.html`, `design-system/`, `tools/` or `docs/`.** This round's only
+  content-bearing edits are `SUMMARY.md` and the `## Next task` block of `AUTOPILOT.md`.
+- **Did not re-try the browser MCPs** (Playwright / Chrome-DevTools). They are *permission*-blocked,
+  not merely headless-blocked — that is decision 4, and retrying burns a round for nothing.
+- **Did not restore `docs/design-parity.md`** (still reachable at `c3351fc:docs/design-parity.md`) —
+  that is decision 8.
+- **Did not trim `AUTOPILOT.md`**, even though its size is precisely why `## Next task` reaches the
+  prompt empty. Deleting round history is discarding evidence and is an owner decision.
+- **Did not add a seventh token check** or add the parity harness to the Verify command; both are on
+  the contract's explicitly-forbidden list.
 
 ## Risk
 
-- 🔴 **The runner's stale-base bug is now ~7 weeks old and still unfixed.** Every round spends
-  several tool calls rediscovering and undoing it. `main` has not moved since **`ef3220e`
-  (2026-06-27)** — nothing this project has produced in weeks has reached the main line. **This is
-  the single thing most worth a reviewer's attention**, and no agent round can fix it.
-- 🔴 **The tip-selection bug drew blood again this round — the two formulas genuinely disagreed.**
-  Unlike `_0006`'s structural heads, `2026-09-13` now holds a real tie, and the text sort broke it
-  wrongly. Cumulative record of the wrong formula: **tails 13 of 23**. Any future round that reaches
-  for `%(committerdate:short) | sort -r` will silently lose a round of work.
-  **The fix is unchanged: `--sort=-committerdate` plus a date-major refname cross-check.**
-- 🔴 **Next round's risk stays at ~90.1%, and the flatness is misleading.** Once this round commits,
-  `2026-09-13` holds **three** tips, but the comparand stays **`e693761`** because `6b787ea` is
-  already below it (`6` < `e`). So the ratchet did not climb *this* round — it will jump the moment
-  a top-day tip starts with something above `e6`. Do not read the flat number as improvement.
-- 🔴 **Permission surface remains narrow and is a standing dependency.** `git for-each-ref` with a
-  combined `--format` + `sort` pipe, and several chained commands, were denied this round; `grep -c`
-  returning 0 also exits non-zero and silently truncated one of my channel checks until I re-ran it
-  split apart. If `git checkout <sha> -- .` is ever denied too, **a round will be unable to reach its
-  own accumulated work at all** — it would start on the stale base where `tools/check-tokens.mjs`
-  does not exist, so Verify would fail with `MODULE_NOT_FOUND` through no fault of the code.
-- ⚠️ **A green Verify does not mean the UI is correct.** No checker inspects `:hover`, and jsdom does
-  no hit testing — the two cascade bugs written up as decision 7 (`#tourBack` staying bright while
-  disabled; `.menu-pop button.danger:hover` swallowing the app's own disabled guard) would **not**
-  turn any stage red. That is exactly why they are waiting on an answer rather than being "tried".
-- ⚠️ `toast-hit` is the one harness key expected to FAIL. A reviewer skimming for green will misread
-  it. Its correctness lives in *which* rows differ — all `#toastUndo`, never `#toast`.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
+- 🔴 **The tip-selection bug came up tails again, and this time the wrong formula would have
+  destroyed two rounds.** Measured this round, not inferred: the sha-first form puts `e693761`
+  (`_0006`) at row 1, while the real tip is `459dd24` (`_0027`). Restoring row 1 would have silently
+  discarded both `_0016` and `_0027` — and nothing downstream would have caught it, because both
+  were no-op rounds touching only `AUTOPILOT.md`/`SUMMARY.md`: the residual diff against the wrong
+  tip is empty, all five harness keys still match, and all three Verify stages stay green.
+  Cumulative record of the wrong formula: **tails 14 of 24**.
+- 🔴 **Next round the same configuration persists at ~90.1% and the damage case grows to three
+  rounds.** `2026-09-13` will hold four tips and the comparand stays `e693761` (both `6b787ea` and
+  `459dd24` are below it), so only a closing sha above `e693761` escapes. Use
+  `--sort=-committerdate`; a date-major refname cross-check is the only safe secondary.
+- ⚠️ **`toast-hit`'s `FAIL — 5` is the correct result, not a regression.** It is easy to misread two
+  ways: the count is identical to what a mis-pinned `toast` run produces, and the harness exits
+  non-zero. Tell them apart by the line `after : auto <- .toast-act`.
+- ⚠️ **`toast-hit`'s `markup coverage OK — 0 old class tokens gone, 0 new class attributes` proves
+  nothing this round.** No class moved, so that phase is vacuously green; only the cascade rows carry
+  information.
+- ⚠️ **Still no browser verification of `index.html`, ever** (decision 4), and PDF export still
+  depends on the cdnjs jsPDF tag at line 7, so the `file://` criterion is not met offline
+  (decision 1). Both are unchanged by this round and remain the two criteria a person must unblock.
+- ⚠️ **The stall is now 4+ weeks old across 100+ branches cut from `3503537`.** Nothing in this
+  repository will advance without an owner answering a decision; further rounds can only re-verify.
