@@ -1,132 +1,119 @@
-# Round 2026-09-14_0012 — no-op (no owner answer)
+# SUMMARY — round `2026-09-14_0022`
+
+**ผลรอบนี้: no-op ตามที่ `## Next task` สั่งไว้ — ยังไม่มีคำตอบจากเจ้าของสักข้อ ทั้ง 8 ข้อ**
+ไม่มีการแตะ `index.html`, `design-system/**`, `tools/**`, `docs/**` แม้แต่บรรทัดเดียว
 
 ## What I did
 
-- **Restored the previous round's tip `989c1e8` (`…/2026-09-14_0002`) onto the stale base.**
-  `git log --oneline -1` showed `3503537` — the round-1 contract commit — so the runner still cuts
-  every `auto/*` branch from the contract commit rather than from the last tip. Restored as its own
-  forward commit (`0b474f7`). **Proof:** `git diff --stat 989c1e8 0b474f7` printed nothing at all —
-  a commit-to-commit comparison, so the restored tree matches the tip on every tracked path at once,
-  not merely "the rows that printed looked equal". (`design-system/node_modules` is untracked —
-  `git ls-files` on it returns nothing — so no pathspec exclusion was needed.)
-- **Checked all five owner-answer channels — every one is silent.** Details under Verification.
-- **Ran the full three-stage Verify plus all five harness keys.** Every number matches the documented
-  expectation exactly, including `toast-hit`'s intended FAIL.
-- **Resolved round `_0002`'s tip-selection forecast with a live A/B: *heads*, forecast correct, and
-  for once the head is *structural* rather than lucky** (see Risk).
-- Only the `## Next task` block of `AUTOPILOT.md` was edited (`git diff --numstat` = `26 1`); no
-  `> **สถานะล่าสุด …` block was appended, following the convention started at round `_0035`.
+- **restore tip ของรอบก่อน (`80a22d3`, branch `…/2026-09-14_0012`) ลงบน stale base `3503537`**
+  — HEAD ตอนเปิดรอบคือ `3503537` ตามบั๊ก runner เดิม (`ls tools` เห็นแต่ `test.mjs`
+  ไม่มี `tools/check-tokens.mjs` = ตัวบ่งชี้ว่า tree เก่า) แยกเป็น commit ของตัวเอง (`99b1f85`)
+  เพื่อให้ diff จริงของรอบนี้อ่านได้
+- **ตรวจครบ 5 ช่องทาง — ไม่มีคำตอบจากเจ้าของเลย** (รายละเอียดใน Verification)
+- **รัน Verify ครบ 3 ขั้น + harness ครบ 5 key** — ตรงตารางทุกค่า
+- **รัน A/B ของสูตรจัดอันดับ tip แบบ live** → เฉลยคำทำนายของรอบ `_0012` ว่า **"ก้อย"**
+  (สองสูตรไม่ตรงกันที่แถว 1 จริง) แล้วเขียนคำทำนายรอบถัดไปลง `AUTOPILOT.md`
+- **แก้ `AUTOPILOT.md` เฉพาะบล็อก `## Next task`** — ชี้ tip ที่รอบหน้าต้อง restore ไปที่
+  `2026-09-14_0022` + เพิ่มบล็อกเฉลย/คำทำนาย (ตามธรรมเนียมของรอบ `_0035`/`_0041`:
+  รอบ no-op **ไม่**ต่อบล็อก `> **สถานะล่าสุด …` ท้ายไฟล์อีก เพื่อหยุดการโตของไฟล์)
 
 ## Why
 
-- **The no-op is the contract's instruction, not a fallback I chose.** `## Next task` (line 340 of
-  the restored `AUTOPILOT.md`) says: if no open decision has been answered, restore the previous tip,
-  check the five channels, run Verify plus all five harness keys, write SUMMARY, end the round — and
-  explicitly forbids inventing other work (`ห้ามประดิษฐ์งานอื่นเด็ดขาด`). All eight decisions in
-  `README.md` are still unanswered.
-- **`## Next task` arrived empty in the prompt again**, for the same structural reason: the section
-  begins at line 340 of the restored `AUTOPILOT.md`, which `wc -l` puts at 3,218 lines, so the
-  prompt truncates it away. The copy of
-  `AUTOPILOT.md` sitting on the stale base is round 1's, whose Next task reads "add tokens to
-  `index.html`" — work finished weeks ago that the contract's own acceptance criteria already mark
-  done. Acting on the prompt's visible contract would have redone finished work. I read the real task
-  out of the **restored** file (Grep for `^## Next task` → line 340 → Read at that offset; the file
-  is ~400 KB, so a whole-file Read is refused).
-- **`git checkout <tip> -- .` + a plain commit, not `merge --ff-only` / `read-tree` / `restore
-  --source=`** — the others are all permission-blocked here. `git status --short` after the checkout
-  showed only `M`/`A` rows and **no `D` rows**, which is the precondition that makes a path-checkout
-  equivalent to a fast-forward; the empty `git diff 989c1e8` then closes the hole conclusively.
-- **The `ds-disabled-hover` before-side reads `989c1e8`, the tip I restored this round** — not a sha
-  copied out of an older block, which the contract explicitly warns against.
-- **Tip chosen with `--sort=-committerdate` plus a date-major refname cross-check**, never
-  `%(committerdate:short) | sort -r`. This round the two forms happen to agree at row 1, but only
-  because the top day-group has a single member — the same output still shows the broken form
-  mis-ordering the `2026-09-13` group (see Risk).
+- **ทำไมไม่ทำงานอื่น:** เกณฑ์ที่เหลือทุกข้อ**บล็อกอยู่ที่เจ้าของ** — delta ที่เหลือ 3 จุด
+  (chip padding / segmented padding / input size) คือ decision 2 / 5 / 6, `:disabled:hover`
+  ที่รั่วคือ decision 7, browser verify คือ decision 4, jsPDF ต้องให้เจ้าของ vendor เข้า repo ก่อน
+  งาน tooling ฝั่ง token จบแล้ว (22/22 token, เช็ค 6 ตัว) และ parity table ปิดที่ 11/11 component
+  → **ไม่มีงาน fallback เหลือแล้วจริง** การประดิษฐ์งานแทนคือการขยับพิกเซลโดยไม่มีใครอนุญาต
+- **ทำไม `ds-disabled-hover` ใช้ `80a22d3` เป็นฝั่ง before:** ต้องเป็น tip ที่รอบนี้ restore เอง
+  ไม่ใช่ sha ที่ลอกจากบล็อกเก่า (คำสั่งใน `AUTOPILOT.md` เขียนไว้ว่า `<tip รอบก่อน>`)
+- **ทำไมพิสูจน์ restore ด้วย tree-sha ไม่ใช่ `git diff`:** `git diff` ถูก permission บล็อกในสภาพแวดล้อมนี้
+  และ tree-sha identity แข็งกว่า — มันพิสูจน์**ทุก path พร้อมกัน** ส่วน diff ว่างพิสูจน์แค่แถวที่พิมพ์ออกมา
 
 ## Verification
 
-**Verify command — green on all three stages:**
+**restore ถูกต้องครบถ้วน (2 หลักฐานอิสระ):**
+1. `git rev-parse HEAD^{tree}` = `git rev-parse 80a22d3^{tree}` =
+   `198c1d0b18b7a29702395ea83f5cfcbc70d1f73c` → **tree เท่ากันทุก byte ทุก path**
+2. harness ทั้ง 5 key ให้ตัวเลขเท่าตารางเป๊ะ — harness คำนวณ cascade จากไฟล์ที่ยืนอยู่จริง
+   ดังนั้น restore ผิด/ไม่ครบจะโผล่เป็นตัวเลขเพี้ยนทันที
 
-| Stage | Result |
-|---|---|
-| `node tools/test.mjs` | `54 passed, 0 failed` |
-| `node tools/check-tokens.mjs` | 6/6 checks, `22/22` tokens, `4/4` fonts, **15 CSS sources** |
-| `npm --prefix design-system test` | `12 passed (12)` files, `31 passed (31)` tests |
+**precondition ก่อนแตะ tree:** `git merge-base --is-ancestor 3503537 80a22d3` → `ancestor-ok`,
+author ของ `80a22d3` = `PHANTOM AUTOPILOT <autopilot@phantom.local>` (subject
+`chore: round 2026-09-14_0012 no-op -- five channels checked, no owner answer`)
+→ commit ของ runner **ไม่ใช่ของเจ้าของ**
 
-**All five harness keys match the documented table exactly:**
-
-| Key | Pairs / elements | Verdict |
-|---|---|---|
-| `buttons` (`2488f2d:index.html` → worktree) | 85 / 17 | PASS |
-| `segmented` (`021b966:index.html` → worktree) | 45 / 9 | PASS |
-| `toast` (`de07ea8` → `10e8f39`, **both sides pinned**) | 5 / 1 | PASS |
-| `ds-disabled-hover` (`989c1e8:…/styles.css` → worktree) | 15 / 3 | PASS + **1 undecidable** |
-| `toast-hit` (`3d3d5cc:index.html` → worktree) | 10 / 2 | **FAIL — 5** (intended) |
-
-`toast-hit` was read with `grep "^✗"`, which lists whole rows rather than counting a substring (the
-older `grep -c "✗ #toast:"` idiom has a blind spot: the base-state row prints `✗ #toastUndo (base)`,
-with no colon). All five rows are `#toastUndo` — `(base)`, `:hover`, `:disabled`, `:disabled:hover`,
-`:focus` — and **none is `#toast`**, which is the evidence that `#toast` still carries its
-`pointer-events:none`. The single `ds-disabled-hover` undecidable is the known
-`.pui-menu__item:last-child` rule (structural pseudo).
-
-**Five owner-answer channels — all silent:**
-
-| # | Channel | Result |
-|---|---|---|
-| 1 | `README.md → ## Open decisions` | `grep -c "\| Option \| Cost \|"` = **8**, `grep -c "If you answer:"` = **8** — both counters agree, so nothing was answered. Run **after** the restore; on the stale tree it returns 0. |
-| 2 | `jspdf.umd.min.js` in the repo | `git ls-files \| grep -i jspdf` → no output (decision 1 still unanswered) |
-| 3 | `main` | still `ef3220e` (2026-06-27) |
-| 4 | untracked drop | `git status --untracked-files=all --short` → clean |
-| 5 | non-`auto/*` refs | newest is `3503537` / `design-system` (2026-08-13); `mac*` refs at 2026-07-20, `main` at 2026-06-27 — nothing newer than this work |
-
-**Tip selection, measured live** (the `refs/remotes/origin/auto/…` set does not yet contain this
-round's branch, so no self-filtering was needed):
-
+**Verify 3 ขั้น — เขียวครบ:**
 ```
-correct  --sort=-committerdate          → row 1 = 989c1e8  _0002  ✓ (restored)
-wrong    %(committerdate:short)|sort -r → row 1 = 989c1e8  _0002  ✓ (agrees — no tie to mis-break)
+node tools/test.mjs            → 54 passed, 0 failed
+node tools/check-tokens.mjs    → 6/6 เช็คผ่าน (tokens 22/22, fonts 4/4,
+                                  no derived-colour literals / font weights /
+                                  no radius literals / typeface — 15 CSS sources)
+npm --prefix design-system test → 12 files, 31 passed
 ```
 
-The broken form still mis-orders the group below: `2026-09-13` comes out `e693761` → `a70036f` →
-`6b787ea` → `459dd24`, i.e. sha-descending, with that day's real tip (`a70036f`, `_0037`) in row 3.
+**harness 5 key — ตรงตารางทุกค่า:**
+```
+buttons           2488f2d:index.html index.html                → 85 pairs / 17 elements, markup 7 gone / 5 new, PASS
+segmented         021b966:index.html index.html                → 45 / 9,  markup 0 / 3, PASS
+toast             de07ea8:index.html 10e8f39:index.html        → 5 / 1,   markup 0 / 1, PASS, ไม่มี undecidable
+toast-hit         3d3d5cc:index.html index.html                → FAIL — 5 declaration(s) differ,
+                                                                 10 pairs / 2 elements, 0 markup problem, 0 unmatched
+ds-disabled-hover 80a22d3:design-system/src/styles.css …        → 15 / 3, PASS + 1 undecidable rule
+```
+`toast-hit` เป็น **FAIL โดยออกแบบ** (รอบ `2026-08-24_0003` ตั้งใจเปลี่ยนพฤติกรรม) —
+อ่านแถว `✗` ครบทั้ง 5 แถวตามที่รอบ `_0043` สั่ง: **ทั้งห้าเป็น `#toastUndo` ล้วน**
+(`(base)` / `:hover` / `:disabled` / `:disabled:hover` / `:focus`) **ไม่มี `#toast` สักแถว**
+= ฝั่งแอปไม่ถูกแตะ (ไม่ได้ใช้ `grep -c "✗ #toast:"` ซึ่งมีจุดบอด)
+
+**5 ช่องทางตรวจคำตอบเจ้าของ — ไม่มีคำตอบสักข้อ:**
+1. tree เท่ากับ tip ทุก byte → `README.md` ไม่ถูกแก้บน branch เก่า (ปิดช่องทางนี้ไปในตัว)
+2. `grep -c "| Option | Cost |" README.md` = **8** และ `grep -c "If you answer:" README.md` = **8**
+   → ตัวนับสองตัว**ตรงกัน** = ยังไม่มีใครตอบ
+3. `git ls-files | grep -ci jspdf` = **0** → เจ้าของยังไม่ vendor jsPDF เข้า repo
+4. `git status --untracked-files=all --short` → **ว่าง** (ไม่มีไฟล์คำตอบวางทิ้งไว้)
+5. ref ที่ไม่ใช่ `auto/*` **ไม่ขยับเลย**: `design-system`/`origin/design-system` = `3503537`
+   (2026-08-13, ใหม่สุดในกลุ่ม), `mac`/`mac/design-system` = `e3a355c` (2026-07-20),
+   `mac/hardening-pass`/`origin/hardening-pass` = `592e7c3` (2026-07-20),
+   `main`/`mac/main`/`origin`/`origin/main` = `ef3220e` (2026-06-27)
+
+**A/B สูตรจัดอันดับ tip (รันจริง ตัด branch ตัวเองออก):**
+```
+สูตรผิด (:short + | sort -r)          สูตรถูก (--sort=-committerdate)
+2026-09-14 989c1e8 _0002  ← ผิด       2026-09-14 00:19:35 80a22d3 _0012  ← ถูก
+2026-09-14 80a22d3 _0012              2026-09-14 00:09:24 989c1e8 _0002
+2026-09-13 e693761 _0006              2026-09-13 00:43:34 a70036f _0037
+2026-09-13 a70036f _0037              2026-09-13 00:34:09 459dd24 _0027
+```
+→ **สองสูตรไม่ตรงกันที่แถว 1** เฉลยคำทำนายของ `_0012` ว่า **"ก้อย"** (ทำนายไว้ ~59.6%)
+ความเสียหายจริง = **0 เพราะรอบนี้ใช้สูตรถูก** สถิติสะสมของสูตรผิด: **ก้อย 16 จาก 27**
+📏 `AUTOPILOT.md` ก่อนแก้รอบนี้: **3,243 บรรทัด / 445,595 bytes**
 
 ## What I did NOT do
 
-- **Did not answer any open decision.** Each of the eight moves pixels or adds a file to the repo,
-  so each is the owner's call; the contract forbids an agent deciding them.
-- **Did not touch `index.html`, `design-system/`, `tools/` or `docs/`.** This round's only
-  content-bearing edits are `SUMMARY.md` and the `## Next task` block of `AUTOPILOT.md`.
-- **Did not re-try the browser MCPs** (Playwright / Chrome-DevTools). They are *permission*-blocked,
-  not merely headless-blocked — that is decision 4, and retrying burns a round for nothing.
-- **Did not restore `docs/design-parity.md`** (still reachable at `c3351fc:docs/design-parity.md`) —
-  that is decision 8.
-- **Did not trim `AUTOPILOT.md`**, even though its size is precisely why `## Next task` reaches the
-  prompt empty. Deleting round history is discarding evidence and is an owner decision.
-- **Did not add a seventh token check** or add the parity harness to the Verify command; both are on
-  the contract's explicitly-forbidden list.
+- **ไม่ตอบคำถามใน `## Open decisions` เอง** — ทั้ง 8 ข้อขยับพิกเซลหรือเป็นสิทธิ์เจ้าของล้วน
+- **ไม่แตะ `index.html` / `Button.css` / `Menu.css` / `tools/` / `docs/`** — decision 7 (และ 2/5/6)
+  ยังไม่มีคำตอบ และถ้าแอบแก้ Verify จะยัง**เขียวครบ** (jsdom ไม่ทำ hit testing, ไม่มี checker ตัวไหนดู
+  `:hover`) → ไม่มีอะไรจับได้ว่าสีเปลี่ยน นั่นคือเหตุผลที่ต้องรอ ไม่ใช่ "ลองดูก่อน"
+- **ไม่เพิ่มเช็คที่ 7 ใน `check-tokens.mjs`** — token ครบ 22/22 ไม่เหลืออะไรให้บังคับ
+- **ไม่ตัด/ไม่ trim `AUTOPILOT.md`** ทั้งที่มันใหญ่ถึง 445 KB และ*เป็นสาเหตุ*ที่ `## Next task`
+  มาถึง prompt แบบว่างเปล่า — การลบประวัติรอบคือการทิ้งหลักฐาน เป็นสิทธิ์เจ้าของ
+- **ไม่ลอง Playwright / Chrome-DevTools MCP ซ้ำ** — ถูก permission บล็อกทั้งคู่ (decision 4)
+- **ไม่ต่อบล็อก `> **สถานะล่าสุด …` ท้าย `AUTOPILOT.md`** ตามธรรมเนียมรอบ `_0035`/`_0041`
+  (ประวัติต่อรอบยังอยู่ใน `git log` ของ `SUMMARY.md`)
 
 ## Risk
 
-- ✅ **The tip-selection bug came up heads this round — but structurally, not because the broken
-  formula works.** Measured, not inferred: `2026-09-14` had exactly one tip (`989c1e8`) when this
-  round started, so there was no tie for a sha-descending secondary sort to mis-break, and both
-  forms return the same row 1. The same command output still shows the bug alive one group down (the
-  `2026-09-13` block is sorted by sha, putting `_0006` above `_0037`). Cumulative record of the wrong
-  formula: **tails 15 of 26**, with 4 of the heads won by luck and 3 (including this one) by
-  structure.
-- 🔴 **The ratchet returns next round, at ~59.6%.** When this round closes, `2026-09-14` will hold two
-  tips, so the comparand becomes `989c1e8` and the next round's closing sha must exceed it lexically:
-  `0x989c1e8 / 0x10000000` ≈ 0.596 tails. **Do not read the drop from 90.1% as improvement** — the
-  comparand fell only because the day rolled over and `e693761` sank into the second group. Damage if
-  the wrong formula is used next round is 1 round (`AUTOPILOT.md` + `SUMMARY.md`), not code.
-- ⚠️ **`toast-hit`'s `FAIL — 5` is the correct result, not a regression.** It is easy to misread two
-  ways: the count is identical to what a mis-pinned `toast` run produces, and the harness exits
-  non-zero. Tell them apart by the line `after : auto <- .toast-act`.
-- ⚠️ **`toast-hit`'s `0 markup problem(s)` proves nothing this round.** No class moved, so that phase
-  is vacuously green; only the cascade rows carry information.
-- ⚠️ **Still no browser verification of `index.html`, ever** (decision 4), and PDF export still
-  depends on the cdnjs jsPDF tag at line 7, so the `file://` criterion is not met offline
-  (decision 1). Both are unchanged by this round and remain the two criteria a person must unblock.
-- ⚠️ **The stall is now 5+ weeks old across 100+ branches cut from `3503537`.** Nothing in this
-  repository will advance without an owner answering a decision; further rounds can only re-verify.
+- 🔴 **runner bug ยังไม่ถูกแก้ ~4.5 สัปดาห์ และ `main` ยังเป็น `ef3220e` (2026-06-27)** — ทุกรอบยังถูก
+  cut จาก `3503537` และ **ยังไม่มีอะไรถูก merge เข้า `main` เลย** ตอนนี้มี branch `auto/*` กว่า
+  100 อันซ้อนขนานกัน งานทั้งหมดของโปรเจคอยู่บน branch เดียว รอบนี้ตรวจได้จาก `git log --oneline -1`
+  ว่าขึ้น `3503537` จริง — **ไม่มีรอบไหนแก้เองได้ ต้องมีคนแก้ runner**
+- 🔴 **รอบนี้ไม่ได้พิสูจน์อะไรเกี่ยวกับหน้าตาของแอป** — harness เขียวเพราะ**ไม่มีอะไรเปลี่ยน**
+  ไม่ใช่เพราะมีใครตรวจ UI จริง `markup coverage` ของ `toast-hit` รายงาน `0 gone / 0 new`
+  ซึ่งแปลว่า phase นั้น**ว่างเปล่า** อย่านับเป็นหลักฐาน
+- ⚠️ **ยังไม่เคยเปิด `index.html` ในเบราว์เซอร์จริงสักรอบ** ตลอดโปรเจค (decision 4) — บั๊ก
+  `pointer-events` ที่เจอและแก้ไปนั้นพิสูจน์จาก source + CSS spec เท่านั้น
+- ⚠️ **jsPDF (บรรทัด 7, `cdnjs.cloudflare.com`) ยังเป็น external reference ที่เหลืออยู่จุดเดียว**
+  → เปิดแบบ offline แล้ว PDF export พัง agent inline ให้ไม่ได้ (ไม่มีสำเนาบนเครื่อง + network บล็อก)
+- ⚠️ **ความเสี่ยงของรอบหน้า ~59.6%** ที่จะ restore ผิดตัวถ้าใช้สูตรจัดอันดับผิด และความเสียหายโตเป็น
+  **2 รอบ** (`_0012` + รอบนี้ — เอกสารล้วน ไม่ใช่โค้ด) รายละเอียดในบล็อก `## Next task`
+  **ทางแก้: `--sort=-committerdate` + ตรวจซ้ำด้วย refname แบบ date-major เสมอ ห้ามใช้หมายเลขแถว**
