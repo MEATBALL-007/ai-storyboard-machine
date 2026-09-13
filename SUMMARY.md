@@ -1,20 +1,21 @@
-# Round 2026-09-14_0002 — no-op (no owner answer)
+# Round 2026-09-14_0012 — no-op (no owner answer)
 
 ## What I did
 
-- **Restored the previous round's tip `a70036f` (`…/2026-09-13_0037`) onto the stale base.**
+- **Restored the previous round's tip `989c1e8` (`…/2026-09-14_0002`) onto the stale base.**
   `git log --oneline -1` showed `3503537` — the round-1 contract commit — so the runner still cuts
   every `auto/*` branch from the contract commit rather than from the last tip. Restored as its own
-  forward commit (`b6313cc`). **Proof:** `git diff a70036f --stat` printed nothing at all, so the
-  working tree matches the tip on every path at once — not merely "the rows that printed looked
-  equal".
+  forward commit (`0b474f7`). **Proof:** `git diff --stat 989c1e8 0b474f7` printed nothing at all —
+  a commit-to-commit comparison, so the restored tree matches the tip on every tracked path at once,
+  not merely "the rows that printed looked equal". (`design-system/node_modules` is untracked —
+  `git ls-files` on it returns nothing — so no pathspec exclusion was needed.)
 - **Checked all five owner-answer channels — every one is silent.** Details under Verification.
 - **Ran the full three-stage Verify plus all five harness keys.** Every number matches the documented
   expectation exactly, including `toast-hit`'s intended FAIL.
-- **Resolved round `_0037`'s tip-selection forecast with a live A/B: *tails*, forecast correct, and
-  the damage case reached three whole rounds** (see Risk).
-- Did **not** append a `> **สถานะล่าสุด …` block, following the convention started at round `_0035`.
-  Only the `## Next task` block of `AUTOPILOT.md` was edited (+30 lines, 1 line changed).
+- **Resolved round `_0002`'s tip-selection forecast with a live A/B: *heads*, forecast correct, and
+  for once the head is *structural* rather than lucky** (see Risk).
+- Only the `## Next task` block of `AUTOPILOT.md` was edited (`git diff --numstat` = `26 1`); no
+  `> **สถานะล่าสุด …` block was appended, following the convention started at round `_0035`.
 
 ## Why
 
@@ -24,7 +25,8 @@
   explicitly forbids inventing other work (`ห้ามประดิษฐ์งานอื่นเด็ดขาด`). All eight decisions in
   `README.md` are still unanswered.
 - **`## Next task` arrived empty in the prompt again**, for the same structural reason: the section
-  begins at line 340 of a ~3,160-line `AUTOPILOT.md`, so the prompt truncates it away. The copy of
+  begins at line 340 of the restored `AUTOPILOT.md`, which `wc -l` puts at 3,218 lines, so the
+  prompt truncates it away. The copy of
   `AUTOPILOT.md` sitting on the stale base is round 1's, whose Next task reads "add tokens to
   `index.html`" — work finished weeks ago that the contract's own acceptance criteria already mark
   done. Acting on the prompt's visible contract would have redone finished work. I read the real task
@@ -33,12 +35,13 @@
 - **`git checkout <tip> -- .` + a plain commit, not `merge --ff-only` / `read-tree` / `restore
   --source=`** — the others are all permission-blocked here. `git status --short` after the checkout
   showed only `M`/`A` rows and **no `D` rows**, which is the precondition that makes a path-checkout
-  equivalent to a fast-forward; the empty `git diff a70036f` then closes the hole conclusively.
-- **The `ds-disabled-hover` before-side reads `a70036f`, the tip I restored this round** — not a sha
+  equivalent to a fast-forward; the empty `git diff 989c1e8` then closes the hole conclusively.
+- **The `ds-disabled-hover` before-side reads `989c1e8`, the tip I restored this round** — not a sha
   copied out of an older block, which the contract explicitly warns against.
 - **Tip chosen with `--sort=-committerdate` plus a date-major refname cross-check**, never
-  `%(committerdate:short) | sort -r`. This round that choice was load-bearing, not ceremonial: the
-  two forms disagree at row 1 (see Risk).
+  `%(committerdate:short) | sort -r`. This round the two forms happen to agree at row 1, but only
+  because the top day-group has a single member — the same output still shows the broken form
+  mis-ordering the `2026-09-13` group (see Risk).
 
 ## Verification
 
@@ -57,7 +60,7 @@
 | `buttons` (`2488f2d:index.html` → worktree) | 85 / 17 | PASS |
 | `segmented` (`021b966:index.html` → worktree) | 45 / 9 | PASS |
 | `toast` (`de07ea8` → `10e8f39`, **both sides pinned**) | 5 / 1 | PASS |
-| `ds-disabled-hover` (`a70036f:…/styles.css` → worktree) | 15 / 3 | PASS + **1 undecidable** |
+| `ds-disabled-hover` (`989c1e8:…/styles.css` → worktree) | 15 / 3 | PASS + **1 undecidable** |
 | `toast-hit` (`3d3d5cc:index.html` → worktree) | 10 / 2 | **FAIL — 5** (intended) |
 
 `toast-hit` was read with `grep "^✗"`, which lists whole rows rather than counting a substring (the
@@ -81,9 +84,12 @@ with no colon). All five rows are `#toastUndo` — `(base)`, `:hover`, `:disable
 round's branch, so no self-filtering was needed):
 
 ```
-correct  --sort=-committerdate          → row 1 = a70036f  _0037  ✓ (restored)
-wrong    %(committerdate:short)|sort -r → row 1 = e693761  _0006  ✗ (three rounds stale)
+correct  --sort=-committerdate          → row 1 = 989c1e8  _0002  ✓ (restored)
+wrong    %(committerdate:short)|sort -r → row 1 = 989c1e8  _0002  ✓ (agrees — no tie to mis-break)
 ```
+
+The broken form still mis-orders the group below: `2026-09-13` comes out `e693761` → `a70036f` →
+`6b787ea` → `459dd24`, i.e. sha-descending, with that day's real tip (`a70036f`, `_0037`) in row 3.
 
 ## What I did NOT do
 
@@ -99,26 +105,21 @@ wrong    %(committerdate:short)|sort -r → row 1 = e693761  _0006  ✗ (three r
   prompt empty. Deleting round history is discarding evidence and is an owner decision.
 - **Did not add a seventh token check** or add the parity harness to the Verify command; both are on
   the contract's explicitly-forbidden list.
-- **Did not append this round to the convention list at `AUTOPILOT.md:622`.** The four `2026-09-13`
-  rounds all skipped it too, so the list has been stale for a while; re-syncing it is history
-  editing, not this round's task.
 
 ## Risk
 
-- 🔴 **The tip-selection bug came up tails a third consecutive time, and the damage case has now
-  reached three rounds.** Measured this round, not inferred: the sha-first form puts `e693761`
-  (`_0006`) at row 1, while the real tip is `a70036f` (`_0037`). Restoring row 1 would have silently
-  discarded `_0016`, `_0027` **and** `_0037` — `git diff --stat e693761 a70036f` = 2 files,
-  148+/98−. Nothing downstream would have caught it: all three were no-op rounds touching only
-  `AUTOPILOT.md`/`SUMMARY.md`, so the residual diff against the wrong tip is empty, all five harness
-  keys still match, and all three Verify stages stay green. Cumulative record of the wrong formula:
-  **tails 15 of 25**.
-- ✅ **Next round is structurally safe — risk 0, and for once not by luck.** This round's closing tip
-  is dated `2026-09-14` and will be the only tip on that day, so next round's top day-group has a
-  single member and there is no tie for the broken formula to mis-break. **Do not read this as the
-  bug being fixed** — it is the shape of the data, not the formula. The ratchet returns the moment a
-  *second* round closes on `2026-09-14`, with the comparand reset to this round's closing sha.
-  Keep using `--sort=-committerdate`; a date-major refname cross-check is the only safe secondary.
+- ✅ **The tip-selection bug came up heads this round — but structurally, not because the broken
+  formula works.** Measured, not inferred: `2026-09-14` had exactly one tip (`989c1e8`) when this
+  round started, so there was no tie for a sha-descending secondary sort to mis-break, and both
+  forms return the same row 1. The same command output still shows the bug alive one group down (the
+  `2026-09-13` block is sorted by sha, putting `_0006` above `_0037`). Cumulative record of the wrong
+  formula: **tails 15 of 26**, with 4 of the heads won by luck and 3 (including this one) by
+  structure.
+- 🔴 **The ratchet returns next round, at ~59.6%.** When this round closes, `2026-09-14` will hold two
+  tips, so the comparand becomes `989c1e8` and the next round's closing sha must exceed it lexically:
+  `0x989c1e8 / 0x10000000` ≈ 0.596 tails. **Do not read the drop from 90.1% as improvement** — the
+  comparand fell only because the day rolled over and `e693761` sank into the second group. Damage if
+  the wrong formula is used next round is 1 round (`AUTOPILOT.md` + `SUMMARY.md`), not code.
 - ⚠️ **`toast-hit`'s `FAIL — 5` is the correct result, not a regression.** It is easy to misread two
   ways: the count is identical to what a mis-pinned `toast` run produces, and the harness exits
   non-zero. Tell them apart by the line `after : auto <- .toast-act`.
