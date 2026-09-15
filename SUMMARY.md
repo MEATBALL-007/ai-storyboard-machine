@@ -1,149 +1,112 @@
-# SUMMARY — round `2026-09-16_0010`
-
-**ผลรอบนี้: no-op ตามที่ `## Next task` สั่งไว้ — ยังไม่มีคำตอบจากเจ้าของสักข้อ ทั้ง 8 ข้อ**
-ไม่มีการแตะ `index.html`, `design-system/**`, `tools/**`, `docs/**` แม้แต่บรรทัดเดียว
+# Round 2026-09-16_0020 — no-op round (blocked on owner decisions)
 
 ## What I did
 
-- **restore tip ของรอบก่อน (`3b3719d`, branch `…/2026-09-15_0035`) ลงบน stale base `3503537`**
-  — HEAD ตอนเปิดรอบคือ `3503537` ตามบั๊ก runner เดิม แยกเป็น commit ของตัวเอง
-  เพื่อให้ diff จริงของรอบนี้อ่านได้
-- **ตรวจครบ 5 ช่องทาง — ไม่มีคำตอบจากเจ้าของเลย** (รายละเอียดใน Verification)
-- **รัน Verify ครบ 3 ขั้น + harness ครบ 5 key** — ตรงตารางทุกค่า
-- **เฉลยคำทำนายของรอบ `_0035` ว่า "ก้อย" — *ทำนายถูก* และรอบนี้วัดซ้ำได้ว่าสองสูตรต่างกันที่แถว 1**
-  แล้วเขียนคำทำนายรอบถัดไปลง `AUTOPILOT.md`
-- **แก้ `AUTOPILOT.md` เฉพาะบล็อก `## Next task`** — ชี้ tip ที่รอบหน้าต้อง restore ไปที่
-  `2026-09-16_0010`, prepend บล็อกเฉลย/คำทำนายใหม่ (ไม่ลบของเก่า), และบันทึกว่า
-  **กับดัก "หมายเลขรอบเดินถอยหลัง" live จริงรอบนี้** (`_0035` → `_0010`) พร้อมวิธีที่รอดมาได้
+- **Restored the previous round's work.** The runner cut this branch from the stale base
+  `3503537` again (73 tracked files, `tools/` holding only `test.mjs` — the one-call tell).
+  Selected the real tip with `git for-each-ref --sort=-committerdate` → `a14011f`
+  (`auto/deep_dive_AI_Storyboard_Machine/2026-09-16_0010`, `2026-09-16 00:18:15`), restored it
+  with `git checkout a14011f -- .` and committed it separately (`c6ae478`) so this round's own
+  diff stays readable.
+- **Checked all five owner-answer channels. All five negative** — no decision has been answered,
+  so the queued no-op task stands and there is no substitute work to invent.
+- **Ran the full Verify command and all five parity-harness keys.** Every one matched its
+  documented expected result (details under Verification).
+- **Updated `## Next task` in `AUTOPILOT.md` only** — resolved `_0010`'s forecast (HEADS, by
+  construction) and wrote the next round's forecast (~63.0% tails, comparand `a14011f`).
+  Per the convention started in `_0035`/`_0041`, a no-op round does **not** append a status
+  block; it edits the forecast block alone.
 
 ## Why
 
-- **ทำไมไม่ทำงานอื่น:** เกณฑ์ที่เหลือทุกข้อ**บล็อกอยู่ที่เจ้าของ** — delta ที่เหลือ 3 จุด
-  (chip padding / segmented padding / input size) คือ decision 2 / 5 / 6, `:disabled:hover`
-  ที่รั่วคือ decision 7, browser verify คือ decision 4, jsPDF ต้องให้เจ้าของ vendor เข้า repo ก่อน
-  งาน tooling ฝั่ง token จบแล้ว (22/22 token, เช็ค 6 ตัว) และ parity table ปิดที่ 11/11 component
-  → **ไม่มีงาน fallback เหลือแล้วจริง** และ `## Next task` สั่งห้ามประดิษฐ์งานแทนไว้ตรงๆ
-- **ทำไมรอบนี้ *รัน* A/B ของสองสูตร:** วัน `2026-09-15` มี **4 tip** ตอนเลือก
-  (`a53dde8` / `06480d3` / `0e31092` / `3b3719d`) → มี tie ที่ day granularity จริง
-  → สองสูตร**แยกกันออก** ผลจึงเป็นหลักฐานได้
-- **ทำไม `ds-disabled-hover` ใช้ `3b3719d` เป็นฝั่ง before:** คำสั่งใน `AUTOPILOT.md` ระบุว่า
-  `<tip รอบก่อน>` = tip ที่รอบนี้ restore เอง ไม่ใช่ sha ที่ลอกจากบล็อกเก่า
+- **Restore before reading anything.** The stale tree does not look broken, it looks *done* —
+  on `3503537` the app's `:root` really is byte-identical to `tokens.css`, which is how round
+  `2026-08-28_0004` wasted a full round concluding the token work was finished. So the first
+  action was `git log --oneline`, not a Read.
+- **Tree-SHA identity instead of a residual diff.** `git diff` is permission-blocked here, and
+  it is the weaker check anyway: an empty diff only proves the rows that printed matched, while
+  `git rev-parse HEAD^{tree}` == `git rev-parse a14011f^{tree}` proves the snapshot agrees on
+  *every path at once*. Both printed `cff49758a4a3ec9d0c43d79f521a48806bcfc3dd`.
+- **Deliberately did NOT re-run the `:short` vs `--sort=-committerdate` A/B.** `2026-09-16` held
+  exactly one tip at selection time, so the two formulas are indistinguishable and their
+  agreement would prove nothing. Cross-checked with a **date-major** refname read instead
+  (newest date holding a tip = `2026-09-16`; highest round number on that date = `_0010`).
+- **Ran the ranking call before the restore commit**, so this branch still sat at `3503537`
+  (dated `2026-08-13`) and sank to the bottom by itself — no manual `grep -v` filtering, which
+  is what weakened the evidence in `_0035` and `_0010`.
 
 ## Verification
 
-**restore ถูกต้องครบถ้วน (2 หลักฐานอิสระ):**
-1. `git rev-parse HEAD^{tree} 3b3719d^{tree}` → ได้
-   `e7c57880c885dc31584999ec15d1d3c2b83546d6` **ทั้งสองบรรทัด** = tree เท่ากันทุก byte ทุก path
-   (`git diff --stat 3b3719d` ว่างเปล่า 0 บรรทัดเช่นกัน)
-2. harness ทั้ง 5 key ให้ตัวเลขเท่าตารางเป๊ะ — harness คำนวณ cascade จากไฟล์ที่ยืนอยู่จริง
-   → restore ผิด tip หรือได้มาไม่ครบ ตัวเลขจะเพี้ยนทันที
+Verify command — **all three stages green**:
 
-`git status --short` หลัง `git checkout 3b3719d -- .` ขึ้น 16 path (M 13 / A 3: `SUMMARY.md`,
-`docs/btn-parity-proof.mjs`, `tools/check-tokens.mjs`) → ตรงกับที่ stale base ขาดไป
-ไม่มีแถว `D` สักแถว = ไม่มีไฟล์ที่ path-checkout ตามลบไม่ได้
+```
+node tools/test.mjs          → 54 passed, 0 failed
+node tools/check-tokens.mjs  → tokens 22/22 · fonts 4/4 · no derived-colour literals (15 sources)
+                               · font weights all in {400,500,700,800} · every border-radius reads
+                               --r-* · every font-family reads var(--mono)
+npm --prefix design-system test → 12 test files, 31 passed (vitest 2.1.9)
+```
 
-**Verify command เขียวครบ 3 ขั้น** (รันเองตามสัญญา ไม่ได้แก้คำสั่ง ไม่ได้ปิดเทสต์):
-- `node tools/test.mjs` → `54 passed, 0 failed`
-- `node tools/check-tokens.mjs` → เขียวครบ 6 เช็ค: tokens 22/22, fonts 4/4,
-  no derived-colour literals / font weights (400,500,700,800) / no radius literals /
-  typeface from one source — ที่ **15 CSS sources**
-- `npm --prefix design-system test` → `12 passed (12)` / `31 passed (31)`
+Parity harness — all five keys, each matching its documented expectation:
 
-**harness ครบ 5 key — ตรงตารางทุกค่า:**
-
-| key | before → after | ผล |
+| key | before → after | result |
 |---|---|---|
-| `buttons` | `2488f2d:index.html` → `9fab5c9:index.html` | 85 pairs / 17 elements → **PASS** |
-| `segmented` | `021b966:index.html` → `index.html` | 45 / 9 → **PASS** |
-| `toast` | `bb10dd9:index.html` → `10e8f39:index.html` | 5 / 1 → **PASS** |
-| `ds-disabled-hover` | `3b3719d:…/styles.css` → `…/styles.css` | 15 / 3 → **PASS** + 1 undecidable |
-| `toast-hit` | `3d3d5cc:index.html` → `index.html` | 10 / 2, 0 markup problem, 0 unmatched → **FAIL — 5 declaration(s) differ** |
+| `buttons` | `2488f2d:index.html` → `index.html` | PASS |
+| `segmented` | `021b966:index.html` → `index.html` | PASS |
+| `toast` | `de07ea8:index.html` → `10e8f39:index.html` | PASS |
+| `toast-hit` | `3d3d5cc:index.html` → `index.html` | `FAIL — 5 declaration(s) differ` ← **expected** |
+| `ds-disabled-hover` | `a14011f:…/styles.css` → `…/styles.css` | PASS (+1 undecidable rule) |
 
-- `toast-hit` ขึ้น FAIL **เป็นผลที่ถูกต้อง** — รอบ `2026-08-24_0003` ตั้งใจเปลี่ยนพฤติกรรม
-  (เติม `pointer-events:auto` ให้ `.toast-act`) key นี้มีไว้ให้*เห็นว่าเปลี่ยนอะไร* ไม่ได้มีไว้ให้ PASS
-  รอบนี้ `grep "✗"` แบบ**ไม่มี `:`** แล้วอ่านครบทั้ง 5 แถว เป็น `#toastUndo` ล้วน
-  (`(base)` / `:hover` / `:disabled` / `:disabled:hover` / `:focus`) **ไม่มี `#toast` สักแถว**
-  = ยืนยันว่าไม่มีใครถอด `pointer-events:none` ออกจาก `#toast`
-  (รอบนี้**เลี่ยง** pattern `grep -c "✗ #toast:"` ที่รอบ `_0024` เตือนว่ามีจุดบอดที่แถว
-   `✗ #toast (base)` ซึ่งไม่มี `:` ตาม — ใช้ `grep "✗"` เปล่าแล้วอ่านด้วยตาแทน)
-- undecidable ของ `ds-disabled-hover` คือ `unreadable because: structural pseudo :last-child`
-  (`.pui-menu__item:last-child`) — เท่าเดิมทุกรอบ
+`toast-hit` failing is the **correct** outcome — it pins the deliberate 2026-08-24
+`pointer-events:auto` fix. I read all five `✗` rows rather than grepping (`grep -c "✗ #toast:"`
+has a known blind spot: the base-state row prints `✗ #toast (base)`, no colon). All five rows
+were `#toastUndo` — `(base)`, `:hover`, `:disabled`, `:disabled:hover`, `:focus` — and `#toast`
+showed **no diff at all**, which is the evidence its `pointer-events:none` is still in place.
 
-**ตรวจครบ 5 ช่องทาง — ไม่มีคำตอบจากเจ้าของเลยสักข้อ:**
-1. **`README.md → ## Open decisions`** — `grep -c "^### [1-8]\."` = **8** และ
-   `grep -c "If you answer:"` = **8** → **ตรงกัน** = ยังไม่มีใครตอบข้อไหน
-   (เสริม: `git diff --stat 3b3719d` ว่างเปล่า → `README.md` เป็นไฟล์เดิมทุก byte)
-2. **jsPDF vendored หรือยัง** — `git ls-files | grep -i jspdf | wc -l` = **0**
-3. **`main`** — ยังเป็น `ef3220e` (2026-06-27) ไม่ขยับ
-4. **ไฟล์ที่เจ้าของหย่อนไว้** — `git status --untracked-files=all --short | wc -l` = **0**
-5. **ref ที่ไม่ใช่ `auto/*`** — `design-system`/`origin/design-system` = `3503537` (2026-08-13),
-   `mac`/`mac/design-system` = `e3a355c` (2026-07-20),
-   `mac/hardening-pass`/`origin/hardening-pass` = `592e7c3` (2026-07-20),
-   `main`/`mac/main`/`origin`/`origin/main` = `ef3220e` (2026-06-27) — **ไม่ขยับเลยสักอัน**
+Five channels, all negative:
 
-**A/B ของสองสูตรจัดอันดับ tip — รอบนี้วัดได้จริง:**
-
-```
-สูตรถูก  --sort=-committerdate               สูตรผิด  %(committerdate:short) | sort -r
-2026-09-15 00:42:59  3b3719d  _0035  ← ถูก   2026-09-15 a53dde8 _0004   ← ผิด (เก่ากว่า 3 รอบ)
-2026-09-15 00:33:05  0e31092  _0024          2026-09-15 3b3719d _0035
-2026-09-15 00:22:03  06480d3  _0014          2026-09-15 0e31092 _0024
-2026-09-15 00:11:54  a53dde8  _0004          2026-09-15 06480d3 _0014
-2026-09-14 00:41:50  120af65  _0032          2026-09-14 a332ab6 _0022   ← ผิดซ้ำที่กลุ่มรอง
-```
-
-- **สองสูตรไม่ตรงกันที่แถว 1** → สูตรผิดเลือก `a53dde8` (`_0004`) ซึ่งเก่ากว่าที่ควร **3 รอบ**
-  รอบนี้ใช้สูตรถูก → **ความเสียหายจริง = 0**
-- ตรวจซ้ำด้วย refname แบบ **date-major**: วันที่ใหม่สุดที่มี tip = `2026-09-15`,
-  หมายเลขรอบสูงสุดของวันนั้น = `_0035` → ตรงกับสูตรถูก
-  และ local กับ `origin/` ของ `_0035` ชี้ `3b3719d` **ทั้งคู่**
-- ⚠️ **บั๊กโผล่สองจุดใน output ชุดเดียวกัน** — กลุ่ม `2026-09-14` สูตรผิดยัง
-  ยก `a332ab6` (`_0022`) ขึ้นหัวกลุ่ม ส่วน tip จริงของวันนั้น `120af65` (`_0032`) ตกลงไปล่างกลุ่ม
-  → บั๊กไม่ได้จำกัดที่กลุ่มวันบนสุด มันผิด**ทุกกลุ่มที่มีมากกว่า 1 tip**
-- 🔴 **กับดัก "หมายเลขรอบเดินถอยหลัง" *live จริง* รอบนี้** — `_0035` → `_0010` ข้ามวัน
-  หมายเลขลดลง selector ที่อ่าน "หมายเลขรอบสูงสุดโดยรวม" จะเลือก `_0035` **เพราะ `0035 > 0010`**
-  ซึ่งบังเอิญถูกรอบนี้ แต่จะผิดทันทีถ้ามีรอบเก่าของวันก่อนที่หมายเลขสูงกว่า
-  → รอบนี้ใช้ `--sort=-committerdate` เป็นหลัก + ตรวจซ้ำ date-major จึงไม่พึ่งความบังเอิญ
-- 🟢 **คำทำนายรอบหน้า: ความเสี่ยง 0% แบบ *เชิงโครงสร้าง*** — พอรอบนี้ปิด วัน `2026-09-16`
-  จะมี **tip เดียว** (ของรอบนี้ เป็นรอบแรกของวัน) → ไม่มี tie ให้สูตรผิดตัด
-  → สูตรผิด**ถูกบังคับ**ให้ได้ tip ที่ถูก ไม่ว่า sha จะขึ้นต้นด้วยอะไร
-  ⚠️ **mask นี้อยู่ได้รอบเดียวเสมอ** พอรอบที่ 2 ของวัน `2026-09-16` ปิด ratchet กลับมาทันที
-- สถิติสะสมของสูตรผิด: **ก้อย 20 จาก 33** (ถ้าไม่นับหัวเชิงโครงสร้าง 2 ครั้ง = **20/31**)
-
-**ขนาด `AUTOPILOT.md` ก่อนแก้รอบนี้: 3,428 บรรทัด** — นี่คือเหตุผลที่ `## Next task` ใน prompt
-มาถึงแบบ**ว่างเปล่า** (prompt ตัดท้ายไฟล์ทิ้ง) รอบนี้อ่านบล็อกนั้นจากไฟล์ในดิสก์หลัง restore แทน
+1. `README.md → ## Open decisions` — `grep -c "| Option | Cost |"` = **8**,
+   `grep -c "If you answer:"` = **8**. Both counters agree; the two disagreeing is itself the
+   signal that someone answered.
+2. No `jspdf` file — neither tracked (`git ls-files | grep -i jspdf`) nor at the repo root.
+3. `main` still `ef3220e` (2026-06-27), unmoved.
+4. `git status --untracked-files=all` — empty.
+5. No non-`auto/*` ref newer than 2026-08-13 (`design-system` `3503537` 2026-08-13; `mac` /
+   `hardening-pass` 2026-07-20; every `main` copy `ef3220e`).
 
 ## What I did NOT do
 
-- **ไม่ตอบ decision ข้อไหนเอง** ทั้ง 8 ข้อ — ทุกข้อขยับพิกเซลที่คนเห็น เป็นสิทธิ์เจ้าของ
-- **ไม่ประดิษฐ์งานแทน** — `## Next task` สั่งห้ามไว้ตรงๆ และงาน fallback หมดจริง
-- **ไม่ตัด `AUTOPILOT.md` ให้สั้นลง** ทั้งที่มันคือสาเหตุที่ `## Next task` มาถึงแบบว่างเปล่า
-  — การตัดประวัติเป็นสิทธิ์เจ้าของ
-- **ไม่เปิดเบราว์เซอร์** — decision 4 ยังไม่ได้รับอนุญาต (Playwright/Chrome-DevTools MCP
-  ถูก permission บล็อก ไม่ใช่แค่ "ไม่มีจอ")
-- **ไม่ inline jsPDF** — ไม่มีสำเนาบนเครื่องและ network ถูกบล็อก
-- **ไม่แก้บั๊ก runner** — ต้องแก้ที่ฝั่ง runner ไม่ใช่ใน repo นี้
-- **ไม่ push / ไม่เปิด PR** — runner เป็นคนทำ
+- **Did not answer any open decision.** All eight still need a person: jsPDF vendoring (1),
+  chip padding (2), spacing/type scale (3), browser verification (4), segmented padding (5),
+  input sizes (6), `:disabled:hover` cascade repair (7), `docs/design-parity.md` (8). Each moves
+  pixels or adds a file, so each is the owner's call, not an agent's.
+- **Did not invent substitute work.** Fallback work has been exhausted since round `_0102`:
+  token tooling is 22/22 across six checks, the parity table is closed at 11/11, and the harness
+  already reports its own undecidable selectors. Did not touch the explicitly-forbidden list
+  either (`:last-child`/combinator matching, adding the harness to Verify, applying decisions
+  2/5/6/7 unilaterally).
+- **Did not re-run the `:short` A/B** — see Why. On a single-tip day it is not a measurement.
+- **Did not retry the browser MCPs.** Playwright and Chrome-DevTools MCP are *permission*-blocked,
+  not merely headless; retrying needs a permission change, not another round.
 
 ## Risk
 
-- 🔴 **รอบนี้ commit restore *ก่อน* รัน A/B — ผิดลำดับที่ `AUTOPILOT.md` เขียนไว้ (ซ้ำรอย `_0035`)**
-  ผลคือต้อง `| grep -v "2026-09-16_0010"` กรอง branch ตัวเองออก**ด้วยมือ**ทั้งสองสูตร
-  ✅ **แต่รอบนี้มีหลักฐานก่อน commit ที่ `_0035` ไม่มี**: tool call แรกสุดของรอบรัน
-  `git branch -a --sort=-committerdate | head -50` ตอน branch ยังชี้ stale base `3503537`
-  → แถว 1 = `…/2026-09-15_0035` และ **branch รอบนี้ไม่ปรากฏใน 50 แถวแรกเลย**
-  (committerdate = `2026-08-13`) → การเลือก tip ถูกตัดสินด้วยสูตรถูก *ก่อน* commit จริง
-  การกรองภายหลังทำด้วย*ชื่อ branch ตัวเอง* ไม่ใช่ด้วยผลที่อยากได้
-- 🔴 **บั๊ก runner ยังไม่ถูกแก้ — `main` ยังเป็น `ef3220e` (2026-06-27)** ทุกรอบต้องเสียเวลา
-  restore tip เองก่อน ไม่มีรอบไหนแก้ได้ ต้องมีคนตอบ
-- 🟢 **รอบหน้าความเสี่ยงเลือก tip ผิด = 0% เชิงโครงสร้าง** แต่ **ห้ามอ่านว่าบั๊กหาย**
-  mask อยู่ได้รอบเดียว พอรอบที่ 2 ของวัน `2026-09-16` ปิด ratchet กลับมาทันที
-- ⚠️ **สถิติสะสม "ก้อย 20 จาก 33" มีส่วนที่เป็นการอนุมาน** — สืบทอดตัวหารมาจากรอบก่อนๆ
-  ซึ่งเองก็อนุมานต่อกันมา ถ้าเจ้าของอยากให้หัวเชิงโครงสร้างไม่นับ = **20/31**
-- ⚠️ **`toast-hit` ขึ้น FAIL โดยตั้งใจ** — ถ้า runner ตีความ "harness FAIL = รอบเสีย" จะกัก PR ผิด
-  หลักฐานว่าถูกต้องคือแถว `✗` ทั้ง 5 เป็น `#toastUndo` ล้วน (harness ไม่ได้อยู่ใน Verify command)
-- ⚠️ **harness ไม่ได้ model CSS inheritance และไม่มี checker ตัวไหนดู `:hover`**
-  → ถ้ารอบไหนแอบแก้ `:hover`/`pointer-events` Verify จะยังเขียวครบ (ช่องว่างเดิม ไม่ใช่ของใหม่)
-- ⚠️ **ยังไม่เคย verify `index.html` ด้วยเบราว์เซอร์จริงสักรอบ**
-- ✅ ความเสี่ยงจาก **เนื้อโค้ด** รอบนี้ = **0** — tree หลัง restore เท่ากับ `3b3719d` ทุก byte
-  (`rev-parse` ของ tree ตรงกัน) ก่อนแก้เอกสาร รอบนี้แตะแค่ `AUTOPILOT.md` + `SUMMARY.md`
+- **The silent-restore bug is one round from firing again, at ~63.0%.** After this round closes,
+  `2026-09-16` holds two tips tied at day granularity, so a ranking that falls through to the
+  SHA must beat comparand `a14011f` (leading `a`). If it fires, it restores `a14011f` and
+  discards this entire round — **and it is undetectable**: the code tree would be byte-identical,
+  so the residual is empty, all five harness keys still match and all three Verify stages stay
+  green. The next round must use `--sort=-committerdate`, never `| sort -r`, and never a row
+  number.
+- **`_0010`'s HEADS was structural, not a fix.** A reviewer seeing two consecutive formulas agree
+  should not read the bug as retired — the mask of a single-tip day lasts exactly one round,
+  every time, and has for 90+ rounds.
+- **`ds-disabled-hover` PASSed but explicitly disclaims one rule** (`.pui-menu__item`,
+  `.pui-menu__item--danger`): a change confined to it computes 0 diff, so the harness says
+  nothing about it. That rule is precisely the subject of open decision 7 — do not read this
+  PASS as evidence the `:disabled:hover` cascade bug is absent.
+- **Still never verified in a real browser** (criterion 3). All parity reasoning is from source
+  plus CSS spec. No checker looks at `:hover`, and jsdom does no hit testing, so a round that
+  quietly changed hover behaviour would keep Verify fully green.
+- **The stall is now 4+ weeks old and has crossed a month boundary**, across 100+ rounds cut from
+  the same stale base. It will not clear on its own; it needs a person, not another round.
