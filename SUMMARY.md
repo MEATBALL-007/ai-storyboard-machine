@@ -1,59 +1,53 @@
-# Round 2026-09-17_0121 — no-op round (blocked on owner decisions)
+# Round 2026-09-18_0006 — no-op round (blocked on owner decisions)
 
 ## What I did
 
 - **Restored the previous round's work.** The runner cut this branch from the stale base `3503537`
-  again. Selected the real tip **before** any checkout → `8ced217`
-  (`auto/deep_dive_AI_Storyboard_Machine/2026-09-17_0034`), restored it with
-  `git checkout 8ced217 -- .` and committed it separately so this round's own diff stays readable.
+  again. Selected the real tip **before** any checkout → `bb09298`
+  (`auto/deep_dive_AI_Storyboard_Machine/2026-09-17_0121`), restored it with
+  `git checkout bb09298 -- .` and committed it separately so this round's own diff stays readable.
 - **Checked all five owner-answer channels. All five negative** — no decision has been answered, so
   the queued no-op task stands and there is no substitute work to invent.
 - **Ran the full Verify command and all five parity-harness keys.** Every one matched its documented
   expected result, including the intentional `toast-hit` FAIL (details under Verification).
-- **Resolved `_0034`'s A/B forecast with a real measurement: "tails" — the forecast was right**
-  (~86.6% predicted, tails landed) and this time the bug was **load-bearing at row 1**: the wrong
-  formula returns `ddc6e24` (`_0024`) and sinks the correct tip `8ced217` to row 3.
-- **Measured something new: the bug lives in the *field order*, not in `sort -r` alone.** Four format
-  variants over the same ref set isolate it to two simultaneous conditions (see Why).
-- **Updated `## Next task` in `AUTOPILOT.md` only.** Per the convention from `_0035`/`_0041`, a
-  no-op round does not append a `> **สถานะล่าสุด` status block; it edits the forecast alone.
+- **Resolved `_0121`'s A/B forecast with a real measurement: "tails" — the forecast was right**
+  (~86.6% predicted, tails landed) and the bug was **load-bearing at row 1**: the wrong formula
+  returns `ddc6e24` (`_0024`) and sinks the correct tip `bb09298` to row 3.
+- **Measured something the last three rounds each predicted would be impossible: next round is
+  MASKED.** This is the first round since `_0011` to open a new calendar day, which removes the
+  tiebreak that has carried ~79–87% risk for five consecutive rounds (see Why).
+- **Updated `## Next task` in `AUTOPILOT.md` only.** Per the convention from `_0035`/`_0041`/`_0121`,
+  a no-op round does not append a `> **สถานะล่าสุด` status block; it edits the forecast alone.
 
 ## Why
 
 - **Restore before reading anything.** The stale tree does not look broken, it looks *done* — the
-  `## Next task` section the runner pasted into my prompt arrived **empty**, because the prompt
-  carries the `3503537` copy of `AUTOPILOT.md`, which predates that section existing. The real task
-  is only readable *after* the restore, so the first action was `git log`, not a Read.
+  `## Next task` section the runner pasted into my prompt arrived **empty**. The cause is now
+  precisely known: `AUTOPILOT.md` is **3,667 lines** and `## Next task` sits at **line 340**, so the
+  runner's truncation drops it. The real task is only readable *after* the restore, so the first
+  action was `git log`, not a Read.
 
-- **The new finding: the wrong formula needs *two* conditions to fire, and either one alone
-  defuses it.** I ran four variants against `refs/remotes/origin/` — same data, same moment:
+- **The mask is real this round, and it is the first one in five rounds.** Every prior round closed
+  with "⚠️ ไม่มี mask รอบหน้า" because a mask requires the *previous* round to be the sole tip of its
+  own day, and `2026-09-16`/`2026-09-17` each accumulated 3–4 tips. This round is different: it is
+  the **first tip of `2026-09-18`** (restore commit timestamped `2026-09-18 00:07:22 +0700`), while
+  `2026-09-17` closed with four. Next round's table therefore has a strictly-greatest date field
+  holding **exactly one** entry, so row 1 is settled by the date before the sha tiebreak is ever
+  reached — both formulas return this round's tip.
 
-  | variant | row 1 | result |
-  |---|---|---|
-  | `--sort=-committerdate` (`iso8601`) | `8ced217` `_0034` | ✅ correct |
-  | `%(committerdate:iso8601) %(refname) %(objectname)` + `sort -r` | `8ced217` `_0034` | ✅ **matches correct formula on every row** |
-  | `%(committerdate:short) %(refname) %(objectname)` + `sort -r` | `8ced217` `_0034` | ✅ **matches correct formula on every row** |
-  | `%(committerdate:short) %(objectname) %(refname)` + `sort -r` | `ddc6e24` `_0024` | ❌ the recorded wrong formula |
+  **This is not the bug being fixed.** It is the bug not being load-bearing for one round, exactly
+  like `_0011`'s structural heads. The two conditions (`_0121`'s finding) are still both present in
+  the wrong formula; the mask only removes the *opportunity* for condition (a) to matter.
 
-  So the bug requires **(a)** truncating the timestamp to a bare date **and** **(b)** placing the sha
-  **before** the refname. With `iso8601` the seconds field settles every comparison before the sha is
-  ever reached. With the refname first, the same-day tiebreak becomes the **round number** — and
-  because those are zero-padded to four digits, lexical order *is* numeric order, which is exactly
-  the date-major rule the log has been recommending all along. Every earlier round described this as
-  "day granularity + sha tiebreak"; that was correct but incomplete — it never separated the two
-  conditions, so it never noticed that one of them is a one-token edit away from being safe.
+- **Which is also why next round must not run the A/B.** When the newest day holds one tip the two
+  formulas cannot disagree, so agreement proves nothing and the cumulative statistic must not move.
+  `_0010`, `_0016`, `_0011` and `_0020` all reached this conclusion; recording a "heads" here would
+  inflate the record with a result that was never a measurement.
 
-- **I am *not* recommending switching to a `sort -r` variant.** The refname-first variants are safe
-  only because `origin/main`, `origin/design-system` and `origin/hardening-pass` currently carry older
-  dates and fall to the bottom on their own. If any non-`auto/` ref ever lands on the newest day,
-  refname-first breaks the other way — `'m'`, `'d'`, `'h'` all sort above the `'a'` of `auto/…` — and
-  it would pick `origin/main`. `--sort=-committerdate` remains the answer; the table above only
-  explains *why* the wrong formula is wrong.
-
-- **Tree-SHA identity as the restore proof.** `git rev-parse HEAD^{tree}` == `git rev-parse
-  8ced217^{tree}` (both `04017b15af6de8d294fae58dbd4c61ea6d7122a9`) proves the snapshot agrees on
-  *every path at once*, including files a path-checkout cannot delete — which `git diff --stat`
-  cannot show. `git ls-files | wc -l` = **76** (the stale tree returns 73).
+- **Tree-SHA identity as the restore proof.** `git rev-parse HEAD^{tree}` ==
+  `git rev-parse bb09298^{tree}` (both `0f0ba36d7262dd66b2a3555ce67cda4ced0c6567`) proves the
+  snapshot agrees on *every path at once*, including files a path-checkout cannot delete — which
+  `git diff --stat` cannot show. `git ls-files | wc -l` = **76** (the stale tree returns 73).
 
 ## Verification
 
@@ -71,8 +65,8 @@ Parity harness — all five keys match the documented table exactly:
 |---|---|
 | `buttons 2488f2d:index.html index.html` | PASS, 85 pairs / 17 elements |
 | `segmented 021b966:index.html index.html` | PASS, 45 / 9 |
-| `toast de07ea8:index.html 10e8f39:index.html` | PASS, 5 / 1 |
-| `ds-disabled-hover 8ced217:…/styles.css …/styles.css` | PASS, 15 / 3, **+1 undecidable rule** |
+| `toast de07ea8:index.html 10e8f39:index.html` | PASS, 5 / 1, markup coverage OK |
+| `ds-disabled-hover bb09298:…/styles.css …/styles.css` | PASS, **+1 undecidable rule** |
 | `toast-hit 3d3d5cc:index.html index.html` | **FAIL — 5 declaration(s) differ**, 10 / 2, 0 markup problems, 0 unmatched |
 
 The `toast-hit` FAIL is the **correct and expected** result, not a regression — see Risk. I listed
@@ -81,15 +75,16 @@ all five `✗` rows rather than counting them: `#toastUndo (base)`, `:hover`, `:
 `#toast` row appears**, which is the evidence that `pointer-events:none` was not removed from the
 container. (I avoided `grep -c "✗ #toast:"`, which has a documented blind spot — the base-state row
 prints `✗ #toastUndo (base)` with no colon.) The `ds-disabled-hover` before-side was read from the
-tip this round actually restored (`8ced217`), not copied from an older block; its 1 undecidable rule
+tip this round actually restored (`bb09298`), not copied from an older block; its 1 undecidable rule
 is `.pui-menu__item:last-child` (structural pseudo), unchanged.
 
 Five owner-answer channels, all negative:
 
-1. Restored tree identical to tip — tree SHAs equal (`04017b1…`), not merely an empty diff.
+1. Restored tree identical to tip — tree SHAs equal (`0f0ba36…`), not merely an empty diff.
 2. README decision counters **agree at 8/8** (`| Option | Cost |` = 8, `If you answer:` = 8).
-   A divergence would be the signature of an answered decision; there is none. (Run *after* the
-   restore — on the stale tree that grep returns 0, which means "stale tree", never "answered".)
+   A divergence would be the signature of an answered decision; there is none. I also read the eight
+   `###` headings directly — all still phrased as open questions, none marked answered. (Run *after*
+   the restore — on the stale tree that grep returns 0, which means "stale tree", never "answered".)
 3. `git ls-files | grep -i jspdf` → empty. jsPDF still not vendored (decision 1 unanswered).
 4. `git status --untracked-files=all --short` → empty. No owner file dropped into the tree.
 5. Non-`auto/` branch tips unmoved, byte-for-byte as prior rounds recorded them:
@@ -100,13 +95,13 @@ Five owner-answer channels, all negative:
 
 Tip selection (run **before** the checkout, so this branch still sat at `3503537`/`2026-08-13`):
 
-- `--sort=-committerdate` → row 1 = `8ced217` = `_0034`, dated `2026-09-17`.
+- `--sort=-committerdate` → row 1 = `bb09298` = `_0121`, dated `2026-09-17`.
 - Date-major refname cross-check agrees: newest day holding a tip = `2026-09-17`; highest round
-  number *on that day* = `_0034`. Both refname-**only** readings still disagree — "highest overall"
-  picks `_0200` and "highest below mine" picks `_0034`'s older siblings on `2026-09-16`.
-- A/B on `refs/remotes/origin/`, resolving `_0034`'s forecast: **tails**, the two formulas disagree
-  at row 1 (`8ced217` vs `ddc6e24`). The wrong formula's cumulative record moves to
-  **tails 23 of 38** (**23/35** excluding the 3 structural heads).
+  number *on that day* = `_0121`.
+- A/B on `refs/remotes/origin/`, resolving `_0121`'s forecast: **tails**, the two formulas disagree
+  at row 1 (`bb09298` vs `ddc6e24`), and `bb09298` lands at **row 3** under the wrong formula. The
+  wrong formula's cumulative record moves to **tails 24 of 39** (**24/36** excluding the 3
+  structural heads).
 
 ## What I did NOT do
 
@@ -115,11 +110,12 @@ Tip selection (run **before** the checkout, so this branch still sat at `3503537
 - **Did not answer any of the eight open decisions.** Every one moves pixels, adds a file, or
   rewrites history; all are owner calls. Decisions 2 / 5 / 6 / 7 remain the only things standing
   between the project and three unticked acceptance criteria.
-- **Did not change the tip-selection command** despite finding two `sort -r` variants that agree with
-  it today. `--sort=-committerdate` is already correct; swapping a working command for one that is
-  only *contingently* correct would be a regression dressed as a cleanup.
-- **Did not delete or rewrite any older forecast block** — I appended above them. Cutting accumulated
-  history is an owner call, as every prior round has recorded.
+- **Did not treat the mask as a reason to relax the tip-selection rule.** Next round must still use
+  `--sort=-committerdate`. A masked round is indistinguishable from a safe one *from inside*, which
+  is precisely why the rule cannot be conditional on the forecast.
+- **Did not run a second A/B after the restore commit**, and did not let this round's own local
+  branch into any ranking table — it now carries a `2026-09-18` commit and would contaminate the
+  local view. Both formulas were run against `refs/remotes/origin/` only.
 - **Did not fix the two `:hover` cascade bugs catalogued under decision 7** (tour Back button staying
   bright while disabled; `.menu-pop button.danger:hover` swallowing the app's own `:disabled:hover`
   guard at equal specificity `(0,3,1)`). Both are real and both move visible colour, so they are
@@ -129,9 +125,23 @@ Tip selection (run **before** the checkout, so this branch still sat at `3503537
 - **Did not open a browser.** Playwright and Chrome-DevTools MCP are recorded as permission-blocked
   here; retrying them burns a round for a known answer (decision 4).
 - **Did not trim `AUTOPILOT.md`.** Deleting accumulated history is an owner call, even though its
-  size is what truncates `## Next task` out of the runner's prompt.
+  size (3,667 lines) is measurably what truncates `## Next task` out of the runner's prompt.
 
 ## Risk
+
+- **The mask is conditional on this round actually being pushed.** The whole "next round is safe"
+  finding assumes `origin` gains a `2026-09-18` tip. If the runner holds this PR back — which it is
+  designed to do when Verify fails — then `origin`'s newest day stays `2026-09-17` with four tips,
+  the comparand returns to `ddc6e24`, and next round's risk snaps back to **~86.6%** with a
+  **two-round** blast radius. A reviewer who sees this PR held must not let the next round read the
+  mask claim at face value. Next round should confirm the mask *from the live table* (newest day
+  holds exactly one tip) rather than trusting this paragraph.
+
+- **A masked round is the easiest place to acquire a bad habit.** Both formulas agree next round, so
+  a round that switches to the wrong formula gets away with it cleanly and may record that it
+  "worked". The round after next re-arms: `2026-09-18` will hold two tips, the tiebreak fires again,
+  and the comparand becomes **this round's closing sha**. I cannot compute that risk here — writing
+  my own closing sha into the file changes it — so next round must read it live and forecast from it.
 
 - **`toast-hit` reports FAIL by design — do not "fix" it.** It documents an intentional behaviour
   change (adding `pointer-events:auto` to `.toast-act` so the Undo button is clickable). A reviewer
@@ -139,20 +149,10 @@ Tip selection (run **before** the checkout, so this branch still sat at `3503537
   all on `#toastUndo`**; if `#toast` ever appears in that list, someone removed `pointer-events:none`
   from the container and the toast now blocks clicks across 80vw for 5s.
 
-- **Next round's risk stays ~86.6%, but the blast radius doubles to two rounds.** When this round
-  closes, `2026-09-17` holds four tips and the comparand is still `ddc6e24` (leading `d`) — *not*
-  `8ced217`, because the wrong formula takes the lexical maximum, not the newest. A round that uses
-  it restores `ddc6e24` and discards **both `_0034` and this round**, and does so **undetectably**:
-  the code tree is byte-identical, the residual is empty, all five harness keys match and all three
-  Verify stages stay green. **There is no structural mask next round** — a mask requires the
-  *previous* round to have been the sole tip of its day, and this one was not. Even if the next round
-  is the first of `2026-09-18`, the risk stays ~86.6%.
-
-- **The new field-order finding is easy to over-read.** "Two `sort -r` variants matched the correct
-  formula on every row" is a statement about *today's ref set*, not a proof. It holds only while
-  every non-`auto/` ref carries an older date than the newest round. A future round that adopts a
-  refname-first `sort -r` because this summary measured it green will silently pick `origin/main`
-  the first day a non-`auto/` branch is touched.
+- **Silent-discard remains the failure mode with no detector.** A round that restores the wrong tip
+  produces a byte-identical code tree, an empty residual, five matching harness keys and three green
+  Verify stages. Nothing in the repo catches it. The only defence is running the correct formula
+  *before* the checkout, and the only evidence it was run is the table printed in the SUMMARY.
 
 - **Sha orderings in older `AUTOPILOT.md` blocks may still contain inference errors.** `_0034`
   found and corrected one. Any block that reasons about sha order *without* showing a live `sort -r`
@@ -161,4 +161,5 @@ Tip selection (run **before** the checkout, so this branch still sat at `3503537
 
 - **The backwards-round-number trap remains live.** Older blocks still recommend the "highest round
   number below mine" cross-check without the date-major qualifier. Only "newest day that has a tip,
-  then highest round number *on that day*" is safe.
+  then highest round number *on that day*" is safe — and note this round's own number (`_0006`) is
+  *lower* than every tip it outranks, which is exactly the shape that trap exploits.
