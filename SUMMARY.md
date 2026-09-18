@@ -1,151 +1,126 @@
-# Round 2026-09-19_0025 — no-op round (five channels checked, no owner answer)
+# Round 2026-09-19_0035 — no-op round (no owner answer; all work still blocked)
 
 ## What I did
 
-- **Restored the tree from the previous round's tip.** This branch was cut from `3503537` (the
-  original round-1 contract), which predates ~57 rounds of committed work. Selected the tip with
-  `git branch -a --sort=-committerdate` as the **first command of the round, before any
-  `checkout`** (row 1 = `2026-09-19_0013`) and cross-checked **by refname** (`_0013` is the highest
-  round number on the latest date `2026-09-19`). Both methods agree. Restored `c6e065b`; residual
-  diff `git diff c6e065b --stat` is **empty**. Committed as `5a05fb2`.
-- **Checked all five owner channels — every one silent.** No decision answered; this round is
-  therefore a no-op by contract, and I invented no substitute work.
-- **Ran the Verify command in full (3 stages) and the parity harness (all 5 keys).** All three
-  Verify stages green; all five harness keys reproduce the recorded table exactly, including
-  `toast-hit`'s intended FAIL.
-- **Resolved the A/B on the tip-selection bug: "หัว" (heads) — but *structurally masked*, so it
-  does not move the statistic.** `_0013` predicted exactly this, for exactly the right reason.
-- **Found and recorded a genuine correction to the record: the mask is not a safety feature.**
-  Round `_0018` concluded that a new day with one tip "resets the ratchet" and pulls expected risk
-  back to ~50%. True in expectation — but this is the first observed reset that landed *worse* than
-  the value it replaced: **P(tails) jumped 33.7% → 77.7%**. Next round is the highest-risk round
-  ever recorded here, and it is the first round whose prediction is **"tails"**.
+- **Restored the previous round's work.** The branch was cut from the stale base `3503537` again
+  (109th+ consecutive round). Selected the tip **date-major** with
+  `git for-each-ref --sort=-committerdate` → `1794e8c` (`auto/…/2026-09-19_0025`), restored with
+  `git checkout 1794e8c -- .`, committed as `cfd4d37`. **Tree-sha identity confirmed:**
+  `git rev-parse HEAD^{tree}` and `git rev-parse 1794e8c^{tree}` both print
+  `6dc7af42418b90eef4fda103fec004b09ba5100d` — every path matches, not just the ones a diff prints.
+- **Checked all five owner-answer channels. None has been answered.** (Details under Verification.)
+- **Ran the A/B the previous round asked for, live.** Its forecast (`P(tails) ≈ 77.7%`, predicting
+  tails) **resolved TAILS — correct.** The trap formula puts `c6e065b` (`_0013`) at row 1 and sinks
+  the real tip `1794e8c` (`_0025`) to row 2, because `'1'` < `'c'`. Using it would have silently
+  discarded all of `_0025`.
+- **Ran the full Verify command and all five harness keys.** All green / all as pinned.
+- **Updated `AUTOPILOT.md`'s `## Next task` block only** — recorded the resolution, the new
+  measurement below, and next round's forecast. No status block appended (the `_0035` convention).
 
 ## Why
 
-The contract's `## Next task` is explicit: with no owner answer, the round is a no-op — restore the
-tip, check five channels, run Verify + harness, write SUMMARY, stop. The eight open decisions in
-`README.md` each gate a change that **moves pixels a human will see** (chip padding, segmented
-padding, input sizes, the two `:disabled:hover` cascade leaks). Answering one myself would be a
-design decision taken by an unattended agent, which is exactly what the contract forbids. Fallback
-tooling work is genuinely exhausted: all 22 tokens already have checker coverage.
-
-I ran the A/B with my own refname excluded, because a round never restores its own branch — leaving
-it in would let this round's fresh commit masquerade as a candidate and fake an agreement between
-the two formulas.
-
-I flagged the mask finding loudly because the existing record trends toward reading a mask as good
-news ("ความเสี่ยงเป็น 0 จริง"). That is true only *for the masked round itself*. The mask also
-**re-draws the comparand uniformly**, and this time the draw was bad. A future round that reads
-"mask = safe" and skips the refname cross-check is walking into a 77.7% chance of silently
-discarding work.
+- **No task was invented.** The contract's `## Next task` says: if no owner decision has been
+  answered, restore the tip, check the five channels, run Verify + the five harness keys, write
+  SUMMARY, end the round — and forbids substituting other work. All eight decisions in
+  `README.md → ## Open decisions` are still unanswered, so that is exactly what this round did.
+  Every remaining path to an acceptance criterion moves pixels or adds a file, which is the owner's
+  call, not an agent's.
+- **Tip selection was date-major, run before `git checkout`.** A sha-lexical tie-break would have
+  restored the wrong tip this round — it is not a hypothetical here, it is what the A/B measured.
 
 ## Verification
 
-**Five channels — all silent:**
-
-| # | Channel | Command | Result |
-|---|---|---|---|
-| 1 | Owner edits in tree | `git diff --stat c6e065b -- .` | **empty** — tree byte-identical to restored tip |
-| 2 | Decision counters | `grep -c "^### [1-8]\."` / `grep -c "If you answer:"` / `grep -c "\| Option \| Cost \|"` | **8 / 8 / 8** — all three agree = nobody answered |
-| 3 | `main` moved? | `git for-each-ref refs/heads refs/remotes` | `main` = `ef3220e` (**2026-06-27**) — unmoved |
-| 4 | jsPDF vendored / untracked drops | `git ls-files \| grep -i jspdf` ; `git status --untracked-files=all --short` | **both empty** |
-| 5 | Non-auto branches | same `for-each-ref` | newest is `design-system`/`origin/design-system` = `3503537` (2026-08-13), older than every round's work; `mac` = `e3a355c`, `hardening-pass` = `592e7c3` (both 2026-07-20) |
-
-**Verify command — green on all 3 stages:**
+**Three-stage Verify command — all green:**
 
 ```
-node tools/test.mjs          → 54 passed, 0 failed
-node tools/check-tokens.mjs  → 6/6 checks pass, 15 CSS sources scanned
-                               (tokens 22/22, fonts 4/4, no derived-colour literals,
-                                font weights 400/500/700/800, no radius literals,
-                                every font-family reads var(--mono))
-npm --prefix design-system test → 12 files, 31 passed
+node tools/test.mjs               → 54 passed, 0 failed
+node tools/check-tokens.mjs       → tokens 22/22 · fonts 4/4 · no derived-colour literals (15 CSS
+                                     sources) · font weights all 400/500/700/800 · every
+                                     border-radius reads a --r-* token · every font-family reads
+                                     var(--mono)
+npm --prefix design-system test   → 12 test files, 31 passed
 ```
 
-**Parity harness — all 5 keys match the recorded table:**
-
-| Key | Arguments used | Pairs / elements | Markup coverage | Result |
-|---|---|---|---|---|
-| `buttons` | `2488f2d:index.html 9fab5c9:index.html` | 85 / 17 | 7 old gone, 5 new | PASS |
-| `segmented` | `021b966:index.html index.html` | 45 / 9 | 0 old, 3 new | PASS |
-| `toast` | `bb10dd9:index.html 3d3d5cc:index.html` | 5 / 1 | 0 old, 1 new | PASS |
-| `ds-disabled-hover` | `c6e065b:design-system/src/styles.css design-system/src/styles.css` | 15 / 3 | N/A — source is a stylesheet | PASS + 1 undecidable (`.pui-menu__item:last-child`, structural pseudo) |
-| `toast-hit` | `3d3d5cc:index.html index.html` | 10 / 2 | 0 problems, 0 unmatched | **FAIL — 5 declarations differ** — the expected, intended result |
-
-The `toast` key reproduced PASS on the **first** attempt this round, because `_0013` recorded its
-argument pair. Pinning the after-side to `3d3d5cc` is mandatory; the obvious guess
-(`bb10dd9:index.html index.html`) still yields a misleading FAIL.
-
-`toast-hit`'s FAIL is correct, not a regression. I enumerated all five `✗` rows —
-`#toastUndo (base)` / `:hover` / `:disabled` / `:disabled:hover` / `:focus`. **Not one is `#toast`**,
-which is the evidence that `#toast`'s `pointer-events:none` is still in place and only the
-`.toast-act` fix moved.
-
-`ds-disabled-hover`'s before-side reads from the tip I actually restored (`c6e065b`), not a sha
-copied from an older AUTOPILOT block.
-
-**A/B on the tip-selection bug — "หัว" (heads), but masked and therefore NOT counted:**
+**Harness, all five keys (argument pairs copied from `AUTOPILOT.md`, not guessed):**
 
 ```
-correct (--sort=-committerdate)                      → row 1 = c6e065b  _0013  ✅
-buggy   (committerdate:short + sha-before-refname + sort -r) → row 1 = c6e065b  _0013  ✅
+buttons           2488f2d:index.html 9fab5c9:index.html   → PASS (85 pairs / 17 elements)
+segmented         021b966:index.html index.html           → PASS (45 pairs / 9 elements)
+toast             bb10dd9:index.html 3d3d5cc:index.html   → PASS (5 pairs / 1 element)
+toast-hit         3d3d5cc:index.html index.html           → 5 rows differ, ALL #toastUndo
+                                                             (base, :hover, :disabled,
+                                                              :disabled:hover, :focus)
+                                                             and NO #toast row — the expected,
+                                                             deliberate pointer-events:auto fix
+ds-disabled-hover 1794e8c:design-system/src/styles.css design-system/src/styles.css
+                                                          → PASS, with the harness's own warning:
+                                                             1 undecidable rule (structural pseudo
+                                                             :last-child on .pui-menu__item) that
+                                                             the PASS says nothing about
 ```
 
-Day `2026-09-19` held exactly **one** tip when the round began (`c6e065b`); this branch itself
-pointed at `3503537`, dated `2026-08-13`, so it was not a tip of that day. The date field decided
-row 1 on its own and the tiebreak never fired — a structural head, not a measurement. Cumulative
-statistic for the buggy formula is therefore **unchanged: tails 26 of 42** (excluding the now-4
-structural heads: **26 of 39**). Both A/B commands were run with my own refname excluded.
+`toast-hit` was read with `grep "✗"` and all five rows inspected — **not** `grep -c "✗ #toast:"`,
+which has a documented blind spot (the base-state row prints without a colon).
 
-**Next round's risk — computed, not copied:**
+**Five channels — all negative:**
+
+| # | Channel | Result |
+|---|---|---|
+| 1 | `README.md → ## Open decisions` | `grep -c "\| Option \| Cost \|"` = **8**, `grep -c "If you answer:"` = **8** — agree, so unanswered |
+| 2 | `jspdf.umd.min.js` in repo | absent (`git ls-files \| grep -i jspdf` → nothing) |
+| 3 | `main` | still `ef3220e` |
+| 4 | untracked drop | `git status --untracked-files=all --short` → empty |
+| 5 | non-`auto/*` refs | newest is `design-system` at **2026-08-13**, older than all this work |
+
+**A/B measurement (own branch filtered out):**
 
 ```
-comparand 0xc6e065b = 208537179
-space     0x10000000 = 268435456
-P(tails) = 77.7%      P(heads) = 22.3%
+correct (--sort=-committerdate)        trap (:short, sha before refname, | sort -r)
+2026-09-19 1794e8c _0025 ✓             2026-09-19 c6e065b _0013 ✗ (one round stale)
+2026-09-19 c6e065b _0013               2026-09-19 1794e8c _0025  ← real tip, row 2
+2026-09-18 7f342c1 _0503               2026-09-18 7f342c1 _0503
+2026-09-18 304da7a _0030               2026-09-18 563e7fc _0006  ← INVERTED
+2026-09-18 1c3401f _0018               2026-09-18 304da7a _0030  ← INVERTED
+2026-09-18 563e7fc _0006               2026-09-18 1c3401f _0018
 ```
+
+New this round: **the bug mis-ranked two day-groups at once.** Row 1 of the top group was wrong,
+*and* the `2026-09-18` group below it was inverted at rows 2–4 — that group merely happened to be
+right at its own row 1 because `_0503`'s sha leads `'7'`, the highest in the set. So "row 1 of the
+top group looks right" is not evidence the formula works. Cumulative record of the wrong formula:
+**tails 27 of 43** (excluding the 3 structural heads: **27 of 40**).
 
 ## What I did NOT do
 
-- **Did not answer any of the 8 open decisions.** Each moves visible pixels; that is the owner's
-  call, and it is the only thing that can unblock the three remaining criteria.
-- **Did not touch `index.html`, `design-system/`, `tools/`, or `docs/`** — not one byte beyond the
-  restore. Only `AUTOPILOT.md` + `SUMMARY.md` changed on top of `5a05fb2`.
-- **Did not "fix" the `toast-hit` FAIL.** It is the intended, documented output of that key.
-- **Did not move the harness argument list into `docs/btn-parity-proof.mjs`**, where it arguably
-  belongs — that would edit a file this no-op round must leave alone. It stays in `AUTOPILOT.md`.
-  A future round with an owner mandate should move it into the harness header.
-- **Did not add a 7th token check.** All 22 tokens have coverage; inventing one is scope creep.
-- **Did not trim `AUTOPILOT.md`.** Its size is why `## Next task` arrives empty in the prompt, but
-  deleting the owner's record is the owner's right, not mine.
-- **Did not open a browser.** Playwright and Chrome-DevTools MCP are permission-blocked, not merely
-  headless. Criterion 3 (`file://` double-click) stays unverified.
-- Did not push or open a PR — I cannot; the runner does that.
+- **Did not answer any of the eight open decisions.** Each moves pixels or adds a file to the repo.
+- **Did not invent substitute work.** Fallback work is genuinely exhausted: token tooling is 22/22
+  across six checks, the element-parity table is closed at 11/11, and the harness already reports
+  its own undecidable selectors. The explicitly-forbidden list (implementing `:last-child`/
+  combinator matching, adding the harness to Verify, applying decisions 2/5/6/7 unilaterally) was
+  left alone.
+- **Did not retry the browser MCPs.** They are *permission*-blocked, not merely headless — that is
+  decision 4, and retrying burns a round for a known answer.
+- **Did not restore `docs/design-parity.md`** (decision 8, unanswered).
+- **Did not append a status block to `AUTOPILOT.md`** — only the `## Next task` block was edited,
+  per the convention started in `_0035`. The file's size is *why* `## Next task` reaches the agent
+  empty in the prompt.
 
 ## Risk
 
-- **🚨 Next round carries the highest tip-selection risk ever recorded: `P(tails) ≈ 77.7%`,
-  and the mask has expired.** Day `2026-09-19` will hold 2 tips, so the tiebreak fires for certain.
-  If that round uses the buggy formula it restores `c6e065b` and silently discards this round.
-  Blast radius is currently 1 round, but grows by 1 for every subsequent tails.
-- **The record's framing of "mask" was over-optimistic and I have corrected it.** A mask makes the
-  *masked* round safe while re-drawing the next comparand uniformly. This round's draw landed at
-  `c` — worse than the `5`-nibble value it replaced. Do not read "we just had a mask" as "we are
-  safe."
-- **The round is genuinely empty of product value.** Nothing a user sees changed, and nothing will
-  until someone answers a decision. Roughly 6 weeks of rounds are now in this state. A reviewer
-  should read that as a process problem, not as progress.
-- **The runner's stale-base bug is unfixed for ~5 weeks** and `main` is still `ef3220e`
-  (2026-06-27) — no autopilot work has ever landed on `main`. Every round pays the restore cost.
-  No round can fix this; it needs a human.
-- **A wrong restore is undetectable by every gate in this repo.** The tree would be byte-identical,
-  residual diff empty, harness keys matching, Verify green on all 3 stages. Only the refname
-  cross-check catches it. Treat the harness and Verify as *incapable* of detecting lost rounds.
-- **The harness is evidence about past rounds, not a live regression net.** Two of the five keys
-  (`toast`, `toast-hit`) legitimately disagree with the working tree, and one of them is supposed
-  to. Nothing forces these keys to track the code.
-- **No checker reads `:hover`, and jsdom does no hit testing.** The two `:disabled:hover` cascade
-  leaks recorded under decision 7 (`#tourBack`, `.menu-pop button.danger:hover`) are real and still
-  live in the shipped app. A round that "just fixed them" would keep Verify fully green — which is
-  precisely why they must wait for an answer.
+- **Nothing in the app or the design system changed this round.** The only edits are `AUTOPILOT.md`
+  and this file; the restore commit `cfd4d37` reproduces `1794e8c`'s tree exactly. A reviewer
+  should see a code diff of zero against `1794e8c`.
+- **The `toast-hit` harness key reports `FAIL — 5 declaration(s) differ`, and that is correct.**
+  It pins a deliberate behaviour change (round `2026-08-24_0003` added `pointer-events:auto` to
+  `.toast-act` to make the toast's Undo button clickable). The check that matters is *which* rows
+  differ: all five must be `#toastUndo` and none may be `#toast`. Verified this round.
+- **`ds-disabled-hover` PASSes but covers less than it looks like.** The harness cannot evaluate
+  `:last-child`, so a change confined to `.pui-menu__item:last-child` computes 0 diff. The harness
+  prints this itself; it is not a silent gap, but the PASS is not blanket coverage.
+- **The stall is structural, not technical.** 109+ rounds have been cut from the same stale base,
+  nothing has merged to `main` since 2026-06-27, and the work has been decision-blocked for over a
+  month. No round can clear this — it needs a person to answer `## Open decisions`.
+- **Next round faces `P(tails) ≈ 77.7%` with a 2-round blast radius.** If a round picks its tip by
+  sha instead of date, it restores `c6e065b` and discards both `_0025` and this round — and it does
+  so **undetectably**: identical code tree, empty residual, five matching harness keys, three green
+  Verify stages. Date-major selection, run before `git checkout`, is the only guard.
