@@ -1,21 +1,22 @@
-# Round 2026-09-19_0035 — no-op round (no owner answer; all work still blocked)
+# Round 2026-09-20_0010 — no-op round (no owner answer; all work still blocked)
 
 ## What I did
 
 - **Restored the previous round's work.** The branch was cut from the stale base `3503537` again
-  (109th+ consecutive round). Selected the tip **date-major** with
-  `git for-each-ref --sort=-committerdate` → `1794e8c` (`auto/…/2026-09-19_0025`), restored with
-  `git checkout 1794e8c -- .`, committed as `cfd4d37`. **Tree-sha identity confirmed:**
-  `git rev-parse HEAD^{tree}` and `git rev-parse 1794e8c^{tree}` both print
-  `6dc7af42418b90eef4fda103fec004b09ba5100d` — every path matches, not just the ones a diff prints.
+  (110th+ consecutive round). Selected the tip **date-major** with
+  `git for-each-ref --sort=-committerdate` → `0c3968d` (`auto/…/2026-09-19_0045`), restored with
+  `git checkout 0c3968d -- .`, committed as `c55349b`. **Tree-sha identity confirmed:**
+  `git rev-parse HEAD^{tree}` and `git rev-parse 0c3968d^{tree}` both print
+  `fc7488cdaf8c812479a8c1cd54fe7e5e9082d38f` — every path matches, not just the ones a diff prints.
 - **Checked all five owner-answer channels. None has been answered.** (Details under Verification.)
 - **Ran the A/B the previous round asked for, live.** Its forecast (`P(tails) ≈ 77.7%`, predicting
-  tails) **resolved TAILS — correct.** The trap formula puts `c6e065b` (`_0013`) at row 1 and sinks
-  the real tip `1794e8c` (`_0025`) to row 2, because `'1'` < `'c'`. Using it would have silently
-  discarded all of `_0025`.
+  tails) **resolved TAILS — correct, two rounds running.** The trap formula puts `c6e065b` (`_0013`)
+  at row 1 and sinks the real tip `0c3968d` (`_0045`) to row 2, because `'0'` < `'c'`.
+- **Found that `_0045` died mid-round after its restore commit** — its tip carries no new work.
+  This is new, and it changes how the blast-radius number should be read (see below).
 - **Ran the full Verify command and all five harness keys.** All green / all as pinned.
 - **Updated `AUTOPILOT.md`'s `## Next task` block only** — recorded the resolution, the new
-  measurement below, and next round's forecast. No status block appended (the `_0035` convention).
+  measurement, and next round's forecast. No status block appended (the `_0035` convention).
 
 ## Why
 
@@ -26,11 +27,15 @@
   Every remaining path to an acceptance criterion moves pixels or adds a file, which is the owner's
   call, not an agent's.
 - **Tip selection was date-major, run before `git checkout`.** A sha-lexical tie-break would have
-  restored the wrong tip this round — it is not a hypothetical here, it is what the A/B measured.
+  restored the wrong tip this round — measured, not hypothetical.
+- **I restored `_0045`, not the `_0035` tip the old instruction block named.** That instruction was
+  written by `_0035` before `_0045` existed, so it was stale. It made no difference: the two trees
+  are byte-identical (see below), so the restore is content-equivalent either way.
 
 ## Verification
 
-**Three-stage Verify command — all green:**
+**Three-stage Verify command — all green** (run as three separate invocations; this repo's Bash
+tool rejects `&&`-chained commands):
 
 ```
 node tools/test.mjs               → 54 passed, 0 failed
@@ -52,7 +57,7 @@ toast-hit         3d3d5cc:index.html index.html           → 5 rows differ, ALL
                                                               :disabled:hover, :focus)
                                                              and NO #toast row — the expected,
                                                              deliberate pointer-events:auto fix
-ds-disabled-hover 1794e8c:design-system/src/styles.css design-system/src/styles.css
+ds-disabled-hover 0c3968d:design-system/src/styles.css design-system/src/styles.css
                                                           → PASS, with the harness's own warning:
                                                              1 undecidable rule (structural pseudo
                                                              :last-child on .pui-menu__item) that
@@ -68,7 +73,7 @@ which has a documented blind spot (the base-state row prints without a colon).
 |---|---|---|
 | 1 | `README.md → ## Open decisions` | `grep -c "\| Option \| Cost \|"` = **8**, `grep -c "If you answer:"` = **8** — agree, so unanswered |
 | 2 | `jspdf.umd.min.js` in repo | absent (`git ls-files \| grep -i jspdf` → nothing) |
-| 3 | `main` | still `ef3220e` |
+| 3 | `main` | still `ef3220e` (2026-06-27) |
 | 4 | untracked drop | `git status --untracked-files=all --short` → empty |
 | 5 | non-`auto/*` refs | newest is `design-system` at **2026-08-13**, older than all this work |
 
@@ -76,19 +81,36 @@ which has a documented blind spot (the base-state row prints without a colon).
 
 ```
 correct (--sort=-committerdate)        trap (:short, sha before refname, | sort -r)
-2026-09-19 1794e8c _0025 ✓             2026-09-19 c6e065b _0013 ✗ (one round stale)
-2026-09-19 c6e065b _0013               2026-09-19 1794e8c _0025  ← real tip, row 2
+2026-09-19 0c3968d _0045 ✓             2026-09-19 c6e065b _0013 ✗ (three tips stale)
+2026-09-19 21d0f4c _0035               2026-09-19 21d0f4c _0035
+2026-09-19 1794e8c _0025               2026-09-19 1794e8c _0025
+2026-09-19 c6e065b _0013               2026-09-19 0c3968d _0045  ← real tip, sunk to row 4
 2026-09-18 7f342c1 _0503               2026-09-18 7f342c1 _0503
 2026-09-18 304da7a _0030               2026-09-18 563e7fc _0006  ← INVERTED
 2026-09-18 1c3401f _0018               2026-09-18 304da7a _0030  ← INVERTED
 2026-09-18 563e7fc _0006               2026-09-18 1c3401f _0018
 ```
 
-New this round: **the bug mis-ranked two day-groups at once.** Row 1 of the top group was wrong,
-*and* the `2026-09-18` group below it was inverted at rows 2–4 — that group merely happened to be
-right at its own row 1 because `_0503`'s sha leads `'7'`, the highest in the set. So "row 1 of the
-top group looks right" is not evidence the formula works. Cumulative record of the wrong formula:
-**tails 27 of 43** (excluding the 3 structural heads: **27 of 40**).
+The real tip landed in **row 4** this time — the worst placement recorded so far — and the
+`2026-09-18` group stayed inverted at rows 2–4, reproducing `_0035`'s finding that the bug
+mis-ranks *every* day-group holding more than one tip. Cumulative record of the wrong formula:
+**tails 28 of 44** (excluding the 3 structural heads: **28 of 41**).
+
+**New this round — a tip can exist with no work in it:**
+
+```
+git rev-parse 0c3968d^{tree}  → fc7488cdaf8c812479a8c1cd54fe7e5e9082d38f   (_0045)
+git rev-parse 21d0f4c^{tree}  → fc7488cdaf8c812479a8c1cd54fe7e5e9082d38f   (_0035)
+git log --oneline -2 0c3968d  → 0c3968d chore: restore work from previous round tip 21d0f4c
+                                 3503537 autopilot: add AUTOPILOT.md contract
+```
+
+`_0045` committed its restore and then ended before doing any round work — which is why the
+SUMMARY.md I restored is still headed "Round 2026-09-19_0035". Consequences: (1) "blast radius in
+rounds" overstates real loss — the trap would skip **3 tips** here but only **2 rounds of content**
+exist, so `_0035`'s "blast radius 2" forecast was right in substance; (2) a tip appearing in
+`for-each-ref` is not evidence that work is in it — check `git log --oneline` for a lone
+`chore: restore…` commit.
 
 ## What I did NOT do
 
@@ -102,14 +124,14 @@ top group looks right" is not evidence the formula works. Cumulative record of t
   decision 4, and retrying burns a round for a known answer.
 - **Did not restore `docs/design-parity.md`** (decision 8, unanswered).
 - **Did not append a status block to `AUTOPILOT.md`** — only the `## Next task` block was edited,
-  per the convention started in `_0035`. The file's size is *why* `## Next task` reaches the agent
-  empty in the prompt.
+  per the `_0035` convention. The file is 3,954 lines, which is *why* `## Next task` reaches the
+  agent empty in the prompt.
 
 ## Risk
 
 - **Nothing in the app or the design system changed this round.** The only edits are `AUTOPILOT.md`
-  and this file; the restore commit `cfd4d37` reproduces `1794e8c`'s tree exactly. A reviewer
-  should see a code diff of zero against `1794e8c`.
+  and this file; the restore commit `c55349b` reproduces `0c3968d`'s tree exactly. A reviewer
+  should see a code diff of zero against `0c3968d`.
 - **The `toast-hit` harness key reports `FAIL — 5 declaration(s) differ`, and that is correct.**
   It pins a deliberate behaviour change (round `2026-08-24_0003` added `pointer-events:auto` to
   `.toast-act` to make the toast's Undo button clickable). The check that matters is *which* rows
@@ -117,10 +139,16 @@ top group looks right" is not evidence the formula works. Cumulative record of t
 - **`ds-disabled-hover` PASSes but covers less than it looks like.** The harness cannot evaluate
   `:last-child`, so a change confined to `.pui-menu__item:last-child` computes 0 diff. The harness
   prints this itself; it is not a silent gap, but the PASS is not blanket coverage.
-- **The stall is structural, not technical.** 109+ rounds have been cut from the same stale base,
+- **The stall is structural, not technical.** 110+ rounds have been cut from the same stale base,
   nothing has merged to `main` since 2026-06-27, and the work has been decision-blocked for over a
   month. No round can clear this — it needs a person to answer `## Open decisions`.
-- **Next round faces `P(tails) ≈ 77.7%` with a 2-round blast radius.** If a round picks its tip by
-  sha instead of date, it restores `c6e065b` and discards both `_0025` and this round — and it does
-  so **undetectably**: identical code tree, empty residual, five matching harness keys, three green
-  Verify stages. Date-major selection, run before `git checkout`, is the only guard.
+- **Next round is a structural mask: risk 0%, and it must NOT be counted in the statistics.**
+  `2026-09-20` will hold exactly one tip (this round's) when the next round starts, so the date
+  field settles row 1 before sha is consulted and both formulas agree. That agreement is *not*
+  evidence the sha-lexical formula works — `_0025` established that a mask is a uniform re-draw,
+  not a safety mechanism, and it has landed on a *worse* comparand before. Use
+  `--sort=-committerdate` regardless.
+- **The round after next is the dangerous one.** `2026-09-20` will then hold two tips and the
+  tie-break fires with this round's closing sha as the comparand. That round must read the sha from
+  `for-each-ref` and compute `P(tails) = 0x<7 hex digits> / 0x10000000` itself — copying the old
+  77.7% figure would be wrong.
