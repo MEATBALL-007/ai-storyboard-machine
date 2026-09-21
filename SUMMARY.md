@@ -1,38 +1,41 @@
-# Round `2026-09-22_0007` — no-op (blocked on owner decisions)
+# Round `2026-09-22_0017` — no-op (blocked on owner decisions)
 
 ## What I did
 
 - **Restored the previous round's work.** The runner cut this branch from the stale base
-  `3503537` again (the 130-somethingth consecutive round), so the tree arrived without
-  `tools/check-tokens.mjs`, `docs/btn-parity-proof.mjs` and every token/radius/font change.
-  Selected the tip **date-major** with `git for-each-ref --sort=-committerdate`, dropped my own
-  refname first, and restored `9f028b6` (`…/2026-09-21_0037`) as its own commit.
+  `3503537` yet again, so the tree arrived without `tools/check-tokens.mjs`,
+  `docs/btn-parity-proof.mjs` and every token/radius/font change. Selected the tip
+  **date-major** with `git for-each-ref --sort=-committerdate`, dropped my own refname first,
+  and restored `7b6829f` (`…/2026-09-22_0007`) as its own commit.
 - **Ran the five owner-answer channels. No answer on any of the eight open decisions.**
   So per the pinned `## Next task`, this is a deliberate no-op round: I did not invent
   substitute work.
 - **Ran the full Verify command (three stages) — green.**
 - **Ran all five parity-harness keys with the pinned refs — every number matches the
   established table**, including the one key that is *supposed* to fail.
-- **Measured the branch-ranking A/B live. It came up TAILS**, exactly as `_0037`'s conditional
-  forecast said it would, and the wrong formula would have silently discarded two rounds.
+- **Did NOT run the branch-ranking A/B — this round is structurally masked**, exactly as
+  `_0007` forecast. I also found and documented a *second*, conflicting set of pinned harness
+  commands in `AUTOPILOT.md` that has strictly weaker detection power.
 
 ## Why
 
 - **The restore comes before any Read.** A stale tree here does not look broken — it looks
-  *finished* (the app's `:root` really is byte-identical to `tokens.css` on `3503537`), which is
-  how round `2026-08-28_0004` burned a whole round concluding the token task was already done.
-  `ls tools` showing only `test.mjs` is the one-call tell, and I ran `git log --oneline -5` as
-  the first action of the round.
-- **Tree-sha identity instead of a residual diff.** `git diff` is permission-blocked here anyway,
-  but the identity check is also strictly stronger: `git rev-parse HEAD^{tree}` =
-  `git rev-parse 9f028b6^{tree}` = `82f577dcb2bb23a8ece81879aa669ff318134149` proves equality on
-  **every path at once**, and it closes the blind spot of `git checkout <sha> -- .` (which cannot
-  delete a file that should be gone). An empty `--stat` only proves the rows that printed matched.
-- **I did not answer any of the eight decisions myself.** Every remaining item on the acceptance
-  criteria — chip padding (decision 2), segmented padding (5), input sizes (6), the
-  `:disabled:hover` cascade leaks (7) — moves pixels a human will see, and no checker in this repo
-  looks at `:hover` (jsdom does no hit testing either). A round that "just tries it" would stay
-  green through all three Verify stages while changing the product.
+  *finished*, which is how round `2026-08-28_0004` burned a whole round concluding the token
+  task was already done. `ls` showing no `SUMMARY.md` and `tools/` without `check-tokens.mjs`
+  is the one-call tell; `git log --oneline -5` was the first action of the round.
+- **Tree-sha identity instead of a residual diff.** `git rev-parse HEAD^{tree}` =
+  `git rev-parse 7b6829f^{tree}` = `3ea827df2a2d92e01d3ddba9beefbd3834317c4e` proves equality
+  on **every path at once**, and it closes the blind spot of `git checkout <sha> -- .`, which
+  cannot delete a file that should be gone. An empty `--stat` only proves the rows that printed.
+- **I did not run the A/B, and that is the correct action, not laziness.** After dropping my own
+  refname the newest remaining date (`2026-09-22`) holds exactly **one** tip, so the date field
+  settles row 1 before any sha is consulted and both formulas agree *by construction*. Agreement
+  there is not evidence the trap is gone — misreading that cost round `2026-09-02_0022`.
+- **I did not answer any of the eight decisions myself.** Every remaining acceptance-criteria
+  item — chip padding (decision 2), segmented padding (5), input sizes (6), the
+  `:disabled:hover` cascade leaks (7) — moves pixels a human will see, and no checker in this
+  repo looks at `:hover` (jsdom does no hit testing either). A round that "just tries it" would
+  stay green through all three Verify stages while changing the product.
 
 ## Verification
 
@@ -50,23 +53,22 @@ node tools/check-tokens.mjs      → 6/6 checks pass:
 npm --prefix design-system test  → 12 test files passed, 31 tests passed
 ```
 
-**Parity harness — all five keys, using the refs pinned at `AUTOPILOT.md:4156-4160`
-(NOT guessed refs — see the trap note below):**
+**Parity harness — all five keys, using the refs pinned in the `2026-09-02_0002` block:**
 
 | key | result | detail |
 |---|---|---|
 | `buttons 2488f2d:index.html index.html` | **PASS** | 85 pairs / 17 elements; markup 7 old class tokens gone, 5 new |
 | `segmented 021b966:index.html index.html` | **PASS** | 45 pairs / 9 elements; markup 0 gone, 3 new |
-| `toast de07ea8:index.html 10e8f39:index.html` | **PASS** | 5 pairs / 1 element |
+| `toast de07ea8:index.html 10e8f39:index.html` | **PASS** | 5 pairs / 1 element; markup 0 gone, 1 new |
 | `toast-hit 3d3d5cc:index.html index.html` | **FAIL — 5** | 10 pairs / 2 elements, **0 markup problems, 0 unmatched** |
-| `ds-disabled-hover 9f028b6:…/styles.css …/styles.css` | **PASS** | 15 pairs / 3 elements, + 1 undecidable |
+| `ds-disabled-hover 7b6829f:…/styles.css …/styles.css` | **PASS** | 15 pairs / 3 elements, + 1 undecidable |
 
 - **`toast-hit`'s FAIL-5 is the correct result, not a regression.** That key exists to *show* the
   one intentional behaviour change (round `2026-08-24_0003` added `pointer-events:auto` to
-  `.toast-act` to fix the dead Undo button). I checked it row by row with `grep "✗"` rather than
-  trusting the count: **all five rows are `#toastUndo`** (`(base)` / `:hover` / `:disabled` /
-  `:disabled:hover` / `:focus`) and **not one row is `#toast`** — which is the evidence that
-  `#toast`'s own `pointer-events:none` was never removed. The single printed delta is
+  `.toast-act` to fix the dead Undo button). I read all five `✗` rows rather than trusting the
+  count: **all five are `#toastUndo`** (`(base)` / `:hover` / `:disabled` / `:disabled:hover` /
+  `:focus`) and **not one row is `#toast`** — which is the evidence that `#toast`'s own
+  `pointer-events:none` was never removed. The single printed delta is
   `before: (unset) <- -` / `after: auto <- .toast-act`.
 - **`ds-disabled-hover`'s 1 undecidable rule** is `.pui-menu__item:last-child`, unreadable because
   the harness deliberately does not model a DOM tree, so structural pseudos cannot match. The PASS
@@ -76,36 +78,42 @@ npm --prefix design-system test  → 12 test files passed, 31 tests passed
 
 1. tree identity matches (above)
 2. `grep -c "^### [1-8]\." README.md` → **8**; `grep -c "If you answer:" README.md` → **8**
-   (8 headings, 8 unused answer slots — note this counter reads 8 because round `2026-08-31_0023`
-   *added* decision 8 itself, not because an owner replied)
+   (8 headings, 8 unused answer slots)
 3. `git ls-files | grep -i jspdf` → empty (no vendored jsPDF, so the last CDN reference still
    cannot be inlined)
 4. `git status --untracked-files=all --short` → empty
-5. non-`auto/*` refs unmoved: `design-system` = `3503537` (2026-08-13), `main` / `origin/main` /
-   `mac/main` = `ef3220e` (2026-06-27), `mac` / `mac/design-system` = `e3a355c`,
-   `mac/hardening-pass` / `origin/hardening-pass` = `592e7c3` (2026-07-20)
+5. non-`auto/*` refs unmoved: `design-system` = `3503537`, `main` / `origin/main` / `mac/main` =
+   `ef3220e`, `mac` / `mac/design-system` = `e3a355c`, `mac/hardening-pass` /
+   `origin/hardening-pass` = `592e7c3`
+   (precondition also holds: local **and** `origin/` of `_0007` both point at `7b6829f`, so
+   restoring from that sha overwrites nothing the owner pushed)
 
-**Branch-ranking A/B — measured live, and it fired: TAILS.**
+**Branch-ranking A/B — deliberately NOT run. This round is structurally masked.**
 
-After dropping my own refname, the newest date `2026-09-21` held **four** tips, so the sha
-tiebreak was live and this is a real measurement, not a masked one:
+After dropping my own refname, the newest date `2026-09-22` held exactly **one** tip (`7b6829f`
+`_0007`). With one tip on the winning date, the date field decides row 1 before the sha tiebreak
+is ever reached, so the correct and the trap formula agree *by construction*. Per the pinned
+instruction I ran no A/B and moved no number: the statistic stays at **tails 33 of 51**
+(excluding the 4 structural-heads rounds: **33 of 47**). `_0007`'s forecast of a masked round
+was correct in every particular.
+
+**New finding — a second, conflicting set of pinned harness commands.**
+
+`AUTOPILOT.md` contains **two** blocks of "the correct harness arguments", and their refs differ:
 
 ```
---sort=-committerdate (correct)          %(committerdate:short) + sha | sort -r (the trap)
-9f028b6  _0037  00:42:40  ✓ real tip     f33211e  _0017   ✗ three rounds stale
-92d9038  _0027  00:35:11                 b857b8e  _0005
-f33211e  _0017  00:22:59                 9f028b6  _0037   ← real tip sunk to row 3
-b857b8e  _0005  00:15:21                 92d9038  _0027
+📌 (2026-09-19_0013):  buttons 2488f2d:index.html 9fab5c9:index.html
+                       toast   bb10dd9:index.html 3d3d5cc:index.html
+🔴 (2026-09-02_0002):  buttons 2488f2d:index.html index.html          ← the set actually in use
+                       toast   de07ea8:index.html 10e8f39:index.html
 ```
 
-The two forms **disagree at row 1**. Blast radius of the wrong formula this round: it restores
-`_0017` and silently discards **both `_0027` and `_0037`** — and both hold real content
-(`git log --oneline -3 9f028b6` shows `9f028b6 docs:` sitting above `68bf84a chore: restore…`).
-
-- `_0037`'s conditional forecast was **correct**: it wrote *"tails iff the closing sha sorts below
-  `f33211e`"*, and it closed at `9f028b6` — `'9' < 'f'` → tails, at its stated ≈95.00% point.
-- **Cumulative record of the wrong formula: tails 33 of 51** (excluding the 4 structural-heads
-  rounds: **33 of 47**).
+I ran the `📌` variants too: they print **identical numbers** (`buttons` 85/17 markup 7/5 PASS;
+`toast` 5/1 markup 0/1 PASS). So output alone cannot tell a round which set it used. The real
+difference is detection power: `📌`'s `buttons` pins its *after* side to `9fab5c9`, so it never
+reads the live `index.html` and would stay PASS even if someone regressed the buttons today.
+Recorded this in the contract with the reasoning, so a future round picks the right set for the
+right reason rather than by matching numbers.
 
 ## What I did NOT do
 
@@ -117,33 +125,35 @@ The two forms **disagree at row 1**. Blast radius of the wrong formula this roun
   cascade leaks (`#tourBack`'s Back button staying bright while disabled; `.menu-pop
   button.danger:hover` beating the app's own `:disabled:hover` guard at identical `(0,3,1)`
   specificity) are genuine bugs, but fixing them changes colours a user sees.
-- **Did not add a 7th token check.** Every one of the 22 tokens already has a checker; there is
-  nothing left to enforce.
+- **Did not delete or "fix" the conflicting `📌` command block.** Removing an instruction block
+  from the contract is an owner call, and both sets are green today; I documented the difference
+  instead.
+- **Did not add a 7th token check.** Every one of the 22 tokens already has a checker.
 - **Did not open a browser.** Decision 4 (permission for Playwright / Chrome-DevTools MCP) is
   still unanswered; both were confirmed permission-blocked in `2026-08-21`, so retrying is a
   wasted round, not a missing capability.
-- **Did not append a status block to `AUTOPILOT.md`.** Per the `_0035`/`_0041` convention, a
-  no-op round edits only the `## Next task` forecast block — the file is already 4,224 lines, and
-  its size *is* why `## Next task` reaches the agent empty in the prompt.
 
 ## Risk
 
 - 🔴 **The stale-base restore is the highest-risk step of every round, and it is invisible to
   every check.** A docs-only round restored from the wrong tip leaves an empty residual, five
   matching harness keys and three green Verify stages. The only defence is selecting the tip
-  **before** `git checkout` and doing it date-major. Reviewers should confirm this round's restore
-  parent is `9f028b6`, not `f33211e`.
-- 🟨 **Next round is MASKED — do not count it in the statistic and do not run the A/B.** At the
-  next round's selection time, `2026-09-22` will hold exactly one tip (mine), so the date field
-  settles row 1 before the sha is ever consulted and the two formulas agree *by construction*.
-  Agreement there proves nothing about the trap. Keep using `--sort=-committerdate`.
+  **before** `git checkout` and doing it date-major. Reviewers should confirm this round's
+  restore parent is `7b6829f`.
+- 🟨 **Next round is a REAL measurement — run the A/B and move the statistic.** At the next
+  round's selection time `2026-09-22` will hold **two** tips (`7b6829f` and mine), so the
+  tiebreak fires for real. The comparand *resets downward* from `f33211e` to `7b6829f`, putting
+  `P(tails) ≈ 48.21%` — the most discriminating measurement in dozens of rounds. The older
+  warning that "tails is now the normal outcome" applied only to the high-comparand era.
+- 🟨 **Every line-number reference inside `AUTOPILOT.md` is now stale.** This round inserted
+  ~55 lines near `:402`, shifting everything below. The previously pinned `:4062`, `:4066-4070`,
+  `:4118-4125`, `:4156-4160` all point at the wrong text now. Future rounds must `Grep` for the
+  block, not copy a line number. I wrote that rule into the contract.
 - 🟨 **`toast-hit` reporting `FAIL` is expected and permanent.** A reviewer skimming for green
-  will misread it. It is not in the Verify command for exactly that reason — the harness is a
-  round tool, not a checker that must stay green.
+  will misread it. It is not in the Verify command for exactly that reason.
 - 🟨 **`tools/check-tokens.mjs` blanks `<script>` before scanning**, so the `.toast-act` rule is
-  the one token reference in the repo no checker sees. That is deliberate (the canvas drawing code
-  legitimately contains `#111` and `#FA4616` literals that `ctx.fillStyle` needs), but it is a
-  real coverage hole worth knowing about.
+  the one token reference in the repo no checker sees. Deliberate (the canvas code legitimately
+  needs `#111` / `#FA4616` literals for `ctx.fillStyle`), but a real coverage hole.
 - ⚪ **Nothing in this round changes a single byte of application or library CSS.** The round's
   diff is `SUMMARY.md` + the `## Next task` block of `AUTOPILOT.md`, on top of a restore commit
-  whose tree is provably identical to `9f028b6`'s.
+  whose tree is provably identical to `7b6829f`'s.
