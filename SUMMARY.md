@@ -1,36 +1,39 @@
-# Round `2026-09-28_0022`: no-op, blocked on owner decisions
+# Round `2026-09-28_0032`: no-op, blocked on owner decisions
 
 ## What I did
 
 - **Restored the previous round's work.** The runner cut this branch from the stale base
-  `3503537` again. `git for-each-ref --sort=-committerdate` shows `ca8954d`
-  (`…/2026-09-28_0012`) as the newest tip. It holds real work (`docs:` above `chore: restore…`).
-  I restored it as its own commit.
+  `3503537` again. `git for-each-ref --sort=-committerdate` shows `67f1def`
+  (`…/2026-09-28_0022`) as the newest tip. It holds real work (`67f1def docs:` above
+  `ece059f docs:` above `434db52 chore: restore…`). I restored it as its own commit.
 - **Read the task from the restored `AUTOPILOT.md`.** The prompt's `## Next task` arrived empty.
   The restored task says: if no owner decision is answered, run a no-op round.
 - **Checked all five owner-answer channels.** None of the eight open decisions has an answer.
 - **Ran Verify and all five parity-harness keys.** Everything is green, and every key matches the
   recorded table.
 - **Updated only the `## Next task` block in `AUTOPILOT.md`.** It now points at this round's tip,
-  records `_0012`'s forecast as resolved, and sets the next round's forecast.
+  records `_0022`'s forecast as resolved, and sets the next round's forecast.
 
 ## Why
 
-- **I ran the A/B this round, and it counts toward the record.** After I dropped my own refname,
-  `2026-09-28` held two tips (`ca8954d`, `8dc4093`), so the sha tiebreak actually fired. The
-  correct form and the trap form (`committerdate:short` + sha + `| sort -r`) both put `ca8954d`
-  at row 1. They agree only because `'c'` sorts above `'8'`. The trap did not stop being a trap.
-  The record moves to **tails 36 of 60** (36/56).
-- **Next round is a live tiebreak again.** `2026-09-28` will hold three tips with comparand
-  `ca8954d`. The trap form picks the wrong tip if and only if this round's closing sha sorts
-  below `ca8954d`. The chance of that is about 79.12%.
+- **The A/B counts toward the record this round, and it came up TAILS.** After I dropped my own
+  refname, `2026-09-28` held three tips (`67f1def`, `ca8954d`, `8dc4093`), so the sha tiebreak
+  actually fired. The correct form (`--sort=-committerdate`) puts `67f1def` at row 1. The trap form
+  (`committerdate:short` + sha + `| sort -r`) puts `ca8954d` at row 1 and pushes the real tip to
+  **row 3 of 3**. A round using the trap form would have silently dropped `_0022`. That is one
+  round of docs-only content, and none of the three Verify stages would have caught it.
+  `_0022`'s conditional forecast was correct: it closed at `67f1def`, and `'6'` < `'c'`.
+  The record moves to **tails 37 of 61** (37/57).
+- **Next round is a live tiebreak again.** `2026-09-28` will hold four tips. The comparand is
+  still `ca8954d`. The trap form picks the wrong tip if and only if this round's closing sha sorts
+  below `ca8954d`. The chance of that is about 79.12% (`0xca8954d / 0x10000000`).
 - **I edited the existing block and did not append a new status block.** That follows the
-  convention started at `_0035`, which limits growth of a file that is already ~4,600 lines.
+  convention started at `_0035`, which limits growth of an already very large file.
 
 ## Verification
 
-- `git rev-parse HEAD^{tree}` and `git rev-parse ca8954d^{tree}` both print
-  `e2375d79a925a4d039c522786c2683f2f4e3c3cb`, so the restore matches on every path.
+- `git rev-parse HEAD^{tree}` and `git rev-parse 67f1def^{tree}` both print
+  `063ff86bd80a048acf67617d675828c946e60694`, so the restore matches on every path.
 - Channels:
   - (1) `grep -c "| Option | Cost |" README.md` = 8 and `grep -c "If you answer:"` = 8. The two
     counters agree.
@@ -41,19 +44,20 @@
     `e3a355c`/`592e7c3`, `main`/`origin/main` = `ef3220e`. The newest is 2026-08-13.
 - Verify: `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`
   - `54 passed, 0 failed`
-  - check-tokens: the colour, font-weight, radius and typeface checks each passed across
-    15 CSS sources, and the chain continued to the next stage
+  - check-tokens: tokens 22/22, fonts 4/4, and the colour, font-weight, radius and typeface
+    checks each passed across 15 CSS sources
   - vitest printed `12 passed (12)` files and `31 passed (31)` tests
 - Harness keys:
   - `buttons 2488f2d:index.html index.html` → PASS, 85 pairs across 17 elements. Markup check:
     7 old class tokens gone, 5 new class attributes.
-  - `segmented 021b966:index.html index.html` → PASS, 45 pairs across 9 elements
-  - `toast de07ea8:index.html 10e8f39:index.html` → PASS, 5 pairs across 1 element
-  - `ds-disabled-hover ca8954d:design-system/src/styles.css design-system/src/styles.css` → PASS,
+  - `segmented 021b966:index.html index.html` → PASS, 45 pairs across 9 elements, markup 0/3
+  - `toast de07ea8:index.html 10e8f39:index.html` → PASS, 5 pairs across 1 element, markup 0/1
+  - `ds-disabled-hover 67f1def:design-system/src/styles.css design-system/src/styles.css` → PASS,
     15 pairs across 3 elements, plus the usual 1 undecidable rule
   - `toast-hit 3d3d5cc:index.html index.html` → `FAIL — 5 declaration(s) differ, 0 markup
     problem(s), 0 unmatched element(s)` across 10 pairs and 2 elements. This FAIL is the expected
-    result. I read all five `✗` rows: every one is `#toastUndo`, and none is `#toast`.
+    result. I read all five `✗` rows: every one is `#toastUndo` (`pointer-events` `(unset)` →
+    `auto`), and none is `#toast`.
 
 ## What I did NOT do
 
