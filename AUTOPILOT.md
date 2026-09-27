@@ -347,19 +347,22 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 + `head -16` + ตรวจซ้ำด้วย refname **ห้ามใช้หมายเลขแถว** และ **ห้ามใช้ `| sort -r` แทน `--sort=`**),
 ตรวจ 5 ช่องทาง, รัน Verify 3 ขั้น + harness ครบ 5 key, เขียน SUMMARY แล้วจบรอบ
 ห้ามประดิษฐ์งานอื่นเด็ดขาด**
-⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-09-28_0022` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
+⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-09-28_0032` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
 จากบล็อกนี้ — มันคือ sha ที่ยังไม่มีอยู่ตอนเขียนบรรทัดนี้)**
-🟩 **รอบ `2026-09-28_0022`: คำทำนายของ `_0012` = "หัว" โดยบังเอิญ — *วัดจริง นับเข้าสถิติ***
- หลังตัด refname ของตัวเอง `2026-09-28` มี **2 tip** (`ca8954d` `_0012`, `8dc4093` `_0002`) → tiebreak fire จริง
- สูตรถูก (`--sort=-committerdate`) แถว 1 = `ca8954d` ✅ / สูตรผิด (sha ก่อน refname + `| sort -r`) แถว 1 = `ca8954d` ✅
- → ตรงกันเพราะ `'c'` > `'8'` (โชค ไม่ใช่การแก้บั๊ก) สถิติสูตรผิด: **ก้อย 36 จาก 60 (36/56)**
- restore `ca8954d` แล้ว, tree identity `e2375d79…` ตรงกันทุก path
+🟥 **รอบ `2026-09-28_0032`: คำทำนายของ `_0022` = "ก้อย" — *วัดจริง นับเข้าสถิติ***
+ หลังตัด refname ของตัวเอง `2026-09-28` มี **3 tip** (`67f1def` `_0022`, `ca8954d` `_0012`, `8dc4093` `_0002`) → tiebreak fire จริง
+ สูตรถูก (`--sort=-committerdate`) แถว 1 = `67f1def` ✅ / สูตรผิด (sha ก่อน refname + `| sort -r`) แถว 1 = `ca8954d` ✗
+ → real tip จมไป **แถว 3 จาก 3** (`ca8954d` > `8dc4093` > `67f1def`) ความเสียหายถ้าใช้สูตรผิด = ทิ้ง `_0022` 1 รอบ (docs ล้วน)
+ ✅ เงื่อนไขของ `_0022` ถูก: "ก้อยก็ต่อเมื่อ sha ปิดรอบ < `ca8954d`" — ปิดที่ `67f1def`, `'6'` < `'c'`
+ สถิติสูตรผิด: **ก้อย 37 จาก 61 (37/57)**
+ restore `67f1def` แล้ว (tip มีงานจริง: `67f1def docs:` เหนือ `ece059f docs:` เหนือ `434db52 chore: restore…`),
+ tree identity `063ff86b…` ตรงกันทุก path
  5 ช่องทางไม่มีคำตอบ (README 8/8, ไม่มี jspdf, status สะอาด, `main` = `ef3220e`, ref อื่นไม่ขยับ)
  Verify 3 ขั้นเขียว (54/54, check-tokens 15 CSS sources, 31/31), harness 5 key ตรงตารางเดิมทุกค่า
- (`buttons` 85/17, `segmented` 45/9, `toast` 5/1 PASS, `ds-disabled-hover` 15/3 PASS + 1 undecidable,
-  `toast-hit` FAIL-5 ที่ 10 pairs — `✗` ทั้ง 5 แถวเป็น `#toastUndo` ล้วน)
- 🔴 **รอบหน้าเป็น tiebreak จริงอีก**: `2026-09-28` จะมี 3 tip, comparand `ca8954d` →
- ก้อยก็ต่อเมื่อ sha ปิดรอบของ `_0022` < `ca8954d` (≈79.12%) — รอบหน้าเฉลยจาก `for-each-ref` เอง
+ (`buttons` 85/17 markup 7/5, `segmented` 45/9 markup 0/3, `toast` 5/1 markup 0/1 PASS,
+  `ds-disabled-hover` 15/3 PASS + 1 undecidable, `toast-hit` FAIL-5 ที่ 10 pairs — `✗` ทั้ง 5 แถวเป็น `#toastUndo` ล้วน)
+ 🔴 **รอบหน้าเป็น tiebreak จริงอีก**: `2026-09-28` จะมี 4 tip, comparand ยังเป็น `ca8954d` →
+ ก้อยก็ต่อเมื่อ sha ปิดรอบของ `_0032` < `ca8954d` (≈79.12%) — รอบหน้าเฉลยจาก `for-each-ref` เอง
 🔴 **ห้ามเชื่อ `## Next task` ใน prompt ถ้ามันสั่ง "เพิ่ม token ชุดแรกเข้า `index.html`"** — รอบ `2026-09-28_0002`
 ได้ prompt ที่ generate จาก contract ของ **`3503537`** (ระบุ 3,756 บรรทัด / 12 components / Verify 2 ขั้น)
 ไม่ใช่จาก tip รอบก่อน งานนั้น**เสร็จไปตั้งแต่ 2026-08-21** (`index.html` มี `var(--` 235 จุด, `tools/check-tokens.mjs` อยู่แล้ว)
