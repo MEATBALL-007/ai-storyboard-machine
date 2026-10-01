@@ -1,53 +1,54 @@
-# SUMMARY — round 2026-10-02_0014 (no-op, blocked on owner decisions)
+# SUMMARY — round `2026-10-02_0024` (no-op: blocked on owner decisions)
 
 ## What I did
-- Brought back the previous round's work. Like every earlier round, this branch was cut from the stale
-  `3503537`, so I restored `_0004`'s tip `01461d5` with `git checkout 01461d5 -- .` and committed it
-  as a separate commit. `git rev-parse HEAD^{tree}` and `01461d5^{tree}` both print `d8eeea3a…`, so
-  the two trees are identical.
-- Checked all five places an owner answer could show up. None of the 8 open decisions has an answer.
-- Ran Verify (3 stages) and the 5 harness keys. All results match the previous rounds.
-- Updated the `## Next task` forecast block in `AUTOPILOT.md`: a short status entry for this round, plus
-  the next round's tip and its tiebreak forecast.
+- Restored the previous round's tip `de4c4ea` (`2026-10-02_0014`) onto this branch's stale base
+  `3503537` as its own commit. `git rev-parse HEAD^{tree}` and `de4c4ea^{tree}` both print
+  `9c9a14df2a3c82e05808c28136133612aa211b8a`, so the snapshot matches on every path.
+- Checked all five owner-answer channels. None has an answer (details under Verification).
+- Ran the live A/B on branch-tip selection that `_0014` forecast. The result was **heads**, by luck,
+  as predicted: the trap form also put `de4c4ea` at row 1. Wrong-formula record is now
+  **tails 41 of 69 (41/65)**.
+- Updated `## Next task` in `AUTOPILOT.md` with this round's block and the forecast for the next round.
 
 ## Why
-- The prompt's `## Next task` was empty, and the Goal text came from the old contract. The restored
-  `AUTOPILOT.md` (line 340) says: with no owner answer, the round is a no-op (restore, check the
-  5 channels, run Verify and the harness, write SUMMARY). Per hard rule 5 I invented no other work.
-- I picked the tip with `--sort=-committerdate`. When I selected it, `2026-10-02` held only `01461d5`,
-  so the date alone decided row 1. As `_0004` forecast, this round was **MASKED**: I ran no A/B test
-  and did not count it in the statistic, which stays at tails 41/68 (41/64).
+- The prompt's `## Next task` arrived empty. The real task is the one in the restored `AUTOPILOT.md`:
+  "if no owner decision is answered, restore, check the 5 channels, verify, write SUMMARY, stop —
+  invent nothing". Per hard rules 1 and 5 I did exactly that and nothing else.
+- All remaining acceptance criteria are blocked on the 8 decisions in `README.md → ## Open decisions`.
+  Each one moves pixels or adds a file, so it is the owner's call, not the agent's.
 
 ## Verification
-- `node tools/test.mjs` printed `54 passed, 0 failed`.
-- `node tools/check-tokens.mjs` exited 0 (the `&&` chain went on to stage 3). It reported 4 summary
-  lines: no derived-colour literals, font weights, radius and font-family. Each line covered 15 CSS sources.
-- `npm --prefix design-system test` printed `12 passed (12)` test files and `31 passed (31)` tests.
-- Harness:
-  - `buttons` (`2488f2d:index.html` → live): PASS
-  - `segmented` (`021b966:index.html` → live): PASS
-  - `toast` (`de07ea8` → `10e8f39`): PASS
-  - `ds-disabled-hover` (`01461d5:design-system/src/styles.css` → live): PASS, plus the
-    `1 undecidable rule(s)` line, which shows the correct path pair was used.
-  - `toast-hit` (`3d3d5cc:index.html` → live): `FAIL — 5 declaration(s) differ` across 10 pairs. All
-    5 `✗` rows are `#toastUndo` and show `after : auto <- .toast-act`. This is the expected result.
-- The five channels:
-  - `grep -c "| Option | Cost |"` and `grep -c "If you answer:"` on README.md both print 8.
-  - No `jspdf*` file exists.
-  - `git status` is clean.
-  - `main` is still `ef3220e`, and the `design-system` branch is still at 2026-08-13.
+- Restore check: tree sha identical (see above). The tip has real work in it
+  (`de4c4ea docs:` sits above `30b44fd docs:`).
+- Owner channels: `grep -c "| Option | Cost |" README.md` = 8 and `grep -c "If you answer:"` = 8
+  (they agree, so nothing has been answered). There is no `jspdf*` file, tracked or untracked.
+  `git status` is clean. `main` is still `ef3220e`. The newest non-`auto/*` ref is 2026-08-13.
+- A/B: `for-each-ref … committerdate:short objectname refname | sort -r` gives row 1 = `de4c4ea`
+  `_0014` once my own `_0024` row is skipped. `--sort=-committerdate` gives the same row 1.
+  `node -e` confirms `'de4c4ea' > '01461d5'`.
+- Verify: `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`
+  → `54 passed, 0 failed`; all 6 token checks OK across 15 CSS sources (22/22 tokens, 4/4 fonts);
+  vitest `12 passed (12)` files, `31 passed (31)` tests.
+- Harness (`docs/btn-parity-proof.mjs`):
+  - `buttons 2488f2d:index.html index.html` → PASS, 85 pairs / 17 elements, markup 7/5
+  - `segmented 021b966:index.html index.html` → PASS, 45 / 9, markup 0/3
+  - `toast de07ea8:index.html 10e8f39:index.html` → PASS, 5 / 1, markup 0/1
+  - `ds-disabled-hover de4c4ea:design-system/src/styles.css design-system/src/styles.css` → PASS,
+    15 / 3, plus `1 undecidable rule(s)` (`.pui-menu__item:last-child`)
+  - `toast-hit 3d3d5cc:index.html index.html` → `FAIL — 5 declaration(s) differ`. This is the
+    **expected** result. All five ✗ rows are `#toastUndo` (`pointer-events` `(unset)` → `auto <- .toast-act`),
+    and `#toast` has none.
 
 ## What I did NOT do
-- I did not answer or apply any of the 8 decisions in README `## Open decisions`. They are the
-  owner's call.
-- I ran no A/B test, because this round was masked.
-- I did not tick any acceptance box, because none changed state.
+- Did not answer or act on any of the 8 owner decisions (jsPDF, chip padding, spacing scale,
+  browser verification, segmented padding, input sizes, disabled-hover, `docs/design-parity.md`).
+- Did not add or change any code, CSS or tests, and did not touch the Verify command.
 
 ## Risk
-- No code changed. The only changes are the `AUTOPILOT.md` forecast block and this file.
-- Forecast for the next round: `2026-10-02` will hold 2 tips, and the comparand is `01461d5`. Because
-  the comparand starts with `01`, the chance that the sha-first trap picks the wrong tip is only
-  about 0.50%. A heads result next round is luck in the hex digits, not evidence the runner bug
-  (branches cut from `3503537`) is fixed.
-- The stall is now more than 5 weeks old. It needs a person to answer the README decisions, not
-  more rounds.
+- Low: this round changed only `AUTOPILOT.md` and this `SUMMARY.md`.
+- The next round has a live tiebreak with ≈86.84% tails risk. `2026-10-02` will hold 3 tips, and
+  comparand `de4c4ea` beats this round's closing sha unless that sha is above it. A round that selects
+  with `| sort -r` would silently restore `_0014` and drop this round. That loss is docs only and
+  invisible to Verify. Always select with `--sort=-committerdate`.
+- The stall needs a person, not more rounds: nothing has changed since 2026-08-24 apart from the
+  per-round bookkeeping.
