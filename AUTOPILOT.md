@@ -357,8 +357,11 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
  restore `c9b679c` แล้ว (tip มีงานจริง: `c9b679c docs:` เหนือ `20edb0f docs:`), tree identity `9fa02c0d…` ตรงกันทุก path
  5 ช่องทางไม่มีคำตอบ (README 8/8 ทั้งสองตัวนับ, ไม่มี jspdf, status สะอาด, `main` = `ef3220e`, ref อื่นใหม่สุด 2026-08-13)
  Verify 3 ขั้นเขียว (54/54, check-tokens 6/6 ที่ 15 CSS sources, 31/31), harness 5 key: `buttons` (`2488f2d`→live) /
- `segmented` (`021b966`→live) / `toast` (`de07ea8`→`10e8f39`) PASS, `ds-disabled-hover` (before = `c9b679c`) PASS,
+ `segmented` (`021b966`→live) / `toast` (`de07ea8`→`10e8f39`) PASS, `ds-disabled-hover` (before = `c9b679c`) PASS + 1 undecidable,
  `toast-hit` FAIL-5 ที่ 10 pairs — `✗` ทั้ง 5 แถวเป็น `#toastUndo` ล้วน (`after : auto <- .toast-act`)
+ ⚠️ `ds-disabled-hover` ต้องใช้ path `design-system/src/styles.css` ทั้งสองฝั่ง — รอบนี้รันด้วย `index.html` ทีแรก
+ ก็ขึ้น `compared 15 … PASS` เหมือนกัน (เทียบกับสไตล์ชีตที่ไม่มี rule `.pui-*` เลย = PASS ที่ไม่พิสูจน์อะไร)
+ สัญญาณที่ใช้แยกคือบรรทัด `1 undecidable rule(s)` ต้องโผล่ — คู่ที่ผิดไม่มีบรรทัดนี้
  🟦 **รอบหน้าถูก MASK ถ้ายังอยู่วัน `2026-10-02` หรือข้ามวัน** (ห้ามรัน A/B ห้ามนับ): หลังตัด ref ของตัวเอง
  `2026-10-02` จะมี tip ตัวเดียว (`_0004`) → วันที่ตัดสินแถว 1 (ถ้า runner ไม่ push `_0004` วันใหม่สุดกลับเป็น
  `2026-10-01` ที่มี 4 tip, comparand `c9b679c`)
