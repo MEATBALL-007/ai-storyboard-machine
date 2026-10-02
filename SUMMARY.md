@@ -1,30 +1,31 @@
-# SUMMARY — round `2026-10-03_0024` (no-op: blocked on owner decisions)
+# SUMMARY — round `2026-10-03_0034` (no-op: blocked on owner decisions)
 
 ## What I did
-- Restored the previous round's tip `a8a0413` (`2026-10-03_0014`) onto this branch's stale base
-  `3503537` as a separate commit. `git rev-parse HEAD^{tree}` and `a8a0413^{tree}` both print
-  `190916eeb1d235c61de127df5b23ec379615abb5`, so every path matches.
+- Restored the previous round's tip `2630cbc` (`2026-10-03_0024`) onto this branch's stale base
+  `3503537` as a separate commit. `git rev-parse HEAD^{tree}` and `2630cbc^{tree}` both print
+  `d9e4ddea0a0e220352450efb2b01008705ae40ba`, so every path matches.
 - Checked all five channels where an owner answer could appear. None has one (details under Verification).
-- Measured the branch-selection A/B live. The result was **TAILS**, as `_0014` forecast.
+- Measured the branch-selection A/B live. The result was **TAILS**, as `_0024` forecast.
 - Updated `## Next task` in `AUTOPILOT.md` with this round's block and the forecast for the next round.
 
 ## Why
 - The prompt's `## Next task` arrived empty. The real task is the one in the restored `AUTOPILOT.md`:
   "if no owner decision is answered: restore, check the 5 channels, run Verify, write SUMMARY, and
   stop. Do not invent work." Per hard rules 1 and 5, I did that and nothing else.
-- I dropped my own ref (`cb441bc`) before ranking, because a round's own branch is never a restore
-  candidate. After that, `2026-10-03` held two tips, so the sha tiebreak really decided row 1:
-  - The correct form (`--sort=-committerdate`) put `a8a0413` (`_0014`) at row 1.
+- I dropped my own ref (`f91e64e`) before ranking, because a round's own branch is never a restore
+  candidate. After that, `2026-10-03` held three tips, so the sha tiebreak really decided row 1:
+  - The correct form (`--sort=-committerdate`) put `2630cbc` (`_0024`) at row 1.
   - The trap form (`%(committerdate:short) %(objectname:short) …` piped to `sort -r`) put `d46fc7a`
-    (`_0004`) at row 1. That would have thrown away all of `_0014`.
-  - `node -e "'a8a0413'<'d46fc7a'"` printed `true`, which confirms `_0014`'s condition held.
-  - The wrong-formula record is now **tails 44 of 72 (44/68)**.
+    (`_0004`) at row 1 and sank the real tip to row 3 of 3. That would have thrown away both `_0014`
+    and `_0024`.
+  - `node -e "'2630cbc'<'d46fc7a'"` printed `true`, which confirms `_0024`'s condition held.
+  - The wrong-formula record is now **tails 45 of 73 (45/69)**.
 - All remaining acceptance criteria are blocked on the 8 decisions in `README.md → ## Open decisions`.
   Each one moves pixels or adds a file, so the owner has to make the call. The agent can't.
 
 ## Verification
 - Restore check: the tree shas are identical (see above). The tip has real work in it
-  (`a8a0413 docs:` sits above `0010f21 docs:`).
+  (`2630cbc docs:` sits above `5d0c62e docs:`).
 - Owner channels:
   - `grep -c "| Option | Cost |" README.md` = 8 and `grep -c "If you answer:"` = 8. The two counts
     agree, so nothing has been answered.
@@ -35,11 +36,11 @@
   → `54 passed, 0 failed`. All 6 token checks pass across 15 CSS sources (22/22 tokens, 4/4 fonts).
   vitest reports `12 passed (12)` files and `31 passed (31)` tests.
 - Harness (`docs/btn-parity-proof.mjs`):
-  - `buttons 2488f2d:index.html index.html` → PASS (85 pairs, 17 elements)
-  - `segmented 021b966:index.html index.html` → PASS (45 pairs, 9 elements)
-  - `toast de07ea8:index.html 10e8f39:index.html` → PASS (5 pairs, 1 element)
-  - `ds-disabled-hover a8a0413:design-system/src/styles.css design-system/src/styles.css` → PASS
-    across 15 pairs, plus the expected `1 undecidable rule(s)` line (`.pui-menu__item:last-child`)
+  - `buttons 2488f2d:index.html index.html` → PASS
+  - `segmented 021b966:index.html index.html` → PASS
+  - `toast de07ea8:index.html 10e8f39:index.html` → PASS
+  - `ds-disabled-hover 2630cbc:design-system/src/styles.css design-system/src/styles.css` → PASS,
+    plus the expected `1 undecidable rule(s)` line
   - `toast-hit 3d3d5cc:index.html index.html` → `FAIL — 5 declaration(s) differ` across 10 pairs.
     This is the **expected** result. All five ✗ rows are `#toastUndo` (`pointer-events` `(unset)` →
     `auto <- .toast-act`), and `#toast` has none.
@@ -53,8 +54,8 @@
 
 ## Risk
 - Low: this round changed only `AUTOPILOT.md` and this `SUMMARY.md`.
-- The next round faces another **live** tiebreak. `2026-10-03` will hold three tips (`_0004`, `_0014`
-  and this one), and the comparand is still `d46fc7a`. The trap form picks the wrong tip if this
-  round's closing sha sorts below `d46fc7a`. The odds of that are about 82.98%. Always select with
-  `--sort=-committerdate`.
+- The next round faces another **live** tiebreak. `2026-10-03` will hold four tips (`_0004`, `_0014`,
+  `_0024` and this one), and the comparand is still `d46fc7a`. The trap form picks the wrong tip if
+  this round's closing sha sorts below `d46fc7a`. The odds of that are about 82.98%. Always select
+  with `--sort=-committerdate`.
 - The stall needs a person, not more rounds. Since 2026-08-24, only the per-round bookkeeping has changed.
