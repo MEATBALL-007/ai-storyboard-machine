@@ -1,9 +1,9 @@
-# SUMMARY — round `2026-10-04_0014` (no-op: blocked on owner decisions)
+# SUMMARY — round `2026-10-04_0024` (no-op: blocked on owner decisions)
 
 ## What I did
-- Restored the previous round's tip `bebc8a2` (`2026-10-04_0004`) onto this branch's stale base
-  `3503537` as a separate commit. `git rev-parse HEAD^{tree}` and `bebc8a2^{tree}` both print
-  `d00f304532d1c4046703969c6c896b1e228fb6a8`, so every path matches.
+- Restored the previous round's tip `d3e28b5` (`2026-10-04_0014`) onto this branch's stale base
+  `3503537` as a separate commit. `git rev-parse HEAD^{tree}` and `d3e28b5^{tree}` both print
+  `76da23ec54923ec8a4ad74f86bae4d2e3882759f`, so every path matches.
 - Checked all five channels where an owner answer could appear. None has one (details under Verification).
 - Updated `## Next task` in `AUTOPILOT.md` with this round's block and the forecast for the next round.
 
@@ -11,16 +11,18 @@
 - The prompt's `## Next task` arrived empty. The real task is the one in the restored `AUTOPILOT.md`:
   "if no owner decision is answered: restore, check the 5 channels, run Verify, write SUMMARY, and
   stop. Do not invent work." Per hard rules 1 and 5, I did that and nothing else.
-- This round was **masked**, as `_0004` forecast. My own ref still pointed at `3503537` (2026-08-13)
-  when I ranked branches, and `2026-10-04` held only one tip (`bebc8a2`). The date alone decided
-  row 1, so the sha tiebreak never ran. I did not run the A/B, since agreement on a single-tip day
-  proves nothing. The wrong-formula record stays at **tails 46 of 74 (46/70)**.
+- This round was a **live tiebreak**. When I ranked branches, my own ref still pointed at `3503537`,
+  and `2026-10-04` held two tips (`bebc8a2` `_0004`, `d3e28b5` `_0014`).
+  - The correct form (`--sort=-committerdate`) and the trap form (`committerdate:short` + sha, then
+    `| sort -r`) both put `d3e28b5` at row 1. That is **heads, by luck**: `'d3e28b5' < 'bebc8a2'`
+    is `false` per `node -e`, which matches `_0014`'s pre-resolved forecast.
+  - The wrong-formula record moves to **tails 46 of 75 (46/71)**.
 - All remaining acceptance criteria are blocked on the 8 decisions in `README.md → ## Open decisions`.
   Each one moves pixels or adds a file, so the owner has to make the call. The agent can't.
 
 ## Verification
 - Restore check: the tree shas are identical (see above). The tip has real work in it
-  (`bebc8a2 docs:` sits above `94ae2cb docs:`).
+  (`d3e28b5 docs:` sits above `f2590b7 docs:`).
 - Owner channels:
   - `grep -c "| Option | Cost |" README.md` = 8 and `grep -c "If you answer:"` = 8. The two counts
     agree, so nothing has been answered.
@@ -33,7 +35,7 @@
   - `buttons 2488f2d:index.html index.html` → PASS
   - `segmented 021b966:index.html index.html` → PASS
   - `toast de07ea8:index.html 10e8f39:index.html` → PASS
-  - `ds-disabled-hover bebc8a2:design-system/src/styles.css design-system/src/styles.css` → PASS,
+  - `ds-disabled-hover d3e28b5:design-system/src/styles.css design-system/src/styles.css` → PASS,
     plus the expected `1 undecidable rule(s)` line
   - `toast-hit 3d3d5cc:index.html index.html` → `FAIL — 5 declaration(s) differ` across 10 pairs.
     This is the **expected** result. All five ✗ rows are `#toastUndo` (`pointer-events` `(unset)` →
@@ -45,11 +47,10 @@
 - Did not add or change any code, CSS or tests, and did not touch the Verify command.
 - Did not retry the browser MCPs. They are blocked by permissions, and a retry needs the owner to
   change those permissions first (decision 4).
-- Did not run the branch-selection A/B. This round was masked.
 
 ## Risk
 - Low: this round changed only `AUTOPILOT.md` and this `SUMMARY.md`.
-- The next round is a **live tiebreak**. Once it drops its own ref, `2026-10-04` will hold two tips
-  (`_0004` and `_0014`), with comparand `bebc8a2`. The trap form picks the wrong tip if this round's
-  closing sha is below `bebc8a2` (≈74.51%). Always select with `--sort=-committerdate`.
+- The next round is another **live tiebreak**. `2026-10-04` will hold three tips, and the comparand
+  climbs to `d3e28b5`. The trap form picks the wrong tip if this round's closing sha is below
+  `d3e28b5` (≈82.77%). Always select with `--sort=-committerdate`.
 - The stall needs a person, not more rounds. Since 2026-08-24, only the per-round bookkeeping has changed.
