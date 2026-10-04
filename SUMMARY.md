@@ -1,9 +1,9 @@
-# SUMMARY — round `2026-10-04_0034` (no-op: blocked on owner decisions)
+# SUMMARY — round `2026-10-05_0004` (no-op: blocked on owner decisions)
 
 ## What I did
-- Restored the previous round's tip `e8a9c6f` (`2026-10-04_0024`) onto this branch's stale base
-  `3503537` as a separate commit. `git rev-parse HEAD^{tree}` and `e8a9c6f^{tree}` both print
-  `9d50fa21b2a389c05fbc2251fa9cd2aacb281b21`, so every path matches.
+- Restored the previous round's tip `9399d36` (`2026-10-04_0034`) onto this branch's stale base
+  `3503537` as a separate commit. `git rev-parse HEAD^{tree}` and `9399d36^{tree}` both print
+  `d272803c4fc540857a4ee6e3693e790b93c82095`, so every path matches.
 - Checked all five channels where an owner answer could appear. None has one (details under Verification).
 - Updated `## Next task` in `AUTOPILOT.md` with this round's block and the forecast for the next round.
 
@@ -11,29 +11,30 @@
 - The prompt's `## Next task` arrived empty. The real task is the one in the restored `AUTOPILOT.md`:
   "if no owner decision is answered: restore, check the 5 channels, run Verify, write SUMMARY, and
   stop. Do not invent work." Per hard rules 1 and 5, I did that and nothing else.
-- This round was a **live tiebreak**. After I dropped my own ref (`0b66a4d`), `2026-10-04` held three
-  tips (`bebc8a2` `_0004`, `d3e28b5` `_0014`, `e8a9c6f` `_0024`). The correct form
-  (`--sort=-committerdate`) put `e8a9c6f` at row 1. The trap form (sha before refname, `| sort -r`)
-  also put `e8a9c6f` at row 1, but only by luck: `e` sorts above `d`. `_0024`'s forecast said
-  "heads by luck" and that is what happened. The wrong-formula record is now **tails 46 of 76 (46/72)**.
+- This was the first round of a new day, so it ran a **live tiebreak**. After I dropped my own ref
+  (`55e1571`), the newest date `2026-10-04` held four tips. The correct form (`--sort=-committerdate`)
+  put `9399d36` `_0034` at row 1. The trap form (sha before refname, `| sort -r`) put `e8a9c6f` `_0024`
+  at row 1 and sank the real tip to **row 4 of 4**. If this round had used the trap form, it would
+  have thrown away `_0034`'s work, which was docs only. `_0034`'s forecast said "tails", and it was
+  right. The wrong-formula record is now **tails 47 of 77 (47/73)**.
 
 ## Verification
-- Tip selection: `git for-each-ref --sort=-committerdate …`. Row 1 was `e8a9c6f` `_0024`, dated
-  2026-10-04 00:27:04. `git log --oneline -2 e8a9c6f` shows two real `docs:` commits, so the tip
-  holds actual work and is not just a restore commit.
+- Tip selection: `git for-each-ref --sort=-committerdate …`. Row 1 was `9399d36` `_0034`, dated
+  2026-10-04 00:37:33. `git log --oneline -3 9399d36` shows two real `docs:` commits above its restore
+  commit, so the tip holds actual work.
 - Channel 1: `grep -c "| Option | Cost |" README.md` → 8, and `grep -c "If you answer:"` → 8. The two counters agree.
-- Channel 2: `ls jspdf*` → no such file.
+- Channel 2: `git ls-files | grep -ci jspdf` → 0, and `ls jspdf*` found nothing.
 - Channel 3: `main` → `ef3220e`, unchanged.
 - Channel 4: `git status --short --untracked-files=all` → clean.
 - Channel 5: the newest non-`auto/*` ref is `design-system`, dated 2026-08-13.
 - Verify, run as the literal chain `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`
   → exit 0. Stage output: `54 passed, 0 failed`, then check-tokens with all six checks passing on 15 CSS
-  sources, then `Tests 31 passed (31)`.
+  sources (22/22 tokens, 4/4 fonts), then `Tests 31 passed (31)`.
 - Harness, all 5 keys:
   - `buttons 2488f2d:index.html index.html` → PASS
   - `segmented 021b966:index.html index.html` → PASS
   - `toast de07ea8:index.html 10e8f39:index.html` → PASS
-  - `ds-disabled-hover e8a9c6f:design-system/src/styles.css design-system/src/styles.css` → PASS, plus the expected
+  - `ds-disabled-hover 9399d36:design-system/src/styles.css design-system/src/styles.css` → PASS, plus the expected
     `1 undecidable rule(s)` line
   - `toast-hit 3d3d5cc:index.html index.html` → `FAIL — 5 declaration(s) differ` across 10 pairs. All five `✗` rows
     are `#toastUndo`: `(base)`, `:hover`, `:disabled`, `:disabled:hover` and `:focus`. Each shows
@@ -49,8 +50,10 @@
 
 ## Risk
 - Low. This round changes only documentation: `AUTOPILOT.md` and `SUMMARY.md`, on top of a restore
-  commit whose tree is identical to `e8a9c6f`.
+  commit whose tree is identical to `9399d36`.
 - The runner still cuts every branch from `3503537`. The next round must restore this round's tip
-  first. Next round's forecast is a live tiebreak: comparand `e8a9c6f`, tails iff this round's
-  closing sha < `e8a9c6f` (≈90.88%). Tails means the trap form would discard this round.
+  first. If the runner pushes this round, the next round is **masked**: after it drops its own ref,
+  `2026-10-05` holds only this round's tip, so the date alone decides row 1. It should not run the
+  A/B and should not count the round. If this round is not pushed, the newest date falls back to
+  `2026-10-04`, and that tiebreak is already known to come out tails.
 - The project stays stalled until a person answers a decision in `README.md`. More rounds will not change that.
