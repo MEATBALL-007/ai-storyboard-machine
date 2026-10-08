@@ -1,31 +1,32 @@
-# SUMMARY — round `2026-10-08_0030` (no-op: blocked on owner decisions)
+# SUMMARY — round `2026-10-09_0000` (no-op: blocked on owner decisions)
 
 ## What I did
-- Restored the previous round's tip `6ab582e` (`2026-10-08_0020`) onto this branch's stale base
-  `3503537` as a separate commit. `git rev-parse HEAD^{tree}` and `6ab582e^{tree}` both print
-  `9bf831391948a3c67b3b615d576b6c3979d9d61c`, so every path matches.
+- Restored the previous round's tip `ea0cc49` (`2026-10-08_0030`) onto this branch's stale base
+  `3503537` as a separate commit. `git rev-parse HEAD^{tree}` and `ea0cc49^{tree}` both print
+  `aaa3bbeb516a481cc9077198d0ee168480d22a3f`, so every path matches.
 - Checked all five channels where an owner answer could appear. None has one (details under Verification).
-- Ran the live tip-selection A/B that `_0020` forecast. It came up TAILS, as predicted.
+- Ran the live tip-selection A/B that `_0030` forecast. It came up TAILS, as predicted.
 - Updated `## Next task` in `AUTOPILOT.md` with this round's block and the forecast for the next round.
 
 ## Why
 - The prompt's `## Next task` arrived empty. The real task is in the restored `AUTOPILOT.md`: if no
   owner decision has been answered, restore, check the 5 channels, run Verify, write SUMMARY, and stop
   without inventing work. Per hard rules 1 and 5, I did that and nothing else.
-- **The A/B was a real measurement this round.** After dropping my own ref (`a3d3488`, row 3),
-  `2026-10-08` held 3 tips. The correct form (`--sort=-committerdate`) put `6ab582e` (`_0020`) at row 1.
+- **The A/B was a real measurement this round.** This is the first round of a new day, and my own ref
+  still pointed at `3503537` (2026-08-13) when I selected the tip. That left `2026-10-08` as the newest
+  date, holding 4 tips. The correct form (`--sort=-committerdate`) put `ea0cc49` (`_0030`) at row 1.
   The trap form (sha before refname, `| sort -r`) put `ff635b9` (`_0000`) at row 1 and sank the real tip
-  to row 3 of 3. Using the trap form would have silently discarded `_0010` and `_0020` (docs only).
-  `node -e "'6ab582e'<'ff635b9'"` → `true`, so `_0020`'s conditional forecast was right.
-  Record: **tails 56 of 88 (56/84)**.
-- **Forecast for the next round:** `2026-10-08` will hold 4 tips. The comparand is still `ff635b9`. The
-  trap form fails if and only if this round's closing sha is below `ff635b9`, which is about 99.76% likely.
-  The next round should check this against `for-each-ref` and compare the shas with `node -e`.
+  to row 2 of 4. Using the trap form would have silently discarded `_0010`, `_0020` and `_0030` (docs only).
+  `node -e "'ea0cc49'<'ff635b9'"` → `true`, so `_0030`'s conditional forecast was right.
+  Record: **tails 57 of 89 (57/85)**.
+- **Forecast for the next round:** after the next round drops its own ref, `2026-10-09` will hold only
+  this round's tip. That means the date alone decides row 1, the round is **MASKED**, and it should not run
+  or count the A/B. The exception is if the runner did not push this round. Then the newest date is
+  `2026-10-08` again, with comparand `ff635b9`, and that case already resolves as TAILS.
 
 ## Verification
-- Tip selection: `git for-each-ref --sort=-committerdate …` put `6ab582e` `_0020` (2026-10-08 00:22:25)
-  at row 1. `git log --oneline -2 6ab582e` shows two `docs:` commits (`6ab582e`, `f724739`), so the
-  tip holds actual work.
+- Tip selection: `git for-each-ref --sort=-committerdate …` put `ea0cc49` `_0030` (2026-10-08 00:32:19)
+  at row 1. `git log --oneline -3 ea0cc49` shows `ea0cc49 docs:` above `aa08a95 docs:`, so the tip holds actual work.
 - Channel 1: `grep -c "| Option | Cost |" README.md` → 8, and `grep -c "If you answer:"` → 8. The two counters agree.
 - Channel 2: `git ls-files | grep -i jspdf` and `ls jspdf*` → nothing.
 - Channel 3: `main` → `ef3220e`, unchanged.
@@ -38,7 +39,7 @@
   - `buttons 2488f2d:index.html index.html` → PASS
   - `segmented 021b966:index.html index.html` → PASS
   - `toast de07ea8:index.html 10e8f39:index.html` → PASS
-  - `ds-disabled-hover 6ab582e:design-system/src/styles.css design-system/src/styles.css` → PASS, plus the
+  - `ds-disabled-hover ea0cc49:design-system/src/styles.css design-system/src/styles.css` → PASS, plus the
     expected `1 undecidable rule(s)` line
   - `toast-hit 3d3d5cc:index.html index.html` → `FAIL — 5 declaration(s) differ` across 10 pairs. All five `✗` rows
     are `#toastUndo`: `(base)`, `:hover`, `:disabled`, `:disabled:hover` and `:focus`. Each shows
@@ -54,8 +55,7 @@
 
 ## Risk
 - Low. This round changes only documentation (`AUTOPILOT.md` and `SUMMARY.md`), on top of a restore
-  commit whose tree is identical to `6ab582e`.
+  commit whose tree is identical to `ea0cc49`.
 - The runner still cuts every branch from `3503537`, so the next round must restore this round's tip
-  first, and it must select with `--sort=-committerdate`. With four tips on `2026-10-08` and comparand
-  `ff635b9`, the sha-first trap form will almost certainly pick `_0000` and silently drop `_0010`, `_0020` and this round.
+  first, and it must select with `--sort=-committerdate`.
 - The project stays stalled until a person answers a decision in `README.md`. More rounds will not change that.
