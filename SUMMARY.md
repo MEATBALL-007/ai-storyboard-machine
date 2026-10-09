@@ -1,49 +1,54 @@
-# SUMMARY — round `2026-10-09_0030` (no-op: blocked on owner decisions)
+# SUMMARY — round `2026-10-10_0220` (no-op: blocked on owner decisions)
 
 ## What I did
-- Restored the previous round's tip `d47e76d` (`2026-10-09_0020`) onto this branch's stale base
-  `3503537` as a separate commit. `git rev-parse HEAD^{tree}` and `d47e76d^{tree}` both print
-  `58139954eaa45c3048ce99980b8712d933b615d1`, so every path matches.
-- Checked all five channels where an owner answer could appear. None of them has one. Details are under Verification.
-- Ran the live A/B that the previous round forecast. The result was **heads**: the trap selector happened to pick the right tip this time.
-- Updated `## Next task` in `AUTOPILOT.md` with this round's block and the forecast for the next round.
+- Restored the previous round's tip `b73d6b3` (`2026-10-09_0030`) onto this branch's stale base
+  `3503537` as a separate commit. `git rev-parse HEAD^{tree}` and `b73d6b3^{tree}` both print
+  `ea2d805a0a6f0732ea9f9c73472cd3ecea31c8c5`, so every path matches.
+- Checked the five places an owner answer could show up. None of them has one (details under Verification).
+- Ran the live A/B that the previous round forecast. It came up **tails**: the trap selector would
+  have restored the wrong tip.
+- Added this round's block and the next round's forecast to `## Next task` in `AUTOPILOT.md`.
 
 ## Why
-- The prompt's `## Next task` arrived empty. The real task is in the restored `AUTOPILOT.md`. It says
-  that if no owner decision has been answered, I should restore the tip, check the 5 channels, run
-  Verify, write SUMMARY and stop without inventing work. Per hard rules 1 and 5, I did that and nothing else.
-- **This round was a real tiebreak, so the A/B counts.** After I dropped my own ref (`766e36e`),
-  `2026-10-09` held 3 tips. The correct form (`--sort=-committerdate`) and the trap form
-  (`%(committerdate:short)` + sha, then `| sort -r`) both put `d47e76d` (`_0020`) at row 1. They agreed
-  only because the leading hex digit `d` sorts above `9a63d32`'s `9`. That is luck, not a fix. The
-  wrong-formula record is now **tails 58 of 91 (58/87)**.
-- **Forecast for the next round:** another real tiebreak. `2026-10-09` will hold 4 tips, and the comparand
-  rises to `d47e76d`. The result is tails if and only if this round's closing sha is less than `d47e76d`.
-  The probability of that is about 83.01%.
+- **The prompt's Next task is stale, so I did not do it.** The prompt asked for the first token pass:
+  add `tokens.css` to `index.html` and map hard-coded values. That is the original `3503537` contract
+  (3,756 lines, 2-stage Verify), and the work was done on 2026-08-21. After the restore,
+  `node tools/check-tokens.mjs` reports 22/22 tokens identical in `index.html` and no tokenised colour
+  re-hardcoded in 15 CSS sources. Per hard rule 5, I followed the Next task in the restored
+  `AUTOPILOT.md` instead. It says to restore, check the 5 channels, run Verify, write SUMMARY and stop
+  when no owner decision has been answered.
+- **This round was a real tiebreak, so the A/B counts.** It is the first round of 2026-10-10. After I
+  dropped my own ref (`cf6b7fa`, row 1), `2026-10-09` held 4 tips. The correct form
+  (`--sort=-committerdate`) put `b73d6b3` (`_0030`) at row 1. The trap form (`%(committerdate:short)`
+  + sha, then `| sort -r`) put `d47e76d` (`_0020`) at row 1 and pushed the real tip down to row 2 of 4.
+  The wrong-formula record is now **tails 59 of 92 (59/88)**.
+- **Forecast for the next round:** masked, as long as the runner pushes this branch. 2026-10-10 will
+  then hold only this round's tip, so the date alone decides row 1.
 
 ## Verification
-- Tip selection: `git for-each-ref --sort=-committerdate …` put `d47e76d` `_0020` (2026-10-09 00:22:47)
-  at row 1. `git log --oneline -2 d47e76d` shows `d47e76d docs:` above `0df49a8 docs:`, so the tip holds actual work.
+- Tip selection: `git for-each-ref --sort=-committerdate …` put `b73d6b3` `_0030` (2026-10-09 00:33:12)
+  at row 1. `git log --oneline -3 b73d6b3` shows two `docs:` commits above the restore, so the tip holds real work.
 - Channel 1: `grep -c "| Option | Cost |" README.md` → 8, and `grep -c "If you answer:"` → 8. The two counters agree.
-- Channel 2: `git ls-files | grep -i jspdf` → nothing.
+- Channel 2: `git ls-files | grep -i jspdf` → nothing, and there is no `jspdf*` file at the root.
 - Channel 3: `main` → `ef3220e`, unchanged.
 - Channel 4: `git status --short --untracked-files=all` → clean.
 - Channel 5: the newest non-`auto/*` refs are `design-system` and `origin/design-system`, dated 2026-08-13.
-- Verify: `node tools/test.mjs` → `54 passed, 0 failed`. `node tools/check-tokens.mjs` → all 6 checks pass
-  on 15 CSS sources (22/22 tokens, 4/4 fonts). `npm --prefix design-system test` → `Test Files 12 passed (12)`,
-  `Tests 31 passed (31)`.
+- The contract's Verify command, `node tools/test.mjs && npm --prefix design-system test`, printed
+  `54 passed, 0 failed`, then `Test Files 12 passed (12)` and `Tests 31 passed (31)`.
+- `node tools/check-tokens.mjs` passed all 6 checks: 22/22 tokens, 4/4 fonts, 15 CSS sources.
 - Harness, all 5 keys:
   - `buttons 2488f2d:index.html index.html` → PASS
   - `segmented 021b966:index.html index.html` → PASS
   - `toast de07ea8:index.html 10e8f39:index.html` → PASS
-  - `ds-disabled-hover d47e76d:design-system/src/styles.css design-system/src/styles.css` → PASS, plus the
-    expected `1 undecidable rule(s)` line
-  - `toast-hit 3d3d5cc:index.html index.html` → `FAIL — 5 declaration(s) differ` across 10 pairs. All five `✗` rows
-    are `#toastUndo`: `(base)`, `:hover`, `:disabled`, `:disabled:hover` and `:focus`. Each one shows
-    `after : auto <- .toast-act`. That is the intended result: this key exists to show the deliberate
-    2026-08-24 behaviour change, not to pass.
+  - `ds-disabled-hover b73d6b3:design-system/src/styles.css design-system/src/styles.css` → PASS, plus
+    the expected `1 undecidable rule(s)` line
+  - `toast-hit 3d3d5cc:index.html index.html` → `FAIL — 5 declaration(s) differ` across 10 pairs. All
+    five `✗` rows are `#toastUndo`: `(base)`, `:hover`, `:disabled`, `:disabled:hover` and `:focus`.
+    Each shows `after : auto <- .toast-act`. That is the expected result: this key exists to record the
+    deliberate 2026-08-24 behaviour change.
 
 ## What I did NOT do
+- I did not redo the token pass the prompt asked for. It is already done, and repeating it would only churn `index.html`.
 - I did not answer or apply any of the 8 owner decisions in `README.md → ## Open decisions` (jsPDF,
   chip padding, spacing scale, browser verification, segmented padding, input sizes, disabled-hover,
   `docs/design-parity.md`). Each one moves pixels or adds a file, so each is the owner's call.
@@ -52,10 +57,10 @@
 - I did not tick any acceptance-criterion box, because no criterion changed state.
 
 ## Risk
-- Low. This round changes only documentation (`AUTOPILOT.md` and `SUMMARY.md`), on top of a restore
-  commit whose tree is identical to `d47e76d`.
-- The runner still cuts every branch from `3503537`. The next round must restore this round's tip
-  first and must select it with `--sort=-committerdate`. With the trap form, the next round has a ≈83%
-  chance of restoring `d47e76d` and silently discarding this round. This round is docs-only, so no
-  check would notice.
-- The project stays stalled until a person answers a decision in `README.md`. More rounds will not change that.
+- Low. This round changes only `AUTOPILOT.md` and `SUMMARY.md`. They sit on a restore commit whose tree is identical to `b73d6b3`.
+- This branch is named `_0220`, not `_0000`, and no `2026-10-10_0000` ref exists. If an earlier round
+  ran today, it was never pushed and any work it did is not in this tree.
+- The runner still cuts every branch from `3503537`, and the prompt still carries a contract from
+  weeks ago. The next round must restore this round's tip first and follow the Next task in the repo,
+  not the one in the prompt.
+- Nothing will move until a person answers a decision in `README.md`.
