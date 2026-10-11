@@ -347,8 +347,22 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 + `head -16` + ตรวจซ้ำด้วย refname **ห้ามใช้หมายเลขแถว** และ **ห้ามใช้ `| sort -r` แทน `--sort=`**),
 ตรวจ 5 ช่องทาง, รัน Verify 3 ขั้น + harness ครบ 5 key, เขียน SUMMARY แล้วจบรอบ
 ห้ามประดิษฐ์งานอื่นเด็ดขาด**
-⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-10-12_0034` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
+⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-10-12_0044` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
 จากบล็อกนี้ — มันคือ sha ที่ยังไม่มีอยู่ตอนเขียนบรรทัดนี้)**
+🟥 **รอบ `2026-10-12_0044`: คำทำนายของ `_0034` = "ก้อย" — *วัดจริง นับเข้าสถิติ***
+ หลังตัด ref ของตัวเอง (`ab7d666`, restore commit) `2026-10-12` มี **3 tip** → tiebreak fire จริง
+ สูตรถูก (`--sort=-committerdate`) แถว 1 = `a353e12` `_0034` ✅ / สูตรผิด (sha ก่อน refname + `| sort -r`) แถว 1 = `c8f27df` `_0014` ✗
+ → real tip จมไป **แถว 2 จาก 3** (`node -e "'a353e12'<'c8f27df'"` → `true`) ความเสียหายถ้าใช้สูตรผิด = ทิ้ง `_0024`+`_0034` 2 รอบ (docs ล้วน)
+ สถิติสูตรผิด: **ก้อย 64 จาก 99 (64/95)**
+ restore `a353e12` แล้ว (tip มีงานจริง: `a353e12 docs:` เหนือ `d77e9f2 docs:`), tree identity `acccba2b…` ตรงกันทุก path
+ 5 ช่องทางไม่มีคำตอบ (README 8/8 ทั้งสองตัวนับ, ไม่มี jspdf, status สะอาด, `main` = `ef3220e`, ref อื่นใหม่สุด 2026-08-13)
+ Verify 3 ขั้นเขียว (54/54, check-tokens 6/6 ที่ 15 CSS sources, 31/31), harness 5 key: `buttons` (`2488f2d`→live) /
+ `segmented` (`021b966`→live) / `toast` (`de07ea8`→`10e8f39`) PASS, `ds-disabled-hover`
+ (`a353e12:design-system/src/styles.css` → live) PASS + 1 undecidable, `toast-hit` FAIL-5 ที่ 10 pairs — `✗` ทั้ง 5 แถวเป็น `#toastUndo` ล้วน
+ prompt ของรอบนี้ส่ง Next task มา**ว่างเปล่า** → ทำตาม Next task ใน repo
+ 🔴 **รอบหน้าเป็น tiebreak จริง** (ไม่ว่าจะอยู่วันเดิมหรือข้ามวัน): `2026-10-12` จะมี 4 tip, comparand ยังเป็น `c8f27df`
+ → ก้อยก็ต่อเมื่อ sha ปิดรอบของ `_0044` < `c8f27df` (≈78.50%) ความเสียหายถ้าก้อย = ทิ้ง `_0024`+`_0034`+`_0044`
+ — รอบหน้าเฉลยจาก `for-each-ref` เอง (เทียบ hex ด้วย `node -e` ห้ามดูด้วยตา)
 🟥 **รอบ `2026-10-12_0034`: คำทำนายของ `_0024` = "ก้อย" — *วัดจริง นับเข้าสถิติ***
  หลังตัด ref ของตัวเอง (`87861d8`, restore commit) `2026-10-12` มี **2 tip** → tiebreak fire จริง
  สูตรถูก (`--sort=-committerdate`) แถว 1 = `3d4baab` `_0024` ✅ / สูตรผิด (sha ก่อน refname + `| sort -r`) แถว 1 = `c8f27df` `_0014` ✗
