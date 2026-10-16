@@ -1,29 +1,26 @@
-# SUMMARY — round `2026-10-17_0009` (no-op: blocked on owner decisions)
+# SUMMARY — round `2026-10-17_0019` (no-op: blocked on owner decisions)
 
 ## What I did
-- Restored the previous round's tip `cffd5e8` (`2026-10-16_0039`) onto this branch's stale base
-  `3503537` as a separate commit (`bc4f31f`). `git rev-parse HEAD^{tree}` and `cffd5e8^{tree}` both
-  print `1882c96d2a4e0a7ac62f23135e45e99b86efef80`, so every path matches.
+- Restored the previous round's tip `e5302b4` (`2026-10-17_0009`) onto this branch's stale base
+  `3503537` as a separate commit. `git rev-parse HEAD^{tree}` and `e5302b4^{tree}` both print
+  `a5a506191238ab28255595730d52a78aed988105`, so every path matches.
 - Checked the five places an owner answer could show up. None has one (details under Verification).
-- Ran the live A/B that `_0039` forecast. I recorded the result and the next round's forecast in
-  `## Next task` of `AUTOPILOT.md`.
+- Added this round's record and the next round's forecast to `## Next task` in `AUTOPILOT.md`.
 
 ## Why
 - **The prompt's Next task was empty.** I followed the Next task in the restored `AUTOPILOT.md`.
   It queues a no-op until the owner answers `README.md → ## Open decisions`.
-- **This round counts toward the A/B record.** It is the first round of 2026-10-17. After I dropped
-  my own ref (`bc4f31f`), the newest date was `2026-10-16`, which holds four tips (`cffd5e8`,
-  `5b985bb`, `18e2bc8`, `0181697`), so the sha tiebreak actually decided the ranking. Both formulas
-  put `cffd5e8` on row 1, because it has the highest sha of the four (`node -e` → `true true true`).
-  The trap formula got it right only because of how the shas happened to sort. The bug is still
-  there. The wrong-formula record moves to tails 70/112 (70/108).
+- **This round is masked, as `_0009` predicted.** My own ref still pointed at `3503537`
+  (2026-08-13) when I picked the tip, so `2026-10-17` held one tip (`e5302b4`). The date alone
+  decided row 1 and no sha tiebreak ran. I did not run the A/B and did not move the record
+  (it stays at tails 70/112, or 70/108).
 - **I did not answer any of the 8 open decisions.** Each one either moves pixels or adds a file to
   the repo, so the owner has to make it.
 
 ## Verification
-- **Tip selection:** `git for-each-ref --sort=-committerdate` put `cffd5e8`
-  (`auto/…/2026-10-16_0039`, local and `origin/`) on row 1. `git log --oneline -2 cffd5e8` shows
-  real work (`cffd5e8 docs:` above `a58cac7 docs:`).
+- **Tip selection:** `git for-each-ref --sort=-committerdate` put `e5302b4`
+  (`auto/…/2026-10-17_0009`, local and `origin/`) on row 1. `git log --oneline -3 e5302b4` shows
+  real work (`e5302b4 docs:` above `855d857 docs:` above the restore commit `bc4f31f`).
 - **Channels:**
   - `grep -c "| Option | Cost |" README.md` printed 8. `grep -c "If you answer:"` also printed 8.
   - `git ls-files | grep -i jspdf` and `ls jspdf*` found nothing.
@@ -39,7 +36,7 @@
   - `buttons 2488f2d:index.html index.html` → PASS
   - `segmented 021b966:index.html index.html` → PASS
   - `toast de07ea8:index.html 10e8f39:index.html` → PASS
-  - `ds-disabled-hover cffd5e8:design-system/src/styles.css design-system/src/styles.css` → PASS,
+  - `ds-disabled-hover e5302b4:design-system/src/styles.css design-system/src/styles.css` → PASS,
     with the `Except the 1 undecidable rule(s)` caveat line
   - `toast-hit 3d3d5cc:index.html index.html` → `FAIL — 5 declaration(s) differ` across 10 pairs.
     This is the expected result. All 5 `✗` rows are `#toastUndo` (`(base)`, `:hover`, `:disabled`,
@@ -52,11 +49,11 @@
 - I did not tick any acceptance-criterion box, because no criterion changed this round.
 
 ## Risk
-- This round changed only three things: the restore commit (its tree is identical to `cffd5e8`'s),
+- This round changed only three things: the restore commit (its tree is identical to `e5302b4`'s),
   the edit to `AUTOPILOT.md`, and this file.
-- **The next round is masked.** Once it drops its own ref, `2026-10-17` will hold only this round's
-  tip, so the date decides row 1 and the A/B tells you nothing. Don't run it and don't count it. If
-  the runner did not push this round, the newest date goes back to `2026-10-16`, where `cffd5e8`
-  is both the real tip and the highest sha.
+- **The next round is a real tiebreak.** `2026-10-17` will hold two tips, with `e5302b4` as the
+  comparand. The trap formula (sha before refname, `| sort -r`) picks the wrong tip if this round's
+  closing sha sorts below `e5302b4`, which has about an 89.53% chance. If it does, that formula
+  would throw away this round, which only changed docs. Rank with `--sort=-committerdate`.
 - The runner keeps cutting branches from `3503537`, and nothing has been merged into `main`. The
   project is stuck until someone answers `README.md → ## Open decisions`. More rounds won't change that.
