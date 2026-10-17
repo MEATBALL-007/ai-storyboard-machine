@@ -1,29 +1,30 @@
-# SUMMARY — round `2026-10-18_0019` (no-op: blocked on owner decisions)
+# SUMMARY — round `2026-10-18_0029` (no-op: blocked on owner decisions)
 
 ## What I did
-- Restored the previous round's tip `07c13fe` (`2026-10-18_0009`) onto this branch's stale base
-  `3503537` as a separate commit. `git rev-parse HEAD^{tree}` and `07c13fe^{tree}` both print
-  `af8aeb2c3a268e2ede29f178ee140942ac469c69`, so every path matches.
+- Restored the previous round's tip `618ee4d` (`2026-10-18_0019`) onto this branch's stale base
+  `3503537` as a separate commit. `git rev-parse HEAD^{tree}` and `618ee4d^{tree}` both print
+  `0b6b552139958aa097c2f013a156ecfd143044fb`, so every path matches.
 - Checked the five places an owner answer could show up. None has one (details under Verification).
 - Added this round's record and the next round's forecast to `## Next task` in `AUTOPILOT.md`.
 
 ## Why
 - **The prompt's Next task was empty.** I followed the Next task in the restored `AUTOPILOT.md`.
   It queues a no-op until the owner answers `README.md → ## Open decisions`.
-- **This round was masked, as `_0009` forecast.** My own ref still pointed at `3503537` when I
-  picked the tip, and `2026-10-18` held one tip (`07c13fe`), so the date decided row 1 and no sha
-  tiebreak ran. I did not run the A/B and did not count this round. The record stays at tails
-  73/115 (73/111).
+- **This round was a live tiebreak, and it came up HEADS by luck, as `_0019` forecast.** After I
+  dropped my own ref (`4c8f354`), `2026-10-18` held two tips. The correct formula and the sha-first
+  trap formula both put `618ee4d` on row 1, because `618ee4d` sorts above `07c13fe`
+  (`node -e "console.log('618ee4d'<'07c13fe')"` printed `false`). The record moves to tails
+  73/116 (73/112).
 - **I did not answer any of the 8 open decisions.** Each one either moves pixels or adds a file to
   the repo, so the owner has to make it.
 
 ## Verification
-- **Tip selection:** `git for-each-ref --sort=-committerdate` put `07c13fe`
-  (`auto/…/2026-10-18_0009`, local and `origin/`) on row 1. `git log --oneline -3 07c13fe` shows
-  real work (`07c13fe docs:` above `65cf06c docs:` above the restore `b29b678`).
+- **Tip selection:** `git for-each-ref --sort=-committerdate` put `618ee4d`
+  (`auto/…/2026-10-18_0019`, local and `origin/`) on row 1. `git log --oneline -3 618ee4d` shows
+  real work (`618ee4d docs:` above `f5794c7 docs:` above the restore `009bfa5`).
 - **Channels:**
   - `grep -c "| Option | Cost |" README.md` printed 8. `grep -c "If you answer:"` also printed 8.
-  - `ls jspdf*` found nothing.
+  - `ls jspdf*` and `git ls-files | grep -i jspdf` found nothing.
   - `git status --short --untracked-files=all` showed no changes.
   - `main` is still `ef3220e`. The newest non-`auto/*` ref is `design-system`, from 2026-08-13.
 - **Verify** (`node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`)
@@ -36,8 +37,8 @@
   - `buttons 2488f2d:index.html index.html` → PASS
   - `segmented 021b966:index.html index.html` → PASS
   - `toast de07ea8:index.html 10e8f39:index.html` → PASS
-  - `ds-disabled-hover 07c13fe:design-system/src/styles.css design-system/src/styles.css` → PASS,
-    with the `Except the 1 undecidable rule(s)` caveat
+  - `ds-disabled-hover 618ee4d:design-system/src/styles.css design-system/src/styles.css` → PASS,
+    with the `Except the 1 undecidable rule(s)` caveat (`.pui-menu__item:last-child`)
   - `toast-hit 3d3d5cc:index.html index.html` → `FAIL — 5 declaration(s) differ` across 10 pairs.
     This is the expected result. All 5 `✗` rows are `#toastUndo` (`(base)`, `:hover`, `:disabled`,
     `:disabled:hover`, `:focus`), each showing `after : auto <- .toast-act` (the intentional
@@ -49,10 +50,10 @@
 - I did not tick any acceptance-criterion box, because no criterion changed this round.
 
 ## Risk
-- This round changed only three things: the restore commit (its tree is identical to `07c13fe`'s),
+- This round changed only three things: the restore commit (its tree is identical to `618ee4d`'s),
   the edit to `AUTOPILOT.md`, and this file.
-- **The next round is a live tiebreak.** `2026-10-18` will hold two tips (`07c13fe` and this
-  round's). The trap formula picks the wrong one only if this round's closing sha sorts below
-  `07c13fe` (about 3%). Rank with `--sort=-committerdate` either way.
+- **The next round is a live tiebreak.** `2026-10-18` will hold three tips, and the comparand moves
+  up to `618ee4d`. The trap formula picks the wrong tip only if this round's closing sha sorts below
+  `618ee4d` (about 38%). Rank with `--sort=-committerdate` either way.
 - The runner keeps cutting branches from `3503537`, and nothing has been merged into `main`. The
   project is stuck until someone answers `README.md → ## Open decisions`. More rounds won't change that.
