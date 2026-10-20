@@ -1,39 +1,45 @@
-# SUMMARY — round `2026-10-20_0033` (no-op)
+# SUMMARY — round `2026-10-21_0003` (no-op, owner decisions still open)
 
 ## What I did
-- Restored the previous round's tip `499a94e` (`2026-10-20_0023`) onto the stale `3503537` base as its own commit (`dc3d84d`). Tree identity check: `HEAD^{tree}` = `499a94e^{tree}` = `b39af070…`.
-- Checked all five owner-answer channels. None has an answer, so no criterion can be unblocked.
-- Ran Verify (3 stages) and all 5 harness keys. Every result matches the expected baseline.
-- Recorded the round in `AUTOPILOT.md` under `## Next task`. The tip pointer now names `_0033`, and a new block records the tiebreak result and the forecast for the next round.
+- Restored the previous round's tip `1796786` (`2026-10-20_0033`) as its own commit. This branch was again cut
+  from the stale base `3503537`. Tree identity checked: `HEAD^{tree}` = `1796786^{tree}` = `057e14dc…`.
+- Checked all five owner-answer channels. None has an answer (details under Verification).
+- Ran Verify (3 stages) and all 5 parity-harness keys. Every one gave its expected reading.
+- Recorded the round in `AUTOPILOT.md` under `## Next task`. The queued task stays the same: a no-op round until
+  the owner answers.
 
 ## Why
-- The prompt's `## Next task` arrived **empty**. Per hard rule 5 I followed the Next task in the restored `AUTOPILOT.md`. It says that when no owner decision has been answered, the round should restore, check the channels, verify, write SUMMARY, and stop. I did not invent substitute work.
-- How I picked the tip: `git for-each-ref --sort=-committerdate` put `499a94e` (`_0023`) at row 1 before the restore. After dropping my own ref (`dc3d84d`), `2026-10-20` held 3 tips, so the sha tiebreak was live. The trap form (`committerdate:short` + sha, `| sort -r`) put `c136f04` (`_0013`) at row 1 and sank the real tip to row 3 of 3, because `'499a94e' < 'c136f04'` (checked with `node -e`). That is TAILS, as `_0023` predicted. Using the trap form would have thrown away `_0023`. The wrong-formula record is now **tails 78/123 (78/119)**.
+- The prompt's `## Next task` arrived **empty**. The task therefore comes from the restored `AUTOPILOT.md`, which
+  queues a no-op round while all 8 decisions in `README.md → ## Open decisions` are unanswered. Answering one
+  myself would move pixels or add files, and those calls belong to the owner.
+- Ranking audit (the "trap form" sorts by `committerdate:short` with sha as tiebreak): after I dropped my own ref,
+  `2026-10-20` held 4 tips. The correct form (`--sort=-committerdate`) puts `1796786` at row 1. The trap form puts
+  `c136f04` (`_0013`) at row 1 and sinks the real tip to row 4 of 4 (`'1796786'<'c136f04'` = `true`). That is
+  **TAILS**, as `_0033` forecast. Using the trap form would have discarded 2 rounds (`_0023`+`_0033`, docs only).
+  Record: tails 79/124 (79/120).
 
 ## Verification
-- `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`, run bare, exit 0:
-  - `54 passed, 0 failed`
-  - check-tokens: all 6 checks pass over 15 CSS sources (tokens 22/22, fonts 4/4)
-  - vitest: `31 passed (31)`, 12 files
-- Harness:
-  - `buttons` (`2488f2d:index.html` → live): PASS
-  - `segmented` (`021b966:index.html` → live): PASS
-  - `toast` (`de07ea8:index.html` → `10e8f39:index.html`): PASS
-  - `ds-disabled-hover` (`499a94e:design-system/src/styles.css` → live): PASS, plus 1 undecidable rule (`.pui-menu__item:last-child`), as expected
-  - `toast-hit` (`3d3d5cc:index.html` → live): `FAIL — 5 declaration(s) differ` across 10 pairs, exit 1. This is the intended baseline: all five `✗` rows are `#toastUndo` (`pointer-events` `(unset)`→`auto <- .toast-act`), and `#toast` itself has no diff.
-- Channels:
-  - README: `| Option | Cost |` = 8, `If you answer:` = 8
-  - no `jspdf*` file, tracked or untracked
-  - `git status` clean
-  - `main` = `ef3220e`
-  - newest non-auto ref is `design-system` / `origin/design-system` at 2026-08-13
+- `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test` → exit 0:
+  `54 passed, 0 failed`; check-tokens 22/22 tokens, 4/4 fonts, all 4 scans clean across 15 CSS sources;
+  vitest `12 passed (12)` files, `31 passed (31)` tests.
+- Harness `docs/btn-parity-proof.mjs`:
+  - `buttons 2488f2d:index.html index.html` → PASS
+  - `segmented 021b966:index.html index.html` → PASS
+  - `toast de07ea8:index.html 10e8f39:index.html` → PASS
+  - `ds-disabled-hover 1796786:design-system/src/styles.css design-system/src/styles.css` → PASS, with 1 undecidable rule
+  - `toast-hit 3d3d5cc:index.html index.html` → `FAIL — 5 declaration(s) differ` across 10 pairs. All 5 `✗` rows are
+    `#toastUndo` (`after : auto <- .toast-act`). This is the expected reading for that key: it documents a deliberate
+    behaviour change and is not a regression.
+- Owner channels: README `| Option | Cost |` = 8 and `If you answer:` = 8. No `jspdf*` file is tracked or on disk.
+  `git status` is clean. `main` = `ef3220e`. The newest non-auto ref is `design-system` at 2026-08-13.
 
 ## What I did NOT do
-- Did not answer or apply any of the 8 open decisions in `README.md`. Each one moves pixels or adds files, so each is the owner's call.
-- Did not retry the browser MCPs. They are permission-blocked (decision 4).
-- Did not tick any acceptance criterion, because nothing new was completed.
+- Did not touch `index.html`, `design-system/`, or any decision 1–8. All are owner calls.
+- Did not retry the browser MCPs (decision 4). They are permission-blocked.
 
 ## Risk
-- Low. This round changed only docs (`AUTOPILOT.md`, `SUMMARY.md`) on top of a byte-identical restore.
-- The project is still stalled on owner input. Nothing moves until someone answers a decision in `README.md → ## Open decisions` or fixes the runner so it branches from the previous tip.
-- The next round is a live tiebreak: `2026-10-20` will hold 4 tips, and the comparand stays `c136f04`. The trap form picks the wrong tip only if this round's closing sha sorts below `c136f04` (about a 75.47% chance). If it does, it would discard both `_0023` and `_0033`. The correct `--sort=-committerdate` form is unaffected either way.
+- None in code: this round changed only `AUTOPILOT.md` and this file.
+- Next round should be **MASKED**: after it drops its own ref, `2026-10-21` will hold one tip (this round's).
+  If the runner does not push this branch, the newest date falls back to `2026-10-20` and the trap form would
+  certainly be wrong (`1796786` < `c136f04`). Always rank with `--sort=-committerdate`.
+- The stall continues: the project is blocked on a person answering the README decisions, not on agent rounds.
