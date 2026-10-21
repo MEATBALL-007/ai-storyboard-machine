@@ -347,8 +347,21 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 + `head -16` + ตรวจซ้ำด้วย refname **ห้ามใช้หมายเลขแถว** และ **ห้ามใช้ `| sort -r` แทน `--sort=`**),
 ตรวจ 5 ช่องทาง, รัน Verify 3 ขั้น + harness ครบ 5 key, เขียน SUMMARY แล้วจบรอบ
 ห้ามประดิษฐ์งานอื่นเด็ดขาด**
-⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-10-22_0026` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
+⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-10-22_0036` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
 จากบล็อกนี้ — มันคือ sha ที่ยังไม่มีอยู่ตอนเขียนบรรทัดนี้)**
+🟩 **รอบ `2026-10-22_0036`: คำทำนายของ `_0026` = "หัว (โชคช่วย)" — *วัดจริง นับเข้าสถิติ***
+ หลังตัด ref ของตัวเอง (`a46b94d`, restore commit — แถว 1 ของสูตรผิด) `2026-10-22` มี **3 tip** → tiebreak fire จริง
+ สูตรถูก (`--sort=-committerdate`) แถว 1 = `8b6dc1b` `_0026` ✅ / สูตรผิด (sha ก่อน refname + `| sort -r`) แถว 1 = `8b6dc1b` ✅
+ → ตรงกันเพราะ `'8b6dc1b'>'548aff8'` (`node -e` → `true`; โชค ไม่ใช่บั๊กหาย) สถิติสูตรผิด: **ก้อย 83 จาก 130 (83/126)**
+ restore `8b6dc1b` แล้ว (tip มีงานจริง: `8b6dc1b docs:` เหนือ `4cdffdb docs:`), tree identity `32466543…` ตรงกันทุก path
+ 5 ช่องทางไม่มีคำตอบ (README 8/8 ทั้งสองตัวนับ, ไม่มี jspdf, status สะอาด, `main` = `ef3220e`, ref อื่นใหม่สุด 2026-08-13)
+ Verify 3 ขั้นเขียว (54/54, check-tokens 6/6 ที่ 15 CSS sources, 31/31), harness 5 key: `buttons` (`2488f2d`→live) /
+ `segmented` (`021b966`→live) / `toast` (`de07ea8`→`10e8f39`) PASS, `ds-disabled-hover`
+ (`8b6dc1b:design-system/src/styles.css` → live) PASS + 1 undecidable, `toast-hit` FAIL-5 ที่ 10 pairs — `✗` ทั้ง 5 แถวเป็น `#toastUndo` ล้วน
+ prompt ของรอบนี้ส่ง Next task มา**ว่างเปล่า** → ทำตาม Next task ใน repo
+ 🔴 **รอบหน้าเป็น tiebreak จริง** (ไม่ว่าจะอยู่วันเดิมหรือข้ามวัน): `2026-10-22` จะมี 4 tip, comparand ขยับขึ้นเป็น `8b6dc1b`
+ → ก้อยก็ต่อเมื่อ sha ปิดรอบของ `_0036` < `8b6dc1b` (≈54.46%) ความเสียหายถ้าก้อย = ทิ้ง `_0036` 1 รอบ (docs ล้วน)
+ — รอบหน้าเฉลยจาก `for-each-ref` เอง (เทียบ hex ด้วย `node -e` ห้ามดูด้วยตา)
 🟥 **รอบ `2026-10-22_0026`: คำทำนายของ `_0016` = "ก้อย" — *วัดจริง นับเข้าสถิติ***
  หลังตัด ref ของตัวเอง (`4af5a7d`, restore commit — แถว 2 ของสูตรผิด) `2026-10-22` มี **2 tip** → tiebreak fire จริง
  สูตรถูก (`--sort=-committerdate`) แถว 1 = `1c8a494` `_0016` ✅ / สูตรผิด (sha ก่อน refname + `| sort -r`) แถว 1 = `548aff8` `_0006` ✗
