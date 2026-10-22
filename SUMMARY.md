@@ -1,20 +1,22 @@
-# SUMMARY — round 2026-10-23_0024 (no-op)
+# SUMMARY — round 2026-10-23_0034 (no-op)
 
 ## What I did
-- Restored the previous round's tip `e77fc1a` (`2026-10-23_0014`) onto the stale `3503537` base
+- Restored the previous round's tip `e633be0` (`2026-10-23_0024`) onto the stale `3503537` base
   this branch was cut from, as its own commit. Tree identity checked: `HEAD^{tree}` =
-  `e77fc1a^{tree}` = `7edf801a…`.
+  `e633be0^{tree}` = `fab425a2…`.
 - Checked all five owner-answer channels. None of the eight `## Open decisions` in `README.md` has an
   answer, so this round is a no-op, as the restored `## Next task` says it should be.
-- Recorded the round in `AUTOPILOT.md`'s Next-task block (MASKED, not counted) and pointed the next
-  round at this round's tip.
+- Recorded the round in `AUTOPILOT.md`'s Next-task block (live tiebreak, counted) and pointed the
+  next round at this round's tip.
 
 ## Why
 - The prompt's `## Next task` was empty. The real task comes from the restored `AUTOPILOT.md`. With no
   owner answer, that task says: restore, check the channels, verify, write SUMMARY, stop.
-- The tip-selection A/B was not run. When this round selected its tip, its own ref was still on
-  `3503537`, and `2026-10-23` held exactly one tip (`e77fc1a`). The date alone decides row 1 there, so
-  both formulas must agree and the comparison proves nothing. The record stays at 84/131.
+- The tip-selection A/B was a real measurement this round. My own ref was still on `3503537`, and
+  `2026-10-23` held two tips. The correct form (`--sort=-committerdate`) put `e633be0` at row 1. The
+  sha-first `| sort -r` form put `e77fc1a` at row 1 and sank the real tip to row 2 of 2
+  (`'e633be0'<'e77fc1a'` is `true` in `node -e`). That is TAILS, as `_0024` forecast, and the record
+  moves to 85/132 (85/128).
 - All remaining acceptance-criterion work is blocked on owner decisions 1–8. Each one moves pixels or
   adds a file, so the agent must not pick an option itself.
 
@@ -26,8 +28,8 @@
   - `buttons 2488f2d:index.html index.html`: PASS.
   - `segmented 021b966:index.html index.html`: PASS.
   - `toast de07ea8:index.html 10e8f39:index.html`: PASS.
-  - `ds-disabled-hover e77fc1a:design-system/src/styles.css design-system/src/styles.css`: PASS,
-    plus 1 undecidable rule.
+  - `ds-disabled-hover e633be0:design-system/src/styles.css design-system/src/styles.css`: PASS,
+    plus 1 undecidable rule (`.pui-menu__item:last-child`).
   - `toast-hit 3d3d5cc:index.html index.html`: `FAIL — 5 declaration(s) differ` across 10 pairs.
     All five `✗` rows are `#toastUndo` (`pointer-events` unset→`auto`), which is the expected,
     deliberate result.
@@ -44,6 +46,6 @@
 ## Risk
 - None in code: this round changed only `AUTOPILOT.md` and `SUMMARY.md`.
 - The runner bug is still present: every round branch is cut from `3503537`. Next round is a live
-  tiebreak on `2026-10-23` (comparand `e77fc1a`, ≈90.43% that the sha-first formula picks the wrong
-  tip). A round that restores the wrong tip loses this round's docs.
+  tiebreak on `2026-10-23` with 3 tips (comparand `e77fc1a`, ≈90.43% that the sha-first formula
+  picks the wrong tip). A round that restores the wrong tip loses `_0024` and this round's docs.
 - The project is stalled on a person. More rounds will not change that.
