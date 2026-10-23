@@ -1,22 +1,24 @@
-# SUMMARY — round 2026-10-24_0029 (no-op)
+# SUMMARY — round 2026-10-24_0039 (no-op)
 
 ## What I did
-- Restored the previous round's tip `43633e5` (`2026-10-24_0019`) as its own commit, on top of the
+- Restored the previous round's tip `8526d92` (`2026-10-24_0029`) as its own commit on top of the
   stale `3503537` base this branch was cut from. Tree identity checked: `HEAD^{tree}` and
-  `43633e5^{tree}` both print `1ac95517543ea159cbf1b26d9f969634379f1dd5`.
+  `8526d92^{tree}` both print `b7290b4eab968c45531e7bee38f80bb3c2e7ca70`.
 - Checked all five owner-answer channels. None of the eight `## Open decisions` in `README.md` has an
-  answer, so this round is a no-op, as the restored `## Next task` says it should be.
-- Recorded the round in `AUTOPILOT.md`'s Next-task block (measured tiebreak, TAILS) and pointed the
+  answer, so this round is a no-op, which is what the restored `## Next task` says to do.
+- Recorded the round in the Next-task block of `AUTOPILOT.md` (tiebreak measured, TAILS) and pointed the
   next round at this round's tip.
 
 ## Why
-- The prompt's `## Next task` was empty, so the real task came from the restored `AUTOPILOT.md`. With
+- The prompt's `## Next task` was empty, so I took the task from the restored `AUTOPILOT.md`. With
   no owner answer, that task is: restore, check the channels, verify, write SUMMARY, stop.
-- Tip selection: `git for-each-ref --sort=-committerdate` put `43633e5` (`_0019`) at row 1. 2026-10-24
-  held two prior tips, so the sha-ordering tiebreak was live. The wrong form (`date sha refname` piped
-  through `sort -r`) put `a129511` (`_0009`) first once my own ref `c1be04d` was skipped, and
-  `node -e "'43633e5'<'a129511'"` printed `true`. So the wrong form would have restored `_0009` and
-  dropped `_0019`. That makes this round TAILS, as `_0019` predicted. The running tally is now 88/135.
+- Tip selection: `git for-each-ref --sort=-committerdate` put `8526d92` (`_0029`) at row 1, and its
+  author is `PHANTOM AUTOPILOT <autopilot@phantom.local>`, so it is the runner's commit, not an owner's.
+  2026-10-24 held three earlier tips, so the sha-ordering tiebreak was live. The wrong form
+  (`date sha refname | sort -r`) put `a129511` (`_0009`) first once my own ref `1d7f68d` was skipped.
+  `node -e` printed `true true` for `'8526d92'<'a129511'` and `'8526d92'>'43633e5'`, which puts the
+  real tip at row 2 of 3. The wrong form would have dropped `_0019` and `_0029`. That makes this round
+  TAILS, as `_0029` predicted, and the running tally is now 89/136.
 
 ## Verification
 - `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test` exited 0:
@@ -24,33 +26,31 @@
   colour / weight / radius / font-family); vitest `31 passed (31)`.
 - Owner-answer channels:
   1. `grep -c "| Option | Cost |" README.md` returned 8, and `grep -c "If you answer:"` also returned 8.
-  2. No tracked file matches `jspdf`.
+  2. No tracked file and no root file matches `jspdf`.
   3. `main` is still `ef3220e`.
   4. `git status --short --untracked-files=all` printed nothing.
-  5. The newest non-auto ref is `design-system` at 2026-08-13.
-- Harness (`docs/btn-parity-proof.mjs`):
-  - `buttons 2488f2d:index.html index.html` → PASS (85 pairs, 17 elements)
-  - `segmented 021b966:index.html index.html` → PASS (45 pairs, 9 elements)
-  - `toast de07ea8:index.html 10e8f39:index.html` → PASS (5 pairs)
-  - `ds-disabled-hover 43633e5:design-system/src/styles.css design-system/src/styles.css` → PASS
-    (15 pairs), plus `1 undecidable rule(s)`, as expected
-  - `toast-hit 3d3d5cc:index.html index.html` → `FAIL — 5 declaration(s) differ` over 10 pairs. All
-    five `✗` rows are `#toastUndo` (`pointer-events` `(unset)` → `auto`, from `.toast-act`). This is the
-    intended result: it shows the 2026-08-24 Undo fix is still present and that `#toast` is untouched.
+  5. The newest non-auto ref is `design-system` / `origin/design-system` at 2026-08-13.
+- `docs/btn-parity-proof.mjs`, five keys:
+  - `buttons 2488f2d:index.html index.html`: PASS, 85 pairs across 17 elements.
+  - `segmented 021b966:index.html index.html`: PASS, 45 pairs across 9 elements.
+  - `toast de07ea8:index.html 10e8f39:index.html`: PASS, 5 pairs across 1 element.
+  - `ds-disabled-hover 8526d92:design-system/src/styles.css design-system/src/styles.css`: PASS,
+    15 pairs across 3 elements, plus `1 undecidable rule(s)` (`.pui-menu__item:last-child`).
+  - `toast-hit 3d3d5cc:index.html index.html`: `FAIL — 5 declaration(s) differ` at 10 pairs, exit 1.
+    This is the expected result. All five `✗` rows are `#toastUndo` (`(base)`, `:hover`, `:disabled`,
+    `:disabled:hover`, `:focus`), every one `pointer-events (unset) → auto <- .toast-act`, and none
+    is `#toast`.
 
 ## What I did NOT do
-- I answered none of the eight open decisions and applied none of decisions 2, 5, 6 or 7. They move
-  pixels, so they are the owner's call.
-- I did not retry the browser MCPs (decision 4). They are blocked by permissions, not by the lack of
-  a display.
-- I did not invent substitute work. There is no fallback work left.
+- I didn't answer, apply or relocate any of the eight open decisions (chip/segmented/input padding,
+  spacing scale, jsPDF, browser verification, disabled-hover, `docs/design-parity.md`). Each one
+  moves pixels or adds a file, so it is the owner's call.
+- I didn't start any substitute task. The restored Next task forbids inventing one, and the fallback
+  work ran out many rounds ago.
+- I didn't open a browser. Decision 4 is still unanswered, and the browser MCPs are permission-blocked.
 
 ## Risk
-- None in code: this round changed only `AUTOPILOT.md` (one new block plus the next-tip pointer) and
-  `SUMMARY.md`.
-- The project is still stalled on a person. Every acceptance criterion left unticked is blocked on
-  `README.md → ## Open decisions`, and another agent round cannot unblock it.
-- The runner still cuts each branch from `3503537` instead of from the previous tip. Next round,
-  2026-10-24 will hold three tips and the comparand stays `a129511`. Selecting the tip by sha order
-  instead of `--sort=-committerdate` would drop `_0019` and `_0029` if this round's closing sha is
-  `< a129511` (≈62.95%). The only loss would be docs.
+- No code, CSS or test changed. The round's diff is the restore commit (byte-identical to `8526d92`
+  by tree sha), the round record in `AUTOPILOT.md`, and this file.
+- The integration has stalled. It is waiting on a person to answer the decisions in `README.md`, and
+  further rounds will not move it.
