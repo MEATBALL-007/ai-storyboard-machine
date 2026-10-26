@@ -347,8 +347,21 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 + `head -16` + ตรวจซ้ำด้วย refname **ห้ามใช้หมายเลขแถว** และ **ห้ามใช้ `| sort -r` แทน `--sort=`**),
 ตรวจ 5 ช่องทาง, รัน Verify 3 ขั้น + harness ครบ 5 key, เขียน SUMMARY แล้วจบรอบ
 ห้ามประดิษฐ์งานอื่นเด็ดขาด**
-⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-10-27_0020` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
+⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-10-27_0033` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
 จากบล็อกนี้ — มันคือ sha ที่ยังไม่มีอยู่ตอนเขียนบรรทัดนี้)**
+🟩 **รอบ `2026-10-27_0033`: คำทำนายของ `_0020` = "หัว" (เฉลยล่วงหน้าแล้ว `5a3002e` > `25890e7`) — *วัดจริง นับเข้าสถิติ***
+ หลังตัด ref ของตัวเอง (`d0c8d0d`, restore commit — แถว 1 ของสูตรผิด) `2026-10-27` มี **2 tip** → tiebreak fire จริง
+ สูตรถูก (`--sort=-committerdate`) แถว 1 = `5a3002e` `_0020` ✅ / สูตรผิด (sha ก่อน refname + `| sort -r`) แถว 1 = `5a3002e` ✅ เช่นกัน → **หัว**
+ (`node -e` → `'5a3002e'>'25890e7'` = `true`) สถิติสูตรผิด: **ก้อย 91 จาก 141 (91/137)**
+ restore `5a3002e` แล้ว (tip มีงานจริง: `5a3002e docs:` เหนือ `591871c docs:` เหนือ `664719c` restore, ผู้เขียน `PHANTOM AUTOPILOT <autopilot@phantom.local>`), tree identity `a877a28f…` ตรงกันทุก path
+ 5 ช่องทางไม่มีคำตอบ (README 8/8 ทั้งสองตัวนับ, ไม่มี jspdf, status สะอาด, `main` = `ef3220e`, ref อื่นใหม่สุด 2026-08-13)
+ Verify 3 ขั้นเขียว (54/54, check-tokens 6/6 ที่ 15 CSS sources, 31/31), harness 5 key: `buttons` (`2488f2d`→live) 85/17 /
+ `segmented` (`021b966`→live) 45/9 / `toast` (`de07ea8`→`10e8f39`) 5/1 PASS, `ds-disabled-hover`
+ (`5a3002e:design-system/src/styles.css` → live) 15/3 PASS + 1 undecidable, `toast-hit` (`3d3d5cc`→live) FAIL-5 ที่ 10 pairs — `✗` ทั้ง 5 แถวเป็น `#toastUndo` ล้วน
+ prompt ของรอบนี้ส่ง Next task มา**ว่างเปล่า** → ทำตาม Next task ใน repo
+ 🔴 **รอบหน้าเป็น tiebreak จริง** (ไม่ว่าจะอยู่วันเดิมหรือข้ามวัน): `2026-10-27` จะมี 3 tip, comparand = `5a3002e`
+ → ก้อยก็ต่อเมื่อ sha ปิดรอบของ `_0033` < `5a3002e` ความเสียหายถ้าก้อย = ทิ้ง `_0033` 1 รอบ (docs ล้วน)
+ — รอบหน้าเฉลยจาก `for-each-ref` เอง (เทียบ hex ด้วย `node -e` ห้ามดูด้วยตา)
 🟦 **รอบ `2026-10-27_0020`: ถูก MASK ตามที่ `_0010` ทำนาย — *ไม่รัน A/B ไม่นับเข้าสถิติ* (คงที่ ก้อย 91/140 (91/136))**
  ref ของตัวเองยังชี้ `3503537`/2026-08-13 ตอนเลือก → `2026-10-27` มี tip ตัวเดียว = `25890e7` (`_0010`, local + `origin/` ตรงกัน) → วันที่ตัดสินแถว 1
  `25890e7` มีงานจริง (`25890e7 docs:` เหนือ `fa8955f docs:` เหนือ `888f693` restore, ผู้เขียน `PHANTOM AUTOPILOT <autopilot@phantom.local>`) → restore แล้ว, tree identity `42c5a08a…` ตรงกันทุก path
