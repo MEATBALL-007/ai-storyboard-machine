@@ -347,8 +347,22 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 + `head -16` + ตรวจซ้ำด้วย refname **ห้ามใช้หมายเลขแถว** และ **ห้ามใช้ `| sort -r` แทน `--sort=`**),
 ตรวจ 5 ช่องทาง, รัน Verify 3 ขั้น + harness ครบ 5 key, เขียน SUMMARY แล้วจบรอบ
 ห้ามประดิษฐ์งานอื่นเด็ดขาด**
-⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-10-28_0033` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
+⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-10-28_0043` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
 จากบล็อกนี้ — มันคือ sha ที่ยังไม่มีอยู่ตอนเขียนบรรทัดนี้)**
+🟥 **รอบ `2026-10-28_0043`: คำทำนายของ `_0033` = "ก้อย" (เฉลยล่วงหน้าแล้ว `633deb3` < `ee206f8`) — *วัดจริง นับเข้าสถิติ***
+ หลังตัด ref ของตัวเอง (`ac904e3`, restore commit — แถว 2 ของสูตรผิด) `2026-10-28` มี **3 tip** → tiebreak fire จริง
+ สูตรถูก (`--sort=-committerdate`) แถว 1 = `633deb3` `_0033` ✅ / สูตรผิด (`%(committerdate:short) %(objectname:short)` + `| sort -r`) แถว 1 = `ee206f8` `_0013` ✗
+ → real tip จมไป **แถว 3 จาก 3** (`node -e` → `'633deb3'<'7397111'<'ee206f8'` = `true`) ความเสียหายถ้าใช้สูตรผิด = ทิ้ง `_0023`+`_0033` 2 รอบ (docs ล้วน)
+ สถิติสูตรผิด: **ก้อย 94 จาก 145 (94/141)**
+ restore `633deb3` แล้ว (tip มีงานจริง: `633deb3 docs:` เหนือ `5b89ce0 docs:` เหนือ `9ee5896` restore, ผู้เขียน `PHANTOM AUTOPILOT <autopilot@phantom.local>`), tree identity `f46c0bd0…` ตรงกันทุก path
+ 5 ช่องทางไม่มีคำตอบ (README 8/8 ทั้งสองตัวนับ, ไม่มี jspdf, status สะอาด, `main` = `ef3220e`, ref อื่นใหม่สุด 2026-08-13)
+ Verify 3 ขั้นเขียว (54/54, check-tokens 6/6 ที่ 15 CSS sources, 31/31), harness 5 key: `buttons` (`2488f2d`→live) 85/17 /
+ `segmented` (`021b966`→live) 45/9 / `toast` (`de07ea8`→`10e8f39`) 5/1 PASS, `ds-disabled-hover`
+ (`633deb3:design-system/src/styles.css` → live) 15/3 PASS + 1 undecidable, `toast-hit` (`3d3d5cc`→live) FAIL-5 ที่ 10 pairs — `✗` ทั้ง 5 แถวเป็น `#toastUndo` ล้วน
+ prompt ของรอบนี้ส่ง Next task มา**ว่างเปล่า** → ทำตาม Next task ใน repo
+ 🔴 **รอบหน้าเป็น tiebreak จริง** (ไม่ว่าจะอยู่วันเดิมหรือข้ามวัน): `2026-10-28` จะมี 4 tip, comparand = `ee206f8`
+ → ก้อยก็ต่อเมื่อ sha ปิดรอบของ `_0043` < `ee206f8` ความเสียหายถ้าก้อย = ทิ้ง `_0023`+`_0033`+`_0043` (docs ล้วน)
+ — รอบหน้าเฉลยจาก `for-each-ref` เอง (เทียบ hex ด้วย `node -e` ห้ามดูด้วยตา)
 🟥 **รอบ `2026-10-28_0033`: คำทำนายของ `_0023` = "ก้อย" (เฉลยล่วงหน้าแล้ว `7397111` < `ee206f8`) — *วัดจริง นับเข้าสถิติ***
  หลังตัด ref ของตัวเอง (`9ee5896`, restore commit — แถว 3 ของสูตรผิด) `2026-10-28` มี **2 tip** → tiebreak fire จริง
  สูตรถูก (`--sort=-committerdate`) แถว 1 = `7397111` `_0023` ✅ / สูตรผิด (`%(committerdate:short) %(objectname:short)` + `| sort -r`) แถว 1 = `ee206f8` `_0013` ✗
