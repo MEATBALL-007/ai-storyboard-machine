@@ -347,8 +347,22 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 + `head -16` + ตรวจซ้ำด้วย refname **ห้ามใช้หมายเลขแถว** และ **ห้ามใช้ `| sort -r` แทน `--sort=`**),
 ตรวจ 5 ช่องทาง, รัน Verify 3 ขั้น + harness ครบ 5 key, เขียน SUMMARY แล้วจบรอบ
 ห้ามประดิษฐ์งานอื่นเด็ดขาด**
-⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-10-28_0043` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
+⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-10-29_0006` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
 จากบล็อกนี้ — มันคือ sha ที่ยังไม่มีอยู่ตอนเขียนบรรทัดนี้)**
+🟥 **รอบ `2026-10-29_0006`: คำทำนายของ `_0043` = "ก้อย" (`09bcfc2` < `ee206f8`) — *วัดจริง นับเข้าสถิติ***
+ รอบแรกของวัน ref ของตัวเองยังชี้ `3503537` ตอนเลือก → `2026-10-28` มี **4 tip** → tiebreak fire จริง
+ สูตรถูก (`--sort=-committerdate`) แถว 1 = `09bcfc2` `_0043` ✅ / สูตรผิด (sha ก่อน refname + `| sort -r`) แถว 1 = `ee206f8` `_0013` ✗
+ → real tip จมไป **แถว 4 จาก 4** (`node -e` → `ee206f8 > 7397111 > 633deb3 > 09bcfc2`) ความเสียหายถ้าใช้สูตรผิด = ทิ้ง `_0023`+`_0033`+`_0043` 3 รอบ (docs ล้วน)
+ สถิติสูตรผิด: **ก้อย 95 จาก 146 (95/142)**
+ restore `09bcfc2` แล้ว (`merge-base --is-ancestor 3503537` ผ่าน), tree identity `7e9024ee…` ตรงกันทุก path
+ 5 ช่องทางไม่มีคำตอบ (README 8/8 ทั้งสองตัวนับ, ไม่มี jspdf, status สะอาด, `main` = `ef3220e`, ref อื่นใหม่สุด 2026-08-13)
+ Verify 3 ขั้นเขียว (54/54, check-tokens 6/6 ที่ 15 CSS sources, 31/31), harness 5 key: `buttons` (`2488f2d`→live) 85/17 /
+ `segmented` (`021b966`→live) 45/9 / `toast` (`de07ea8`→`10e8f39`) 5/1 PASS, `ds-disabled-hover`
+ (`09bcfc2:design-system/src/styles.css` → live) 15/3 PASS + 1 undecidable, `toast-hit` (`3d3d5cc`→live) FAIL-5 ที่ 10 pairs — `✗` ทั้ง 5 แถวเป็น `#toastUndo` ล้วน
+ prompt ของรอบนี้ส่ง Next task มา**ว่างเปล่า** → ทำตาม Next task ใน repo
+ 🟦 **รอบหน้าถูก MASK** — `2026-10-29` จะมี tip ตัวเดียว (ของรอบนี้) หลังตัด ref ของตัวเอง → ไม่รัน A/B ไม่นับสถิติ
+ (ยกเว้นรอบนี้ไม่ถูก push → วันใหม่สุดกลับเป็น `2026-10-28`, comparand `ee206f8`)
+ ⚠️ **ไฟล์นี้โต ~898 KB แล้ว** — Read ทั้งไฟล์ไม่ได้ (เกิน 256 KB) ต้องใช้ Grep หา `^## Next task` แล้ว Read ด้วย `offset`+`limit`
 🟥 **รอบ `2026-10-28_0043`: คำทำนายของ `_0033` = "ก้อย" (เฉลยล่วงหน้าแล้ว `633deb3` < `ee206f8`) — *วัดจริง นับเข้าสถิติ***
  หลังตัด ref ของตัวเอง (`ac904e3`, restore commit — แถว 2 ของสูตรผิด) `2026-10-28` มี **3 tip** → tiebreak fire จริง
  สูตรถูก (`--sort=-committerdate`) แถว 1 = `633deb3` `_0033` ✅ / สูตรผิด (`%(committerdate:short) %(objectname:short)` + `| sort -r`) แถว 1 = `ee206f8` `_0013` ✗
