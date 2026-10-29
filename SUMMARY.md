@@ -1,47 +1,31 @@
-# SUMMARY — round 2026-10-29_0036
+# SUMMARY — round `2026-10-30_0006`
 
 ## What I did
-- Restored the previous round's tip `61776ea` (`2026-10-29_0026`) onto this branch. The runner
-  cut this branch from the stale base `3503537` again. I kept the restore as its own commit, and
-  `HEAD^{tree}` == `61776ea^{tree}` == `7bcc55c3…`.
-- Checked all five owner-answer channels. None of them has an answer, so per the queued
-  `## Next task` this is a **no-op round**.
-- Ran Verify and all five parity-harness keys. Every result matches the expected values.
-- Logged this round in `AUTOPILOT.md` → `## Next task`. The tiebreak `_0026` forecast was live
-  (`2026-10-29` held 3 tips) and it came up **TAILS**: the wrong ranking formula would have
-  restored `c512c72` and lost `_0016` and `_0026`. Record is now 97/148 (97/144).
+- Restored the previous round's tip `b26dc2f` (`2026-10-29_0036`) onto this branch, which the runner had cut from the stale base `3503537`. The restore is its own commit, and the tree sha matches the tip on every path (`c2af31e3…`).
+- Checked all five owner-answer channels and found no answer. `README.md` still has 8 option tables and 8 `If you answer:` lines. There is no `jspdf` file, the working tree is clean, `main` is still `ef3220e`, and no non-`auto/*` ref is newer than 2026-08-13.
+- Ran the Verify command and all five harness keys. Everything matched expectations.
+- Added this round's record to the top of `## Next task` in `AUTOPILOT.md`. The task itself is unchanged: no-op until the owner answers a decision.
 
 ## Why
-- The prompt's `## Next task` arrived empty. The real task is in the restored `AUTOPILOT.md`.
-  It says that if no decision in `README.md → ## Open decisions` has been answered, I should
-  restore, check, verify, write this summary and stop, without inventing other work.
-- I picked the tip with `git for-each-ref --sort=-committerdate`, not by sha order. Row 1 was
-  `61776ea` (`_0026`), the same sha locally and on `origin/`.
+- The prompt's `## Next task` arrived empty. The real task lives in the restored `AUTOPILOT.md`: if no owner decision is answered, do a no-op round and invent nothing else. All 8 decisions in `README.md → ## Open decisions` are still open, and each one either moves pixels or adds a file, so the owner has to make them.
+- Tip selection used `--sort=-committerdate` (the correct formula). The date-major trap formula (`committerdate:short` + sha + `| sort -r`) puts `c512c72` (`_0006`) first once my own ref `c0689dd` is dropped. That would sink the real tip `b26dc2f` to row 2 of 4 and lose 3 rounds of work. This is the TAILS outcome `_0036` predicted. The wrong formula's record is now tails 98/149 (98/145).
 
 ## Verification
-- `git rev-parse HEAD^{tree} 61776ea^{tree}` → both `7bcc55c32ed1d156748ebdb494c46bea16f0ce4f`.
-- Channels: `grep -c "| Option | Cost |" README.md` → 8, `grep -c "If you answer:"` → 8;
-  no `jspdf` file in `git ls-files` or at the root; `git status --short --untracked-files=all` empty;
-  `main` = `ef3220e` (2026-06-27); newest non-`auto/*` ref is `design-system` at 2026-08-13.
-- `node -e "console.log('61776ea'<'c512c72', '06db8e9'<'61776ea')"` → `true true` (TAILS, real tip row 2/3).
-- Verify `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`:
-  `54 passed, 0 failed`; check-tokens 22/22 tokens, 4/4 fonts, and all four scans clean over
-  15 CSS sources; vitest `12 passed` files / `31 passed` tests.
-- Harness: `buttons` (`2488f2d`→live) 85 pairs / 17 elements PASS; `segmented` (`021b966`→live)
-  45/9 PASS; `toast` (`de07ea8`→`10e8f39`) 5/1 PASS; `ds-disabled-hover`
-  (`61776ea:design-system/src/styles.css`→live) 15/3 PASS + 1 undecidable rule;
-  `toast-hit` (`3d3d5cc`→live) `FAIL — 5 declaration(s) differ` across 10 pairs, which is the
-  expected result. All five `✗` rows are `#toastUndo`, and none is `#toast`.
+- `git rev-parse HEAD^{tree} b26dc2f^{tree}` printed the same sha twice: `c2af31e31b83bacbdddea7ae9ef9d0344174b497`.
+- `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test` passed: `54 passed, 0 failed`; check-tokens passed 6/6 across 15 CSS sources (22/22 tokens, 4/4 fonts); vitest passed `31 passed (31)`.
+- `docs/btn-parity-proof.mjs` results:
+  - `buttons` (`2488f2d:index.html` → live): 85 pairs / 17 elements, PASS
+  - `segmented` (`021b966:index.html` → live): 45 / 9, PASS
+  - `toast` (`de07ea8:index.html` → `10e8f39:index.html`): 5 / 1, PASS
+  - `ds-disabled-hover` (`b26dc2f:design-system/src/styles.css` → live): 15 / 3, PASS, plus 1 undecidable rule
+  - `toast-hit` (`3d3d5cc:index.html` → live): `FAIL — 5 declaration(s) differ` across 10 pairs. All 5 `✗` rows are `#toastUndo` (`(base)`, `:hover`, `:disabled`, `:disabled:hover`, `:focus`) and none is `#toast`. This is the expected result: the key documents a deliberate behaviour fix.
 
 ## What I did NOT do
-- I did not answer any of the eight open decisions (jsPDF, chip padding, spacing scale, browser
-  verification, segmented padding, input sizes, disabled-hover, `docs/design-parity.md`).
-  Each one moves pixels or adds files, so each is the owner's call.
-- I did not touch `index.html`, any CSS, or any tests.
+- I did not answer or act on any of the 8 open decisions (jsPDF, chip padding, spacing scale, browser verification, segmented padding, input sizes, disabled-hover, `docs/design-parity.md`). They are the owner's call.
+- I did not retry the browser MCPs, because they are permission-blocked (decision 4).
+- No CSS, JS or test changes this round.
 
 ## Risk
-- Low. This round's only content change is to `AUTOPILOT.md` and `SUMMARY.md`.
-- The next round is a **live tiebreak**. `2026-10-29` will hold 4 tips with comparand `c512c72`,
-  so ranking by sha would discard `_0016`, `_0026` and `_0036` if this round's closing sha < `c512c72`.
-- The stall itself is the real risk. Every acceptance criterion still open is blocked on an owner
-  answer in `README.md → ## Open decisions`, and more rounds won't clear it.
+- Low. The only changes are a restore commit (tree-identical to `b26dc2f`) plus documentation edits to `AUTOPILOT.md` and `SUMMARY.md`.
+- The work is still stalled on the owner. More rounds will not unblock it; a person needs to answer at least one item in `README.md → ## Open decisions`.
+- The next round should be MASKED: `2026-10-30` will hold only this round's tip. If this round is not pushed, the newest date falls back to `2026-10-29` with comparand `c512c72`.
