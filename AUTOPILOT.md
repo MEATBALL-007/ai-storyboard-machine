@@ -347,8 +347,21 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 + `head -16` + ตรวจซ้ำด้วย refname **ห้ามใช้หมายเลขแถว** และ **ห้ามใช้ `| sort -r` แทน `--sort=`**),
 ตรวจ 5 ช่องทาง, รัน Verify 3 ขั้น + harness ครบ 5 key, เขียน SUMMARY แล้วจบรอบ
 ห้ามประดิษฐ์งานอื่นเด็ดขาด**
-⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-10-30_0027` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
+⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-10-30_0037` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
 จากบล็อกนี้ — มันคือ sha ที่ยังไม่มีอยู่ตอนเขียนบรรทัดนี้)**
+🟩 **รอบ `2026-10-30_0037`: คำทำนายของ `_0027` = "หัว" (`dee4b75` > `8f31a1b`) — *วัดจริง นับเข้าสถิติ***
+ หลังตัด ref ของตัวเอง (`92067f6`, restore commit — แถว 3 ของสูตรผิด) `2026-10-30` มี **3 tip** → tiebreak fire จริง
+ สูตรถูก (`--sort=-committerdate`) แถว 1 = `dee4b75` `_0027` ✅ / สูตรผิด (sha ก่อน refname + `| sort -r`) แถว 1 = `dee4b75` ✅ เหมือนกัน
+ สถิติสูตรผิด: **ก้อย 99 จาก 151 (99/147)**
+ restore `dee4b75` แล้ว (local + `origin/` ตรงกัน), tree identity `1c1f4819…` ตรงกันทุก path
+ 5 ช่องทางไม่มีคำตอบ (README 8/8 ทั้งสองตัวนับ, ไม่มี jspdf, status สะอาด, `main` = `ef3220e`, ref อื่นใหม่สุด 2026-08-13)
+ Verify 3 ขั้นเขียว (54/54, check-tokens 6/6 ที่ 15 CSS sources, 31/31), harness 5 key: `buttons` (`2488f2d`→live) 85/17 /
+ `segmented` (`021b966`→live) 45/9 / `toast` (`de07ea8`→`10e8f39`) 5/1 PASS, `ds-disabled-hover`
+ (`dee4b75:design-system/src/styles.css` → live) 15/3 PASS + 1 undecidable, `toast-hit` (`3d3d5cc`→live) FAIL-5 ที่ 10 pairs — `✗` ทั้ง 5 แถวเป็น `#toastUndo` ล้วน
+ prompt ของรอบนี้ส่ง Next task มา**ว่างเปล่า** → ทำตาม Next task ใน repo
+ 🔴 **รอบหน้าเป็น tiebreak จริง**: `2026-10-30` จะมี 4 tip, comparand = `dee4b75` (ratchet ขึ้นมาแล้ว)
+ → ก้อยก็ต่อเมื่อ sha ปิดรอบของ `_0037` < `dee4b75` ความเสียหายถ้าก้อย = ทิ้ง `_0037` (docs ล้วน)
+ — รอบหน้าเฉลยจาก `for-each-ref` เอง (เทียบ hex ด้วย `node -e` ห้ามดูด้วยตา)
 🟥 **รอบ `2026-10-30_0027`: คำทำนายของ `_0016` = "ก้อย" (`0836af3` < `8f31a1b`) — *วัดจริง นับเข้าสถิติ***
  หลังตัด ref ของตัวเอง (`ec950a8`, restore commit — แถว 1 ของสูตรผิด) `2026-10-30` มี **2 tip** → tiebreak fire จริง
  สูตรถูก (`--sort=-committerdate`) แถว 1 = `0836af3` `_0016` ✅ / สูตรผิด (sha ก่อน refname + `| sort -r`) แถว 1 = `8f31a1b` `_0006` ✗
