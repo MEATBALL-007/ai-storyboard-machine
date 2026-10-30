@@ -1,9 +1,9 @@
-# SUMMARY — round 2026-10-30_0037
+# SUMMARY — round 2026-10-31_0007
 
 ## What I did
-- Restored the previous round's tip `dee4b75` (`2026-10-30_0027`) onto this branch. Like every
+- Restored the previous round's tip `0564d43` (`2026-10-30_0037`) onto this branch. Like every
   round before it, the branch had been cut from the stale base `3503537`. The restore is its own
-  commit, and `git rev-parse HEAD^{tree} dee4b75^{tree}` printed the same tree sha `1c1f4819…` for both.
+  commit, and `git rev-parse HEAD^{tree} 0564d43^{tree}` printed the same tree sha `f5cd8686…` for both.
 - Checked all five owner-answer channels. None has an answer, so this round is a no-op, as the
   restored `## Next task` prescribes.
 - Ran the three-stage Verify command and all five parity-harness keys. Every result matches the
@@ -13,33 +13,53 @@
 
 ## Why
 - The prompt's `## Next task` arrived empty. The real task is in the restored `AUTOPILOT.md`: check
-  `README.md → ## Open decisions` first, and if nothing is answered, do a no-op round and invent no
-  other work. All remaining acceptance criteria are blocked on the eight owner decisions.
+  `README.md → ## Open decisions` first, and if nothing is answered, restore, verify, write SUMMARY
+  and stop. It says outright not to invent other work, because everything left moves pixels and is
+  the owner's call.
+- I picked the tip with `git for-each-ref --sort=-committerdate`. That put `0564d43` (`_0037`)
+  first. The trap form (sha before refname, then `| sort -r`, filtered to `2026-10-30`) puts
+  `dee4b75` (`_0027`) first and sinks the real tip to row 4 of 4. I checked the hex ordering with
+  `node -e` (`true true true`). Using the trap form would have thrown away `_0037`. The forecast
+  was TAILS and it held, so the record is now 100 of 152 (100/148).
 
 ## Verification
-- Channels: `grep -c "| Option | Cost |" README.md` → 8, `grep -c "If you answer:"` → 8, no `jspdf*`
-  file, `git status --short --untracked-files=all` empty, `main` = `ef3220e`, newest non-`auto/*` ref
-  2026-08-13 (`design-system` @ `3503537`).
-- Verify (`node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`),
-  run bare: `54 passed, 0 failed`; check-tokens 6/6 across 15 CSS sources (tokens 22/22, fonts 4/4);
-  vitest `12 passed (12)` files, `31 passed (31)` tests.
-- Harness (`docs/btn-parity-proof.mjs`):
-  - `buttons` (`2488f2d` → live): 85 pairs / 17 elements, PASS
-  - `segmented` (`021b966` → live): 45 / 9, PASS
-  - `toast` (`de07ea8` → `10e8f39`): 5 / 1, PASS
-  - `ds-disabled-hover` (`dee4b75:design-system/src/styles.css` → live): 15 / 3, PASS, plus 1 undecidable rule
-  - `toast-hit` (`3d3d5cc` → live): `FAIL — 5 declaration(s) differ` over 10 pairs. All five ✗ rows
-    are `#toastUndo` (`pointer-events` `(unset)` → `auto`). That is the expected result.
-- Trap-form A/B: the forecast was HEADS (`dee4b75` > `8f31a1b`), and the live ranking put `dee4b75`
-  at row 1. The record is now tails 99/151 (99/147).
+- Restore: tree sha identical to `0564d43` (`f5cd868664c6472f06e47f27a9cb4f3c4fef5b0f`). Local and
+  `origin/` refs agree on `0564d43`.
+- Owner channels:
+  1. README `| Option | Cost |` = 8, `If you answer:` = 8. All eight decisions are still open.
+  2. No `jspdf*` file, either tracked or on disk.
+  3. `main` = `ef3220e`, unchanged.
+  4. `git status --short --untracked-files=all` came back empty.
+  5. Newest non-`auto/*` ref is dated 2026-08-13 (`design-system`).
+- Verify, `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`,
+  run bare:
+  - `54 passed, 0 failed`
+  - check-tokens 6/6: 22/22 tokens, 4/4 fonts, and colour, weight, radius and font-family checks
+    across 15 CSS sources
+  - vitest `12 passed (12)` files, `31 passed (31)` tests
+- Harness `docs/btn-parity-proof.mjs`:
+  - `buttons` (`2488f2d:index.html` → `index.html`): 85 pairs / 17 elements, PASS, markup coverage OK
+  - `segmented` (`021b966:index.html` → `index.html`): 45 / 9, PASS
+  - `toast` (`de07ea8:index.html` → `10e8f39:index.html`): 5 / 1, PASS
+  - `ds-disabled-hover` (`0564d43:design-system/src/styles.css` → live): 15 / 3, PASS, plus 1
+    undecidable rule
+  - `toast-hit` (`3d3d5cc:index.html` → `index.html`): `FAIL — 5 declaration(s) differ` across
+    10 pairs. All five `✗` rows are `#toastUndo` (`pointer-events` unset → `auto`), with no
+    `#toast` row. This is the expected result.
 
 ## What I did NOT do
-- I answered no open decision, and I did not apply decisions 2/5/6/7 on my own. They move pixels, so
-  they are the owner's call.
-- I did not retry the browser MCPs. They are permission-blocked, and decision 4 is still open.
+- I didn't answer, implement or work around any of the eight open decisions (jsPDF, chip padding,
+  spacing scale, browser verification, segmented padding, input sizes, disabled-hover, and
+  `docs/design-parity.md`). Each is the owner's call.
+- I didn't retry the browser MCPs. Decision 4 records that they are blocked by permissions.
+- I didn't tick any acceptance-criterion box, because none changed state.
 
 ## Risk
-- None introduced. Besides the restore commit, the only change is a docs-only block in `AUTOPILOT.md`.
-- Still outstanding: nothing on `main` has moved since 2026-06-27. Every round branch is cut from
-  `3503537` and has to restore its predecessor by hand. The integration work will stay stalled
-  until an owner answers the decisions in `README.md → ## Open decisions` or merges a branch.
+- No code or CSS changed this round. The diff is the restore commit plus docs (`AUTOPILOT.md`,
+  `SUMMARY.md`).
+- The stall still needs a person. Three acceptance criteria stay blocked on decisions 1–7 in
+  `README.md → ## Open decisions`, and the runner still cuts every branch from `3503537`. Until one
+  of those changes, every round will be a no-op like this one.
+- The next round is MASKED: after dropping its own ref, `2026-10-31` holds only this round's tip.
+  The exception is if this branch isn't pushed. Then `2026-10-30` stays newest and the comparand
+  is `dee4b75`.
