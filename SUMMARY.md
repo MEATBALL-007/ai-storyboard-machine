@@ -1,49 +1,36 @@
-# SUMMARY — round 2026-11-01_0007
+# SUMMARY — round `2026-11-01_0017`
 
 ## What I did
-- Restored the previous round's tip `d896877` (`2026-10-31_0037`) onto this branch (cut from stale
-  base `3503537` again) as its own commit; `git rev-parse HEAD^{tree} d896877^{tree}` both print
-  `c9f766c20b1a3d94beea76f6098db579280a7dc4`, so every path matches.
-- Checked all five owner-answer channels: none has an answer. That makes this round a no-op, as
-  the queued Next task in the restored `AUTOPILOT.md` directs.
-- Ran the Verify command and all five harness keys. Results are below and all are as expected.
-- Added this round's entry to `## Next task` in `AUTOPILOT.md`. It records the trap-form A/B
-  (HEADS, record 100/155) and the forecast that next round is MASKED. It also points the restore
-  target at this round's tip.
+- Restored the previous round's tip `f80e8c8` (`2026-11-01_0007`) onto the stale base `3503537` in its own commit. The runner cut this branch from `3503537` again.
+- Checked the five owner-answer channels. None has an answer, so I did not apply any of the eight open decisions.
+- Ran the three-stage Verify command and all five `docs/btn-parity-proof.mjs` keys.
+- Added this round's entry to `AUTOPILOT.md → ## Next task` and pointed the next restore at `_0017`'s tip.
 
 ## Why
-- The prompt's `## Next task` arrived empty. Hard rule 5 forbids inventing a task, so I followed
-  the one in the restored repo file. That task says: if no decision in `README.md → ## Open decisions`
-  is answered, restore, check, verify, summarise, and stop.
-- All remaining acceptance criteria are blocked on owner decisions 1–7 (jsPDF vendoring, chip /
-  segmented / input sizes, spacing scale, browser verification, disabled-hover). Decision 8
-  (`docs/design-parity.md`) is a git-history question and blocks no criterion. An agent must not
-  answer any of these.
+- The prompt's `## Next task` arrived empty. The restored `AUTOPILOT.md` queues a no-op round whenever `README.md → ## Open decisions` is unanswered, and it still is. Hard rule 5 forbids inventing a substitute task.
+- This round is **MASKED**. When I picked the tip, my own ref still pointed at `3503537`, and `2026-11-01` held only `f80e8c8`. With one candidate on the deciding date the A/B has nothing to compare, so I didn't run it and the record stays at 100/155 (100/151).
 
 ## Verification
-- `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test` →
-  `54 passed, 0 failed`; check-tokens passes on all six checks (tokens 22/22, fonts 4/4, colour,
-  weights, radius, font-family; 15 CSS sources); vitest `12 passed (12)` files, `31 passed (31)` tests.
-- Five channels: `grep -c "| Option | Cost |" README.md` = 8, `grep -c "If you answer:"` = 8;
-  no `jspdf` file tracked or on disk; `git status` clean; `main` = `ef3220e` (2026-06-27);
-  newest non-auto ref `design-system`/`origin/design-system` = `3503537` (2026-08-13).
-- Harness `docs/btn-parity-proof.mjs`:
-  - `buttons 2488f2d:index.html index.html` → 85 pairs / 17 elements PASS, markup coverage OK
-  - `segmented 021b966:index.html index.html` → 45 / 9 PASS
-  - `toast de07ea8:index.html 10e8f39:index.html` → 5 / 1 PASS
-  - `ds-disabled-hover d896877:design-system/src/styles.css design-system/src/styles.css` → 15 / 3 PASS + 1 undecidable rule
-  - `toast-hit 3d3d5cc:index.html index.html` → `FAIL — 5 declaration(s) differ` at 10 pairs. All five `✗` rows
-    are `#toastUndo` (base/:hover/:disabled/:disabled:hover/:focus) and none is `#toast`. That is
-    the intended result of the 2026-08-24 `pointer-events:auto` fix, not a regression.
+- `git rev-parse HEAD^{tree} f80e8c8^{tree}` printed the same sha twice (`45e88726608c986e7cf82adddd792b33c8bccbd8`), so the restore matches on every path.
+- `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test` printed `54 passed, 0 failed`, 22/22 tokens, 4/4 fonts, 4 scan checks over 15 CSS sources, then `Tests 31 passed (31)`.
+- Harness:
+  - `buttons 2488f2d:index.html index.html` → 85 pairs / 17 elements, PASS
+  - `segmented 021b966:index.html index.html` → 45 / 9, PASS
+  - `toast de07ea8:index.html 10e8f39:index.html` → 5 / 1, PASS
+  - `ds-disabled-hover f80e8c8:design-system/src/styles.css design-system/src/styles.css` → 15 / 3, PASS, plus `1 undecidable rule(s)`
+  - `toast-hit 3d3d5cc:index.html index.html` → `FAIL — 5 declaration(s) differ` over 10 pairs. All five ✗ rows are `#toastUndo` (`(base)`, `:hover`, `:disabled`, `:disabled:hover`, `:focus`) and none are `#toast`. That is this key's expected result.
+- Channels:
+  - `README.md` still has 8 `| Option | Cost |` tables and 8 `If you answer:` lines
+  - no `jspdf` file is tracked or present
+  - `git status` is clean
+  - `main` = `ef3220e`
+  - the newest non-`auto/*` ref is from 2026-08-13
 
 ## What I did NOT do
-- Did not answer or act on any open decision, did not restore `docs/design-parity.md` (decision 8),
-  and did not touch any CSS, JS, tests or markers.
-- Did not retry the browser MCPs (permission-blocked per decision 4).
+- I did not answer or apply any of open decisions 1–8, because each one moves pixels or adds a file, and that is the owner's call.
+- I did not retry the browser MCPs (decision 4) and did not touch `index.html`, `design-system/`, `tools/` or `docs/`.
 
 ## Risk
-- Low: this round changes only `AUTOPILOT.md` (one forecast block) and `SUMMARY.md` on top of
-  an exact-tree restore.
-- The stall is structural. Every round restores, finds no answer and ends. Progress needs a person
-  to answer a decision in `README.md → ## Open decisions` (or drop `jspdf.umd.min.js` at the repo
-  root), and the runner should cut branches from the previous tip instead of `3503537`.
+- Low. The only changes are the restore commit (identical to `f80e8c8`'s tree) and documentation edits to `AUTOPILOT.md` and `SUMMARY.md`.
+- The project stays stalled until a person answers `README.md → ## Open decisions`. More rounds won't clear it.
+- If the runner keeps cutting branches from `3503537`, the next round on 2026-11-01 is a real tiebreak against `f80e8c8`.
