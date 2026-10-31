@@ -347,8 +347,21 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 + `head -16` + ตรวจซ้ำด้วย refname **ห้ามใช้หมายเลขแถว** และ **ห้ามใช้ `| sort -r` แทน `--sort=`**),
 ตรวจ 5 ช่องทาง, รัน Verify 3 ขั้น + harness ครบ 5 key, เขียน SUMMARY แล้วจบรอบ
 ห้ามประดิษฐ์งานอื่นเด็ดขาด**
-⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-11-01_0017` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
+⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-11-01_0027` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
 จากบล็อกนี้ — มันคือ sha ที่ยังไม่มีอยู่ตอนเขียนบรรทัดนี้)**
+🟥 **รอบ `2026-11-01_0027`: คำทำนายของ `_0017` = "ก้อย" (`0b66eba` < `f80e8c8`) — *วัดจริง นับเข้าสถิติ***
+ ref ของตัวเองยังชี้ `3503537` ตอนเลือก → `2026-11-01` มี **2 tip** → tiebreak fire จริง
+ สูตรถูก (`--sort=-committerdate`) แถว 1 = `0b66eba` `_0017` ✅ / สูตรผิด (sha + `| sort -r`) แถว 1 = `f80e8c8` ❌ (จะทิ้ง `_0017`)
+ (`node -e "console.log('0b66eba'<'f80e8c8')"` → `true`) สถิติสูตรผิด: **ก้อย 101 จาก 156 (101/152)**
+ restore `0b66eba` แล้ว (local + `origin/` ตรงกัน), tree identity `f80971af…` ตรงกันทุก path
+ 5 ช่องทางไม่มีคำตอบ (README 8/8 ทั้งสองตัวนับ, ไม่มี jspdf, status สะอาด, `main` = `ef3220e`, ref อื่นใหม่สุด 2026-08-13)
+ Verify 3 ขั้นเขียว (54/54, check-tokens 6/6 ที่ 15 CSS sources, 31/31), harness 5 key: `buttons` (`2488f2d`→live) 85/17 /
+ `segmented` (`021b966`→live) 45/9 / `toast` (`de07ea8`→`10e8f39`) 5/1 PASS, `ds-disabled-hover`
+ (`0b66eba:design-system/src/styles.css` → live) 15/3 PASS + 1 undecidable, `toast-hit` (`3d3d5cc`→live) FAIL-5 ที่ 10 pairs — `✗` ทั้ง 5 แถวเป็น `#toastUndo` ล้วน
+ prompt ของรอบนี้ส่ง Next task มา**ว่างเปล่า** → ทำตาม Next task ใน repo
+ 🔴 **รอบหน้าเป็น tiebreak จริง** (ถ้ายังอยู่วันที่ 11-01): `2026-11-01` จะมี 3 tip, comparand = `f80e8c8`
+ → ก้อยก็ต่อเมื่อ sha ปิดรอบของ `_0027` < `f80e8c8` ความเสียหายถ้าก้อย = ทิ้ง `_0017`+`_0027` (docs ล้วน)
+ — รอบหน้าเฉลยจาก `for-each-ref` เอง (เทียบ hex ด้วย `node -e` ห้ามดูด้วยตา)
 🟦 **รอบ `2026-11-01_0017`: ถูก MASK ตามที่ `_0007` ทำนาย — *ไม่รัน A/B ไม่นับเข้าสถิติ* (คงที่ ก้อย 100/155 (100/151))**
  ref ของตัวเองยังชี้ `3503537` ตอนเลือก → `2026-11-01` มี tip ตัวเดียว = `f80e8c8` (`_0007`, local + `origin/` ตรงกัน) → วันที่ตัดสินแถว 1
  restore `f80e8c8` แล้ว, tree identity `45e88726…` ตรงกันทุก path (`git rev-parse HEAD^{tree} f80e8c8^{tree}` → sha เดียวกัน)
