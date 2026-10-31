@@ -1,63 +1,49 @@
-# SUMMARY — round 2026-10-31_0037
+# SUMMARY — round 2026-11-01_0007
 
 ## What I did
-- Restored the previous round's tip `553b616` (`2026-10-31_0027`) onto this branch. Like every
-  round before it, the branch had been cut from the stale base `3503537`. The restore is its own
-  commit, and `git rev-parse HEAD^{tree} 553b616^{tree}` printed the same tree sha
-  `e2c401c1aa4b713385c616b0642888082bd1b633` for both.
-- Checked all five owner-answer channels. None has an answer, so this round is a no-op, as the
-  restored `## Next task` prescribes.
-- Ran the three-stage Verify command and all five parity-harness keys. Every result matches the
-  expected value.
-- Added this round's record block to `## Next task` in `AUTOPILOT.md` and pointed the next round
-  at this branch's tip.
+- Restored the previous round's tip `d896877` (`2026-10-31_0037`) onto this branch (cut from stale
+  base `3503537` again) as its own commit; `git rev-parse HEAD^{tree} d896877^{tree}` both print
+  `c9f766c20b1a3d94beea76f6098db579280a7dc4`, so every path matches.
+- Checked all five owner-answer channels: none has an answer. That makes this round a no-op, as
+  the queued Next task in the restored `AUTOPILOT.md` directs.
+- Ran the Verify command and all five harness keys. Results are below and all are as expected.
+- Added this round's entry to `## Next task` in `AUTOPILOT.md`. It records the trap-form A/B
+  (HEADS, record 100/155) and the forecast that next round is MASKED. It also points the restore
+  target at this round's tip.
 
 ## Why
-- The prompt's `## Next task` arrived empty. The task lives in the branch's `AUTOPILOT.md`, which
-  only exists after the restore. That file says: if no decision in `README.md → ## Open decisions`
-  has been answered, restore, check, verify, summarise, and stop. Nothing has been answered.
-- All remaining acceptance-criterion work is blocked on owner decisions 1–8 in `README.md`. Each
-  one moves pixels or adds a file, so I didn't answer any of them myself.
+- The prompt's `## Next task` arrived empty. Hard rule 5 forbids inventing a task, so I followed
+  the one in the restored repo file. That task says: if no decision in `README.md → ## Open decisions`
+  is answered, restore, check, verify, summarise, and stop.
+- All remaining acceptance criteria are blocked on owner decisions 1–7 (jsPDF vendoring, chip /
+  segmented / input sizes, spacing scale, browser verification, disabled-hover). Decision 8
+  (`docs/design-parity.md`) is a git-history question and blocks no criterion. An agent must not
+  answer any of these.
 
 ## Verification
-- Tip selection: `git for-each-ref --sort=-committerdate` put `553b616`
-  (`auto/…/2026-10-31_0027`, local and `origin/` identical) at row 1. This round's own ref was
-  still on `3503537`. 2026-10-31 held 3 tips: `553b616`, `3f89259` and `12bf024`. Ranked by sha,
-  the trap form also puts `553b616` first (`node -e` printed `true true`), so this round counts as
-  HEADS: tails 100/154.
-- Owner channels:
-  - `grep -c "| Option | Cost |" README.md` printed 8, and `grep -c "If you answer:"` printed 8.
-  - `git ls-files | grep -ic jspdf` printed 0.
-  - `git status --short --untracked-files=all` printed nothing.
-  - `main` is still `ef3220e`.
-  - The newest non-`auto/*` ref is `design-system` at 2026-08-13.
-- Verify, `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`
-  (run bare, so the exit status is real):
-  - `54 passed, 0 failed`
-  - check-tokens: tokens 22/22, fonts 4/4, and all four 15-source scans clean
-  - vitest: `Test Files 12 passed (12)`, `Tests 31 passed (31)`
-- Harness (`docs/btn-parity-proof.mjs`):
-  - `buttons 2488f2d:index.html index.html`: 85 pairs / 17 elements, PASS, markup OK
-  - `segmented 021b966:index.html index.html`: 45 / 9, PASS
-  - `toast de07ea8:index.html 10e8f39:index.html`: 5 / 1, PASS
-  - `ds-disabled-hover 553b616:design-system/src/styles.css design-system/src/styles.css`: 15 / 3,
-    PASS, with 1 undecidable rule (`.pui-menu__item:last-child`)
-  - `toast-hit 3d3d5cc:index.html index.html`: `FAIL — 5 declaration(s) differ` across 10 pairs.
-    This is the intended result. All five ✗ rows are `#toastUndo`
-    (`(base)`, `:hover`, `:disabled`, `:disabled:hover`, `:focus`), and none is `#toast`.
+- `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test` →
+  `54 passed, 0 failed`; check-tokens passes on all six checks (tokens 22/22, fonts 4/4, colour,
+  weights, radius, font-family; 15 CSS sources); vitest `12 passed (12)` files, `31 passed (31)` tests.
+- Five channels: `grep -c "| Option | Cost |" README.md` = 8, `grep -c "If you answer:"` = 8;
+  no `jspdf` file tracked or on disk; `git status` clean; `main` = `ef3220e` (2026-06-27);
+  newest non-auto ref `design-system`/`origin/design-system` = `3503537` (2026-08-13).
+- Harness `docs/btn-parity-proof.mjs`:
+  - `buttons 2488f2d:index.html index.html` → 85 pairs / 17 elements PASS, markup coverage OK
+  - `segmented 021b966:index.html index.html` → 45 / 9 PASS
+  - `toast de07ea8:index.html 10e8f39:index.html` → 5 / 1 PASS
+  - `ds-disabled-hover d896877:design-system/src/styles.css design-system/src/styles.css` → 15 / 3 PASS + 1 undecidable rule
+  - `toast-hit 3d3d5cc:index.html index.html` → `FAIL — 5 declaration(s) differ` at 10 pairs. All five `✗` rows
+    are `#toastUndo` (base/:hover/:disabled/:disabled:hover/:focus) and none is `#toast`. That is
+    the intended result of the 2026-08-24 `pointer-events:auto` fix, not a regression.
 
 ## What I did NOT do
-- I didn't answer, apply or reword any of the eight open decisions (chip/segmented/input padding,
-  spacing scale, jsPDF, browser verification, disabled-hover, `docs/design-parity.md`).
-- I didn't invent substitute work. The fallback list is exhausted, and the Next task explicitly
-  forbids it.
-- I didn't retry the browser MCPs. They're blocked by permissions, not by the headless setup.
+- Did not answer or act on any open decision, did not restore `docs/design-parity.md` (decision 8),
+  and did not touch any CSS, JS, tests or markers.
+- Did not retry the browser MCPs (permission-blocked per decision 4).
 
 ## Risk
-- This round changes no code. The only edits are the restore commit (which is tree-identical to
-  `553b616`), one record block in `AUTOPILOT.md`, and this file.
-- The real problem is still unresolved: the runner cuts every branch from `3503537`, and none of
-  this work has been merged to `main`. Progress needs a person to answer `README.md → ## Open
-  decisions`, not another round.
-- Next round: if it runs on 2026-10-31, there will be 4 tips that day, with `553b616` as the
-  comparand. Pick the tip with `--sort=-committerdate`, never with sha ordering.
+- Low: this round changes only `AUTOPILOT.md` (one forecast block) and `SUMMARY.md` on top of
+  an exact-tree restore.
+- The stall is structural. Every round restores, finds no answer and ends. Progress needs a person
+  to answer a decision in `README.md → ## Open decisions` (or drop `jspdf.umd.min.js` at the repo
+  root), and the runner should cut branches from the previous tip instead of `3503537`.
