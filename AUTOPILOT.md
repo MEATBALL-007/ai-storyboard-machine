@@ -347,8 +347,21 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 + `head -16` + ตรวจซ้ำด้วย refname **ห้ามใช้หมายเลขแถว** และ **ห้ามใช้ `| sort -r` แทน `--sort=`**),
 ตรวจ 5 ช่องทาง, รัน Verify 3 ขั้น + harness ครบ 5 key, เขียน SUMMARY แล้วจบรอบ
 ห้ามประดิษฐ์งานอื่นเด็ดขาด**
-⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-11-02_0017` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
+⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-11-02_0027` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
 จากบล็อกนี้ — มันคือ sha ที่ยังไม่มีอยู่ตอนเขียนบรรทัดนี้)**
+🟥 **รอบ `2026-11-02_0027`: คำทำนายของ `_0017` = tiebreak จริง comparand `ccba208` — *วัดจริง นับเข้าสถิติ* → ก้อย**
+ ref ของตัวเองยังชี้ `3503537` ตอนเลือก (หลัง restore ref ตัวเองลง 11-02 = `1515029` → ตัดทิ้งก่อนอ่าน) → `2026-11-02` มี **2 tip** → tiebreak fire จริง
+ สูตรถูก (`--sort=-committerdate`) แถว 1 = `bda6403` `_0017` ✅ / สูตรผิด (sha + `| sort -r`) แถว 1 = `ccba208` ❌ (จะทิ้ง `_0017`)
+ (`node -e "console.log('bda6403'<'ccba208')"` → `true`) สถิติสูตรผิด: **ก้อย 104 จาก 159 (104/155)**
+ restore `bda6403` แล้ว (local + `origin/` ตรงกัน), tree identity `49a106ab…` ตรงกันทุก path
+ 5 ช่องทางไม่มีคำตอบ (README 8/8 ทั้งสองตัวนับ, ไม่มี jspdf, status สะอาด, `main` = `ef3220e`, ref อื่นใหม่สุด 2026-08-13)
+ Verify 3 ขั้นเขียว (54/54, check-tokens 6/6 ที่ 15 CSS sources, 31/31), harness 5 key: `buttons` (`2488f2d`→live) 85/17 /
+ `segmented` (`021b966`→live) 45/9 / `toast` (`de07ea8`→`10e8f39`) 5/1 PASS, `ds-disabled-hover`
+ (`bda6403:design-system/src/styles.css` → live) 15/3 PASS + 1 undecidable, `toast-hit` (`3d3d5cc`→live) FAIL-5 ที่ 10 pairs — `✗` ทั้ง 5 แถวเป็น `#toastUndo` ล้วน
+ prompt ของรอบนี้ส่ง Next task มา**ว่างเปล่า** → ทำตาม Next task ใน repo
+ 🔴 **รอบหน้าเป็น tiebreak จริง** (ถ้ายังอยู่วันที่ 11-02): `2026-11-02` จะมี 3 tip, comparand = `ccba208`
+ → ก้อยก็ต่อเมื่อ sha ปิดรอบของ `_0027` < `ccba208` ความเสียหายถ้าก้อย = ทิ้ง `_0017`+`_0027` (docs ล้วน)
+ — รอบหน้าเฉลยจาก `for-each-ref` เอง (เทียบ hex ด้วย `node -e` ห้ามดูด้วยตา)
 🟦 **รอบ `2026-11-02_0017`: ถูก MASK ตามที่ `_0007` ทำนาย — *ไม่รัน A/B ไม่นับเข้าสถิติ* (คงที่ ก้อย 103/158 (103/154))**
  ref ของตัวเองยังชี้ `3503537` ตอนเลือก → `2026-11-02` มี tip ตัวเดียว = `ccba208` (`_0007`, local + `origin/` ตรงกัน) → วันที่ตัดสินแถว 1
  restore `ccba208` แล้ว, tree identity `32542e3e…` ตรงกันทุก path (`git rev-parse HEAD^{tree} ccba208^{tree}` → sha เดียวกัน)
