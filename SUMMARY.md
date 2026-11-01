@@ -1,32 +1,55 @@
-# SUMMARY — round `2026-11-02_0007`
+# SUMMARY — round 2026-11-02_0017
 
 ## What I did
-- Restored the previous round's tip `a33bee7` (`2026-11-01_0037`) onto the stale base `3503537` in a separate commit. The runner cut this branch from `3503537` again.
-- Checked the five owner-answer channels. None has an answer, so I applied none of the eight open decisions.
-- Ran the three-stage Verify command and all five `docs/btn-parity-proof.mjs` keys.
-- Added this round's entry to `AUTOPILOT.md → ## Next task` and pointed the next restore at this round's tip.
+- Restored the previous round's tip `ccba208` (`2026-11-02_0007`, local and `origin/` agree) onto this
+  branch, which the runner again cut from the stale `3503537`. I committed the restore on its own.
+- Checked all five owner-answer channels. None has an answer, so this round is a planned **no-op**,
+  as the restored `AUTOPILOT.md` Next task says.
+- Ran the Verify command and all five parity-harness keys. Every result matches the previous round.
+- Added this round's entry to the `## Next task` block in `AUTOPILOT.md` and pointed the
+  "tip to restore" line at `2026-11-02_0017`.
 
 ## Why
-- The prompt's `## Next task` arrived empty. The restored `AUTOPILOT.md` says to run a no-op round while `README.md → ## Open decisions` has no answers, and none has arrived. Hard rule 5 forbids inventing a substitute task.
-- This round counts in the restore-ranking record. My own ref still pointed at `3503537` when I picked the tip, and `2026-11-01` held four tips. `--sort=-committerdate` put `a33bee7` (`_0037`) first, which is correct. The sha-sorted `| sort -r` form put `f80e8c8` (`_0007`) first and sank the real tip to row 3 of 4, which would have dropped `_0017`, `_0027` and `_0037` (`node -e "console.log('a33bee7'<'f80e8c8','b8210f6'<'f80e8c8','0b66eba'<'f80e8c8')"` → `true true true`). Record: tails 103/158 (103/154).
-- The next round is masked. Once it drops its own ref, `2026-11-02` holds only this round's tip, so the date alone decides row 1. That holds unless this round isn't pushed.
+- The prompt arrived with an **empty** Next task. I followed the Next task in the restored repo
+  file rather than inventing one (hard rule 5).
+- All remaining acceptance-criterion work waits on eight owner decisions in `README.md → ## Open
+  decisions`. Each one moves pixels or adds a file, so the agent must not answer any of them.
+- This round is **MASKED** for the tiebreak statistic. When the tip was chosen, `2026-11-02` held a
+  single tip (`ccba208`), so the date alone settled row 1. The statistic is unchanged at 103/158 (103/154).
 
 ## Verification
-- `git rev-parse HEAD^{tree} a33bee7^{tree}` printed the same sha twice (`5c6799509f8a6b30164b4c0073d39d2475f5b49a`), so the restore matches on every path.
-- Channels: `grep -c "| Option | Cost |" README.md` → 8, `grep -c "If you answer:" README.md` → 8, `git ls-files | grep -i jspdf` → nothing, `git status --short --untracked-files=all` → clean, `main` = `ef3220e`, newest non-`auto/*` ref dated 2026-08-13.
-- Verify (`node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`), run bare: `54 passed, 0 failed`. check-tokens printed all six checks OK: tokens 22/22, fonts 4/4, and 15 CSS sources scanned for colour, weight, radius and family. vitest: 12 files, `31 passed (31)`.
-- Harness:
-  - `buttons 2488f2d:index.html index.html` → PASS, 85 pairs / 17 elements.
-  - `segmented 021b966:index.html index.html` → PASS, 45 / 9.
-  - `toast de07ea8:index.html 10e8f39:index.html` → PASS, 5 / 1.
-  - `ds-disabled-hover a33bee7:design-system/src/styles.css design-system/src/styles.css` → PASS, 15 / 3, plus `1 undecidable rule(s)` (`.pui-menu__item:last-child`).
-  - `toast-hit 3d3d5cc:index.html index.html` → `FAIL — 5 declaration(s) differ` across 10 pairs, exit 1. This is expected: the key shows the deliberate `pointer-events:auto` fix. All five `✗` rows are `#toastUndo` (base, `:hover`, `:disabled`, `:disabled:hover`, `:focus`), and none is `#toast`.
+- `git rev-parse HEAD^{tree} ccba208^{tree}` printed `32542e3e1d32b3e83153fadf44a9bbb3dd985d50`
+  twice, so the restore matches the previous tip on every path.
+- Channels: README `| Option | Cost |` = 8 and `If you answer:` = 8. No `jspdf` file is tracked
+  or present. `git status --short --untracked-files=all` is empty. `main` = `ef3220e`. The newest
+  non-`auto/*` ref is dated 2026-08-13 (`design-system` / `origin/design-system` at `3503537`).
+- Verify `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`:
+  printed `54 passed, 0 failed`. All check-tokens checks passed across 15 CSS sources. Vitest
+  printed `12 passed (12)` test files and `31 passed (31)` tests.
+- Harness (`docs/btn-parity-proof.mjs`):
+  - `buttons 2488f2d:index.html index.html`: 85 pairs / 17 elements, PASS, markup coverage OK
+  - `segmented 021b966:index.html index.html`: 45 pairs / 9 elements, PASS, markup coverage OK
+  - `toast de07ea8:index.html 10e8f39:index.html`: 5 pairs / 1 element, PASS
+  - `ds-disabled-hover ccba208:design-system/src/styles.css design-system/src/styles.css`:
+    15 pairs / 3 elements, PASS, plus 1 undecidable rule that this PASS does not cover
+  - `toast-hit 3d3d5cc:index.html index.html`: `FAIL — 5 declaration(s) differ` over 10 pairs.
+    All five `✗` rows are `#toastUndo` (`(base)`, `:hover`, `:disabled`, `:disabled:hover`,
+    `:focus`) and none are `#toast`. This is the expected result: it records the deliberate
+    2026-08-24 `pointer-events:auto` fix, so it is not a regression.
 
 ## What I did NOT do
-- Answered none of the eight open decisions (jsPDF, chip padding, spacing scale, browser verification, segmented padding, inputs, disabled-hover, `docs/design-parity.md`). Each one moves pixels or adds a file, so the owner has to make it.
-- Didn't retry the browser MCPs, since decision 4 has no permission change.
-- Ticked no acceptance criteria, because this round completed none.
+- I did not answer or apply any open decision (1–8), including chip/segmented/input padding,
+  jsPDF vendoring, browser verification, disabled-hover repair, and `docs/design-parity.md`.
+- I did not retry the Playwright or Chrome-DevTools MCPs. Earlier rounds found them blocked by
+  permissions.
+- I made no CSS, JS, or test changes.
 
 ## Risk
-- None in the product. Compared with `a33bee7`, this round changes only `AUTOPILOT.md` and `SUMMARY.md`.
-- The work has stalled. Each round now only restores the tree and re-checks for answers. Nothing will move until someone answers a decision in `README.md → ## Open decisions` or drops `jspdf.umd.min.js` into the repo.
+- Low. The only content change is the log entry in `AUTOPILOT.md` plus this file. The restore
+  commit's tree is byte-identical to `ccba208`.
+- The structural problem remains. The runner still cuts every round from `3503537`, so each
+  round's real diff depends on restoring the right tip, and nothing is merged to `main`. If the
+  next round lands on 11-02 it faces a real tiebreak against `ccba208`. That is
+  logged in `AUTOPILOT.md`.
+- The stall needs a person. Answering any `## Open decisions` entry in `README.md`, or dropping
+  `jspdf.umd.min.js` at the repo root, is the only thing that will unblock an acceptance criterion.
