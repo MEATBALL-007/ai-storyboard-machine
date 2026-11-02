@@ -1,36 +1,52 @@
-# SUMMARY — round `2026-11-03_0023`
+# SUMMARY — round 2026-11-03_0033
 
 ## What I did
-- Restored the previous round's tip `f957798` (`2026-11-03_0013`) onto this branch. The runner cut this branch from `3503537` again. The restore is its own commit. `git rev-parse HEAD^{tree} f957798^{tree}` printed `b468d0c184d7725b7c511b23ffe07d3432cd30f9` for both, so the tree matches on every path.
-- Followed the restored `## Next task`. The prompt's Next task arrived **empty**. This is a no-op round because no owner decision has been answered.
-- Checked all five answer channels and found nothing new (details under Verification).
-- Measured the tiebreak that `_0013` forecast. It came up **HEADS**: the wrong ranking form would have picked the right tip by luck. Running record for the wrong form: tails 105/162 (105/158).
-- Added this round's block to `## Next task` in `AUTOPILOT.md` and pointed the next restore at `2026-11-03_0023`.
+- Restored the previous round's tip `46761aa` (`2026-11-03_0023`) in its own commit. This branch was cut
+  from the stale base `3503537` again. After the commit, `git rev-parse HEAD^{tree}` printed `c3f58754…`,
+  the same tree `for-each-ref` reports for `46761aa`, so every path matches.
+- Checked all five answer channels for the eight owner decisions. None has an answer, so this round is a
+  no-op, which is what the restored `## Next task` says to do.
+- Ran Verify plus all five parity-harness keys. Everything is green, or reports its known by-design result.
+- Added this round's entry to `## Next task` in `AUTOPILOT.md` and pointed the "tip to restore" line at `_0033`.
 
 ## Why
-- Hard rule 5 and the restored contract both say a round with no owner answer must not invent work. All remaining criteria are blocked on README `## Open decisions` 1–8.
-- I ranked tips with `--sort=-committerdate`, not by sha. After dropping my own ref (`26bbb7a`), 2026-11-03 had two tips: `f957798` (`_0013`, 00:17) and `61504bf` (`_0003`, 00:06). `node -e "console.log('f957798'<'61504bf')"` printed `false`, so sha order and date order agree this time.
+- The prompt arrived with an empty "Next task". The real task lives in the restored `AUTOPILOT.md`: if no
+  owner answer exists, restore, check the channels, verify, write this summary, and stop. Hard rule 5 forbids
+  inventing a substitute task.
+- I picked the tip with `for-each-ref --sort=-committerdate`, not by sha order. Sorting by sha
+  (`| sort -r`) would put `f957798` (`_0013`) in row 1 and silently drop `_0023`. Checked with
+  `node -e "console.log('46761aa'<'f957798')"` → `true`.
 
 ## Verification
-- `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test` exited 0. It printed `54 passed, 0 failed`, then check-tokens 6/6 (tokens 22/22, fonts 4/4, and colour/weight/radius/font-family over 15 CSS sources), then `Tests 31 passed (31)`.
-- Harness, 5 keys:
-  - `buttons` (`2488f2d:index.html` → `index.html`): 85 pairs / 17 elements, PASS.
-  - `segmented` (`021b966:index.html` → `index.html`): 45/9, PASS.
-  - `toast` (`de07ea8:index.html` → `10e8f39:index.html`): 5/1, PASS.
-  - `ds-disabled-hover` (`f957798:design-system/src/styles.css` → `design-system/src/styles.css`): 15/3, PASS, plus 1 undecidable rule.
-  - `toast-hit` (`3d3d5cc:index.html` → `index.html`): `FAIL — 5 declaration(s) differ` over 10 pairs. All five `✗` rows are `#toastUndo` (`(base)`, `:hover`, `:disabled`, `:disabled:hover`, `:focus`), and none is `#toast`. This is the expected result.
-- Channels:
-  - README: `grep -c "| Option | Cost |"` = 8 and `grep -c "If you answer:"` = 8.
-  - No jsPDF file is tracked or present at the repo root.
-  - `git status --short --untracked-files=all` is empty.
-  - `main` is still `ef3220e`.
-  - The newest non-`auto/*` ref is `design-system`/`origin/design-system` at 2026-08-13.
+- Answer channels:
+  - `grep -c "| Option | Cost |" README.md` → 8, `grep -c "If you answer:"` → 8
+  - `git ls-files | grep -ic jspdf` → 0, no `jspdf*` at the repo root
+  - `git status --short --untracked-files=all` → clean
+  - `main` = `ef3220e` (2026-06-27); newest non-auto ref is `design-system` / `origin/design-system`
+    `3503537` (2026-08-13)
+- `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`, run bare (exit 0):
+  - `54 passed, 0 failed`
+  - check-tokens: 6/6 checks pass across 15 CSS sources (tokens 22/22, fonts 4/4)
+  - vitest: `Tests 31 passed (31)`
+- Harness (`docs/btn-parity-proof.mjs`):
+  - `buttons` (`2488f2d:index.html` → live): 85 pairs / 17 elements, PASS
+  - `segmented` (`021b966:index.html` → live): 45 / 9, PASS
+  - `toast` (`de07ea8:index.html` → `10e8f39:index.html`): 5 / 1, PASS
+  - `ds-disabled-hover` (`46761aa:design-system/src/styles.css` → live): 15 / 3, PASS, plus 1 undecidable rule
+  - `toast-hit` (`3d3d5cc:index.html` → live): `FAIL — 5 declaration(s) differ` across 10 pairs. All five `✗`
+    rows are `#toastUndo` (`pointer-events` unset → `auto`) and none are `#toast`. This is the expected
+    by-design result.
 
 ## What I did NOT do
-- I answered none of decisions 1–8 and applied none of 2/5/6/7 on my own. Each one either moves pixels or adds a file, so each is the owner's call.
-- I did not restore `docs/design-parity.md`, because that is decision 8.
-- I did not open a browser. The Playwright and DevTools MCPs are permission-blocked, which is decision 4.
+- I did not answer or apply any of the eight `## Open decisions` (jsPDF, chip/segmented/input padding,
+  spacing scale, browser verification, disabled-hover, `docs/design-parity.md`). Each one moves pixels or
+  adds a file, so each is the owner's call.
+- No CSS, JS, or test changes. No criterion boxes ticked, because none changed state.
+- I did not retry the browser MCPs (they are permission-blocked; see decision 4).
 
 ## Risk
-- Low. The only change beyond the restore is documentation (`AUTOPILOT.md` and this file). No CSS, JS or test changed.
-- The stall continues. Every round since late August has been a no-op like this one, and nothing will move until the owner answers a decision in README `## Open decisions`. The runner also keeps cutting branches from `3503537`. If the next round skips the restore, or ranks tips by sha, it will silently lose work.
+- Low. The only files changed beyond the byte-exact restore are `AUTOPILOT.md` (docs) and this `SUMMARY.md`.
+- The project is still stalled on owner input. Every round since 2026-08-24 has been a no-op, and the stall
+  will not clear without a person answering at least one item in `README.md → ## Open decisions`.
+- The runner still cuts each branch from `3503537`. If a future round skips the restore, it will be working
+  on a tree that looks finished but is stale.
