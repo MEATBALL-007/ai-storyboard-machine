@@ -1,46 +1,46 @@
-# SUMMARY — round `2026-11-06_0019`
+# SUMMARY — round `2026-11-06_0029`
 
 ## What I did
-- Restored the previous round's tip `dd91e40` (`2026-11-06_0009`) onto this branch. The runner cut it
-  from the stale base `3503537` again. I committed the restore as its own commit. Tree identity holds:
-  `git rev-parse HEAD^{tree} dd91e40^{tree}` printed `07704331976d2a49497d149f1436f02f6457c3cd` twice.
-- Checked all five owner-answer channels and found no answer on any of them (details under Verification).
-- Followed the restored `## Next task`, which calls for a no-op round while nothing is answered. I ran
-  Verify and all five harness keys, then added this round's entry to `AUTOPILOT.md` (commit `754f7ef`).
-- This round is the **MASKED** case that `_0009` predicted. `2026-11-06` held only one tip (`dd91e40`),
-  so the date decides row 1 and the trap-form A/B proves nothing. I didn't run it, and the record stays at 112/170 (112/166).
+- Restored the previous round's tip. The runner cut this branch from the stale base `3503537` again. I restored `d5ceb44` (`2026-11-06_0019`, same sha locally and on `origin/`) with `git checkout d5ceb44 -- .` and committed that restore by itself.
+- Checked all five owner-answer channels. None of them has an answer, so this is a no-op round, as the restored `## Next task` says. That Next task arrived empty in this round's prompt, so I followed the copy in the repo.
+- Ran the full Verify command and all five parity-harness keys. Every result matched the previous rounds.
+- Recorded the round in `AUTOPILOT.md` under `## Next task`. That covers the A/B measurement, the result, and a forecast for the next round. The task itself is unchanged: check `## Open decisions` first; if nothing is answered, do another no-op round.
 
 ## Why
-- The prompt's `## Next task` arrived **empty**. The real task is in the restored `AUTOPILOT.md`. It says
-  to run no-op rounds until the owner answers one of the eight `## Open decisions` in `README.md`.
-  Hard rule 5 forbids inventing a substitute task.
-- Every remaining acceptance gap (chip, segmented and input padding, the spacing/type scale, jsPDF, browser
-  verification, disabled-hover) moves pixels or adds a file. Those are owner decisions, so I didn't answer any of them myself.
+- All remaining integration work is waiting on the eight owner decisions under `README.md → ## Open decisions`. Each of them either moves pixels or adds a file, so none is mine to answer. Per hard rule 5, I did not make up a substitute task.
+- The A/B tiebreak was live this round. After dropping my own ref, `2026-11-06` held two tips. The trap form (`| sort -r` on sha) puts `dd91e40` at row 1. The real tip, `d5ceb44`, lands at row 2/2, so the trap form would have thrown away round `_0019`. Result: TAILS. Running record for the wrong formula: 113 of 171 (113/167).
 
 ## Verification
-- Tip selection: `git for-each-ref --sort=-committerdate …` row 1 was `dd91e40`
-  `auto/…/2026-11-06_0009`, and the local and `origin/` copies match.
-- Channels: `grep -c "| Option | Cost |" README.md` → `8`; `grep -c "If you answer:" README.md` → `8`;
-  no `jspdf` file tracked or at the root; `git status --short --untracked-files=all` → empty;
-  `main`/`origin/main`/`mac/main` = `ef3220e`; the newest non-`auto/*` ref is `design-system` at 2026-08-13.
-- Verify (run bare, exit 0): `54 passed, 0 failed`; check-tokens 22/22 tokens, 4/4 fonts, and all four
-  scan checks clean across 15 CSS sources; vitest `12 passed (12)` files, `31 passed (31)` tests.
+- Restore: `git rev-parse HEAD^{tree} d5ceb44^{tree}` printed `70b5545d8be69b00286725d184af86bb3f346684` for both, so the tree matches on every path.
+- Channels:
+  - `grep -c "| Option | Cost |" README.md` printed 8, and `grep -c "If you answer:"` printed 8.
+  - There is no `jspdf` file, tracked or untracked.
+  - `git status --short --untracked-files=all` printed nothing.
+  - `main`, `origin/main` and `mac/main` are all at `ef3220e`.
+  - The newest non-auto ref is `design-system` at 2026-08-13.
+- A/B: `node -e "console.log('d5ceb44'<'dd91e40')"` printed `true`.
+- Verify (`node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`, run bare) exited 0:
+  - `54 passed, 0 failed`
+  - check-tokens: tokens 22/22, fonts 4/4, and the colour, weight, radius and font-family checks all passed across 15 CSS sources
+  - vitest: `12 passed (12)` files, `31 passed (31)` tests
 - Harness (`docs/btn-parity-proof.mjs`):
-  - `buttons 2488f2d:index.html index.html` → 85 pairs / 17 elements PASS
-  - `segmented 021b966:index.html index.html` → 45 / 9 PASS
-  - `toast de07ea8:index.html 10e8f39:index.html` → 5 / 1 PASS
-  - `ds-disabled-hover dd91e40:design-system/src/styles.css design-system/src/styles.css` → 15 / 3 PASS + `1 undecidable rule(s)`
-  - `toast-hit 3d3d5cc:index.html index.html` → `FAIL — 5 declaration(s) differ` at 10 pairs, and all five `✗`
-    rows are `#toastUndo` (base, :hover, :disabled, :disabled:hover, :focus). That is the intended result.
+
+  | Key | Before → after | Result |
+  |---|---|---|
+  | `buttons` | `2488f2d:index.html` → live | 85 pairs / 17 elements, markup OK, PASS |
+  | `segmented` | `021b966:index.html` → live | 45 pairs / 9 elements, PASS |
+  | `toast` | `de07ea8:index.html` → `10e8f39:index.html` | 5 pairs / 1 element, PASS |
+  | `ds-disabled-hover` | `d5ceb44:design-system/src/styles.css` → live | 15 pairs / 3 elements, PASS, plus 1 undecidable rule |
+  | `toast-hit` | `3d3d5cc:index.html` → live | `FAIL — 5 declaration(s) differ` over 10 pairs |
+
+  For `toast-hit`, all five ✗ rows are `#toastUndo` (`(base)`, `:hover`, `:disabled`, `:disabled:hover`, `:focus`) and none is `#toast`. FAIL-5 is the expected result for that key.
 
 ## What I did NOT do
-- I didn't touch `index.html`, `design-system/`, `README.md` or any test. Nothing was answered, so there was nothing to apply.
-- I didn't run the trap-form A/B, because this round is structurally masked.
-- I didn't retry the browser MCPs (decision 4: they are permission-blocked).
+- I did not answer or apply any open decision. Decisions 2, 5, 6 and 7 move pixels. Decision 1 needs a vendored jsPDF file, and there is no network. Decision 4 needs browser permission. Decision 8 is a git-history question.
+- I did not open a browser. The Playwright and DevTools MCPs are blocked by permissions, not just by the server being headless.
+- I did not touch `index.html`, any CSS, the tests, or the Verify command.
 
 ## Risk
-- Low. This round changes only documentation (`AUTOPILOT.md` and this file) on top of a byte-identical restore.
-- The stall continues: no owner decision has been answered since the 2026-08 rounds. Another round won't
-  clear it. A person has to answer one of the eight entries in `README.md → ## Open decisions`.
-- Next round is a **live** tiebreak: `2026-11-06` will hold 2 tips, and the comparand is `dd91e40`. The trap form
-  discards `_0019` only if this round's closing sha sorts below `dd91e40`.
+- Low. This round's only content changes are the restore commit (its tree is identical to `d5ceb44`) and the text added to `AUTOPILOT.md` and `SUMMARY.md`.
+- The project is still stalled. Nothing has merged to `main` and the decisions in `README.md` are unanswered. More rounds will not change that; it needs the owner to respond.
+- The next round is a live tiebreak. `2026-11-06` will hold three tips, and the comparand is `dd91e40`. The trap form would discard `_0019` and `_0029` if this round's closing sha sorts below `dd91e40`.
