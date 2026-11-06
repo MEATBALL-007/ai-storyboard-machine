@@ -1,29 +1,42 @@
-# SUMMARY — round `2026-11-07_0024`
+# SUMMARY — round `2026-11-07_0034`
 
 ## What I did
-- Restored the previous round's tip. The runner cut this branch from the stale base `3503537` again. I restored `992c0fe` (`2026-11-07_0009`, same sha locally and on `origin/`) with `git checkout 992c0fe -- .` and committed that restore by itself.
-- Checked all five owner-answer channels. None has an answer, so this is a no-op round, as the restored `## Next task` says.
-- Ran both Verify commands (the restored three-stage one and the prompt's two-stage one) and all five parity-harness keys. Every result matched previous rounds.
-- Recorded the round in `AUTOPILOT.md` under `## Next task`, with a forecast for the next round. The task is unchanged: check `README.md → ## Open decisions` first, and if nothing has been answered, do another no-op round.
+- Restored the previous round's tip. The runner cut this branch from the stale base `3503537` again. I restored `1d86a06` (`2026-11-07_0024`, same sha locally and on `origin/`) with `git checkout 1d86a06 -- .` and committed that restore by itself.
+- Checked all five owner-answer channels and found no answer in any of them. That makes this a no-op round, as the restored `## Next task` says.
+- Ran the three-stage Verify command and all five parity-harness keys. Every result matches the expected values.
+- Measured the queued A/B forecast live: **TAILS**. With my own ref dropped, 11-07 holds two tips. The correct form (`--sort=-committerdate`) puts the real tip `1d86a06` at row 1. The trap form (sha `| sort -r`) puts `992c0fe` at row 1, which would discard `_0024`. The record is now tails 115/174 (115/170).
+- Added this round's entry to the `## Next task` block in `AUTOPILOT.md`, including the forecast for the next round.
 
 ## Why
-- **I did not do the token pass this round's prompt asked for, because it was finished on 2026-08-21.** The prompt carried the original `3503537` contract (3,756 lines, 12 components, two-stage Verify, "first token pass"). The restored tree is past that: `check-tokens.mjs` reports 22/22 tokens in sync, no derived-colour literals, and no radius literals. The hex values with no matching token are already listed in `AUTOPILOT.md` under the first acceptance criterion (`#000`, `#222`, `#333`, `#fff`, `#161616`, `#151515`, `#0a0a0a`, `#bbb`, `#ffb4a0`, `#7ac87a`). Per hard rule 5, I followed the restored Next task and did not invent a substitute.
-- All remaining integration work is waiting on the eight owner decisions in `README.md → ## Open decisions`. Each one either moves pixels or adds a file, so I can't answer any of them.
-- This round was MASKED, as `_0009` forecast. Before the restore, `2026-11-07` held one tip (`992c0fe`), so there was no A/B to measure. The record is unchanged at 114 of 173 (114/169).
+- The prompt's `## Next task` was empty. Per hard rule 5 and the memory notes, the real task lives in the restored `AUTOPILOT.md`. That task says: if no owner decision has been answered, restore, check, verify, and stop. I invented no other work.
+- All eight decisions in `README.md → ## Open decisions` change pixels or add files, so only the owner can make them.
 
 ## Verification
-- Restore: `git rev-parse HEAD^{tree} 992c0fe^{tree}` printed `45c802c7f0b1e4e23f447ff505efb53e740e08a8` for both, so the tree matches on every path.
-- Channels: `grep -c "| Option | Cost |" README.md` = 8 and `grep -c "If you answer:" README.md` = 8. `git ls-files | grep -i jspdf` printed nothing. `git status --short --untracked-files=all` was clean. `main` = `ef3220e` (2026-06-27). The newest non-`auto/*` ref is `design-system` at 2026-08-13.
-- Restored Verify, `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`: `54 passed, 0 failed`, then 6/6 check-tokens lines (22/22 tokens, 4/4 fonts, 15 CSS sources scanned), then `Tests 31 passed (31)`.
-- Prompt Verify, `node tools/test.mjs && npm --prefix design-system test`: `54 passed, 0 failed` and `Tests 31 passed (31)`.
-- Harness: `buttons` (`2488f2d`→live) compared 85 across 17, PASS. `segmented` (`021b966`→live) 45/9 PASS. `toast` (`de07ea8`→`10e8f39`) 5/1 PASS. `ds-disabled-hover` (`992c0fe:design-system/src/styles.css`→live) 15/3 PASS with 1 undecidable. `toast-hit` (`3d3d5cc`→live) FAIL with 5 declarations at 10 pairs, which is its expected result: all five ✗ rows are `#toastUndo` and none is `#toast`.
+- Tree identity: `HEAD^{tree}` after the restore commit = `279c8048a3253d15ba7dcc76bbaa162d2bf77358`, which is `1d86a06`'s tree (`279c804` from `for-each-ref`).
+- Channels:
+  - `grep -c "| Option | Cost |" README.md` returned 8 and `grep -c "If you answer:"` returned 8, so all eight decisions are still unanswered.
+  - There is no `jspdf*` file.
+  - `git status --short --untracked-files=all` is clean.
+  - `main` is still `ef3220e`.
+  - The newest non-auto ref is `design-system`/`origin/design-system` at 2026-08-13.
+- `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test` printed:
+  - `54 passed, 0 failed`
+  - all six check-tokens lines green: tokens 22/22, fonts 4/4, and 15 CSS sources scanned for colour, weight, radius and font-family
+  - vitest: `12 passed (12)` test files, `31 passed (31)` tests
+- Harness:
+  - `buttons 2488f2d:index.html index.html`: 85 pairs / 17 elements, PASS
+  - `segmented 021b966:index.html index.html`: 45/9, PASS
+  - `toast de07ea8:index.html 10e8f39:index.html`: 5/1, PASS
+  - `ds-disabled-hover 1d86a06:design-system/src/styles.css design-system/src/styles.css`: 15/3, PASS, plus `1 undecidable rule(s)`
+  - `toast-hit 3d3d5cc:index.html index.html`: `FAIL — 5 declaration(s) differ` across 10 pairs. All five `✗` rows are `#toastUndo` (`pointer-events` `(unset)`→`auto`) and none is `#toast`. This is the intended result.
+- `node -e "console.log('1d86a06'<'992c0fe')"` printed `true`.
 
 ## What I did NOT do
-- I did not answer or apply any of the eight open decisions, including the chip, segmented and input padding (decisions 2, 5 and 6) or vendoring jsPDF (decision 1).
-- I did not re-run the token survey the prompt described. It is finished, and the unmatched values are already recorded.
-- I did not touch `storyboard-simulator.html`, the PURE-LOGIC or TESTS markers, or any test.
+- I did not answer or apply any of the eight open decisions (jsPDF, chip padding, spacing scale, browser check, segmented padding, inputs, disabled-hover, `docs/design-parity.md`).
+- I did not retry the browser MCPs. They are permission-blocked.
+- I touched no CSS, HTML or JS. The only file changes are `AUTOPILOT.md` and this summary.
 
 ## Risk
-- Low. The only changes this round are documentation (`AUTOPILOT.md`, `SUMMARY.md`) on top of a restore commit that is tree-identical to `992c0fe`.
-- Next round: `2026-11-07` will hold two tips. If this round's closing sha sorts below `992c0fe`, the `| sort -r` trap form would restore `992c0fe` and discard this round (documentation only). Use `--sort=-committerdate`.
-- The underlying stall still needs a person: every round restores, finds no answers, and stops.
+- Low. The round changed only documentation, on top of a restore whose tree matches the previous tip exactly.
+- The integration has been stalled for months on owner decisions. More rounds won't move it; the owner has to answer `README.md → ## Open decisions`.
+- The runner still cuts every branch from `3503537`. Any round that skips the restore will silently lose all work since then.
