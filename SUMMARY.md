@@ -1,40 +1,40 @@
-# SUMMARY — round `2026-11-08_0031`
+# SUMMARY — round `2026-11-09_0003`
 
 ## What I did
-- Restored the previous round's tip. The runner cut this branch from the stale base `3503537` again. I restored `89e9571` (`2026-11-08_0022`, same sha locally and on `origin/`) with `git checkout 89e9571 -- .` and committed the restore on its own (`1925dab`).
-- Checked all five owner-answer channels and found no answer in any of them. Under the restored `## Next task`, that makes this a no-op round.
-- Ran the three-stage Verify command and all five parity-harness keys. Every result matches the expected values.
-- Ran the A/B ranking test that `_0022` forecast. My own ref was still on `3503537` when I listed refs, so `2026-11-08` held three tips. The correct form (`--sort=-committerdate`) put `89e9571` (`_0022`) at row 1. The trap form (sha + `| sort -r`) put `d38ce60` (`_0001`) at row 1, which is TAILS: it would have thrown away `_0011` and `_0022`. The record is now tails 118/177 (118/173).
-- Added this round's entry to the `## Next task` block in `AUTOPILOT.md` (`05299a1`), with the forecast for the next round.
+- Restored the previous round's tip `869c6cd` (`2026-11-08_0031`) onto this branch, which the runner had again
+  cut from the stale base `3503537`. Restore commit tree `de233c18…` is identical to `869c6cd^{tree}`.
+- Checked all five owner-answer channels. **No decision has been answered**, so per the restored `## Next task`
+  this round is a no-op.
+- Ran Verify plus the five parity-harness keys. All results match the previous rounds exactly.
+- Recorded the round in `AUTOPILOT.md`'s Next task block: live A/B of the tip-ranking trap came up TAILS,
+  so the record is now 119/178, and the forecast for the next round is MASKED.
 
 ## Why
-- The prompt's `## Next task` was empty. The task lives in the restored `AUTOPILOT.md`: check the README's `## Open decisions` first, and if nothing has been answered, restore, check, verify, summarise, and stop. I followed that and did not make up any other work (hard rule 5).
-- All remaining acceptance-criteria work is waiting on eight owner decisions in `README.md`. Each one moves pixels or adds a file, so the owner has to make it.
+- The prompt's `## Next task` was empty. Hard rule 5 forbids inventing a substitute, so I followed the task
+  in the restored `AUTOPILOT.md`: check for owner answers, and if there are none, verify and stop.
+- All remaining acceptance-criteria work is gated on the eight `README.md → ## Open decisions` items. Each one
+  moves pixels or adds a file, so the owner has to make those calls. I did not answer any of them.
 
 ## Verification
-- Restore: `git rev-parse HEAD^{tree} 89e9571^{tree}` printed `65529b48a8e05f3aae092f4704f8d0a216688638` twice. The trees are identical on every path.
-- Channel 1: `grep -c "| Option | Cost |" README.md` → `8`; `grep -c "If you answer:" README.md` → `8`. The two counters agree, so nothing has been answered.
-- Channel 2: `git ls-files | grep -i jspdf` → nothing; `ls jspdf*` → "No such file or directory".
-- Channel 3: `main` = `ef3220e` (2026-06-27), unchanged.
-- Channel 4: `git status --short --untracked-files=all` → clean.
-- Channel 5: the newest non-`auto/*` ref is `design-system` / `origin/design-system` at 2026-08-13. Nothing newer.
-- Tip author: `89e9571 | PHANTOM AUTOPILOT <autopilot@phantom.local>`, the runner, not the owner.
-- Verify (`node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`) ran bare and exited 0: `54 passed, 0 failed`; check-tokens 6/6 OK (tokens 22/22, fonts 4/4, 15 CSS sources for each scan); vitest `12 passed (12)` files, `31 passed (31)` tests.
-- Harness:
-  - `buttons 2488f2d:index.html index.html` → 85 pairs / 17 elements, PASS
-  - `segmented 021b966:index.html index.html` → 45 / 9, PASS
-  - `toast de07ea8:index.html 10e8f39:index.html` → 5 / 1, PASS
-  - `ds-disabled-hover 89e9571:design-system/src/styles.css design-system/src/styles.css` → 15 / 3, PASS + `1 undecidable rule(s)`
-  - `toast-hit 3d3d5cc:index.html index.html` → `FAIL — 5 declaration(s) differ` over 10 pairs. All five ✗ rows are `#toastUndo` (`(base)`, `:hover`, `:disabled`, `:disabled:hover`, `:focus`), and every one has `after : auto <- .toast-act`. None is `#toast`. This FAIL is the expected result.
-- A/B: `node -e "console.log('89e9571'<'d38ce60', '98663a6'<'d38ce60')"` → `true true`.
+- `git rev-parse HEAD^{tree} 869c6cd^{tree}` → both `de233c18d58403f1afa3f6c4f7e573d1bcc9ad73`
+- Channels: `grep -c "| Option | Cost |" README.md` = 8, `grep -c "If you answer:"` = 8; no `jspdf` file;
+  `git status` clean; `main` = `ef3220e`; newest non-`auto/*` ref is 2026-08-13.
+- Ranking A/B: the trap form (`committerdate:short` + sha, `| sort -r`) puts `d38ce60` at row 1. The real tip
+  `869c6cd` lands at row 4/4 → TAILS (`node -e "console.log('869c6cd'<'d38ce60')"` → `true`).
+- Verify `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`, run bare:
+  `54 passed, 0 failed`; check-tokens 6/6 lines OK (22/22 tokens, 4/4 fonts, 15 CSS sources);
+  vitest `12 passed (12)` files, `31 passed (31)` tests.
+- Harness: `buttons` (`2488f2d`→live) 85 pairs/17 elements PASS; `segmented` (`021b966`→live) 45/9 PASS;
+  `toast` (`de07ea8`→`10e8f39`) 5/1 PASS; `ds-disabled-hover` (`869c6cd:…/styles.css`→live) 15/3 PASS +
+  1 undecidable; `toast-hit` (`3d3d5cc`→live) `FAIL — 5 declaration(s) differ`. That FAIL is the expected
+  result: all five `✗` rows are `#toastUndo` and none is `#toast`.
 
 ## What I did NOT do
-- I did not answer any of the eight open decisions, and I did not apply decisions 2, 5, 6 or 7. All of them move pixels.
-- I did not restore `docs/design-parity.md` (decision 8).
-- I did not retry the browser MCPs (decision 4). They are permission-blocked.
-- I did not touch `index.html`, any `.css` file, the tests, or the Verify command.
+- I did not answer or act on any of the eight open decisions (jsPDF, chip padding, spacing scale, browser
+  verification, segmented padding, input sizes, disabled-hover, `docs/design-parity.md`).
+- No CSS, JS, or test changes. Only `AUTOPILOT.md` and `SUMMARY.md` changed after the restore.
 
 ## Risk
-- Low. The only content change is the new entry at the top of `AUTOPILOT.md`'s `## Next task` block (plus this file). The restore commit is a large diff against `3503537`, but its tree is byte-identical to `89e9571`.
-- The stall continues. The runner still cuts every branch from `3503537`, and none of the eight decisions has an answer. More rounds will not change that. It needs the owner.
-- Next round's forecast: `2026-11-08` will hold four tips and the comparand stays `d38ce60`. The trap form fails iff this round's closing sha < `d38ce60`. The next round should settle that from `for-each-ref` itself.
+- Low. The restore was checked by tree-sha identity, and the only edits are documentation.
+- The project stays stalled until a person answers the decisions in `README.md`. Further rounds cannot move
+  any unchecked acceptance criterion.
