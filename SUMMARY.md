@@ -1,38 +1,33 @@
-# SUMMARY: round 2026-11-09_0024 (no-op, no owner answer)
+# SUMMARY — round `2026-11-09_0034`
 
 ## What I did
-- Restored the previous round's tip `25da204` (`2026-11-09_0013`). This branch was cut from the stale base `3503537` again. I used `git checkout 25da204 -- .` and committed the restore on its own. Tree identity matches: `HEAD^{tree}` = `25da204^{tree}` = `0b020137…`.
-- Checked all five owner-answer channels. None has an answer.
-- Ran the three-stage Verify command and all five harness keys. Every result matches the expected values.
-- Ran the live A/B measurement that `_0013` forecast. Result: TAILS. Logged it in `## Next task` in `AUTOPILOT.md` and pointed the next restore at `2026-11-09_0024`.
+- Restored the previous round's tip `00d2e03` (`2026-11-09_0024`) onto this branch, which the runner again cut from the stale base `3503537`. I committed the restore on its own (`791c7d5`). `HEAD^{tree}` and `00d2e03^{tree}` are both `f066497f62c5ee5f20f5bfa18a05be2344e7084d`, so every path matches.
+- Checked all five owner-answer channels. None has an answer (details under Verification).
+- Ran the Verify command and the five `docs/btn-parity-proof.mjs` harness keys. Every result matches the previous round.
+- Added this round's entry to `AUTOPILOT.md → ## Next task` and pointed the "tip to restore next" line at `2026-11-09_0034`.
 
 ## Why
-- The prompt's `## Next task` was empty. The restored `AUTOPILOT.md` (line 340) says that if no decision under `README.md → ## Open decisions` has an answer, the round is a no-op: restore, check the channels, verify, write SUMMARY, and stop. I followed that and did not invent a substitute task (hard rule 5).
-- A/B: after setting aside this round's own ref (`9779080`), `2026-11-09` held 2 tips. The correct form (`--sort=-committerdate`) puts `25da204` (`_0013`) at row 1. The trap form (sha + `sort -r`) puts `3be73ae` (`_0003`) at row 1, which would discard `_0013`. `node -e "console.log('25da204'<'3be73ae')"` printed `true`, so the result is TAILS. Trap-form record: tails 120/179 (120/175).
+- The prompt's `## Next task` was empty, so I followed the one in the restored `AUTOPILOT.md`. It says: if none of the eight `README.md → ## Open decisions` items has been answered, this is a no-op round (restore, check channels, verify, write SUMMARY). It also says not to invent other work. Hard rule 5 points the same way.
+- Restoring before reading anything matters. The stale `3503537` tree looks finished, not broken: it has no `tools/check-tokens.mjs`, so the Verify command fails with a missing file there.
 
 ## Verification
-- `git for-each-ref --sort=-committerdate …`: newest tip `25da204`, the same in `refs/heads` and `refs/remotes/origin`.
-- Channels:
-  1. `grep -c "| Option | Cost |" README.md` → 8, and `grep -c "If you answer:" README.md` → 8 (both still unanswered)
-  2. `git ls-files | grep -i jspdf` → nothing
-  3. `main` = `ef3220e` (unchanged)
-  4. `git status --short --untracked-files=all` → clean
-  5. Newest non-`auto/*` ref is dated 2026-08-13
-- Verify (`node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`) ran bare and exited 0:
+- Tip selection: `git for-each-ref --sort=-committerdate`, own ref dropped. Row 1 is `00d2e03` (`_0024`), and local and `origin/` agree. The trap form (sorting by sha) would have put `3be73ae` at row 1, because `node -e "console.log('00d2e03'<'3be73ae')"` prints `true`. That makes this round a measured TAILS case.
+- Channels: `grep -c "| Option | Cost |" README.md` printed `8` and `grep -c "If you answer:"` printed `8`. No jsPDF file is tracked or present. `git status --short --untracked-files=all` is empty. `main` is `ef3220e`. The newest non-`auto/*` ref is `design-system`/`origin/design-system` at `3503537`, dated 2026-08-13.
+- Verify (`node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`), run bare:
   - `54 passed, 0 failed`
-  - check-tokens: 6/6 checks passed (22/22 tokens, 4/4 fonts, 15 CSS sources scanned)
-  - vitest: `12 passed` files, `31 passed` tests
-- Harness (`docs/btn-parity-proof.mjs`):
-  - `buttons 2488f2d:index.html index.html` → 85 pairs / 17 elements, PASS
-  - `segmented 021b966:index.html index.html` → 45 pairs / 9 elements, PASS
-  - `toast de07ea8:index.html 10e8f39:index.html` → 5 pairs / 1 element, PASS
-  - `ds-disabled-hover 25da204:design-system/src/styles.css design-system/src/styles.css` → 15 pairs / 3 elements, PASS + 1 undecidable rule
-  - `toast-hit 3d3d5cc:index.html index.html` → `FAIL — 5 declaration(s) differ` across 10 pairs. All five `✗` rows are `#toastUndo` (base / :hover / :disabled / :disabled:hover / :focus), and none is `#toast`. That is the expected result.
+  - check-tokens: 22/22 tokens, 4/4 fonts, and all six checks pass across 15 CSS sources
+  - vitest: `12 passed (12)` test files, `31 passed (31)` tests
+- Harness:
+  - `buttons 2488f2d:index.html index.html`: PASS, 85 pairs across 17 elements
+  - `segmented 021b966:index.html index.html`: PASS, 45 pairs across 9 elements
+  - `toast de07ea8:index.html 10e8f39:index.html`: PASS, 5 pairs across 1 element
+  - `ds-disabled-hover 00d2e03:design-system/src/styles.css design-system/src/styles.css`: PASS, 15 pairs across 3 elements, plus 1 undecidable rule (`.pui-menu__item:last-child`)
+  - `toast-hit 3d3d5cc:index.html index.html`: exit 1 with `FAIL — 5 declaration(s) differ`, which is the expected result. All five ✗ rows are `#toastUndo` (`(base)`, `:hover`, `:disabled`, `:disabled:hover`, `:focus`) and none is `#toast`.
 
 ## What I did NOT do
-- Did not answer any of the 8 open decisions, and did not touch CSS, `index.html`, or the design system. Every remaining acceptance criterion is blocked on an owner decision.
-- Did not try the browser MCPs (decision 4: they are permission-blocked).
+- I did not answer any of the eight open decisions (jsPDF, chip padding, spacing scale, browser verification, segmented padding, inputs, disabled-hover, `docs/design-parity.md`). Each one moves pixels or adds files, so each is the owner's call.
+- I did not retry the browser MCPs, which are blocked by permissions. I did not touch CSS or JS, and I did not start any fallback work.
 
 ## Risk
-- Low. The only content change is the new round note in `AUTOPILOT.md`. The restore commit is tree-identical to `25da204`.
-- The stall continues: every round re-cuts from `3503537`, and progress needs a person to answer `README.md → ## Open decisions`. Forecast for the next round on 11-09: it faces 3 tips with comparand `3be73ae`. It comes up TAILS if this round's closing sha < `3be73ae`, which would discard `_0013` + `_0024`.
+- None in code: this round changed only `AUTOPILOT.md` (one appended entry) and `SUMMARY.md`.
+- Process risk is unchanged. Every round branch is still cut from `3503537`, and nothing is merged to `main`. The integration criteria can't move until someone answers a decision in `README.md → ## Open decisions`. Rerunning rounds won't change that; it needs a person.
