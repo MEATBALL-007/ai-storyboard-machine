@@ -1,39 +1,41 @@
-# SUMMARY — round `2026-11-12_0001`
+# SUMMARY — round `2026-11-12_0011`
 
 ## What I did
-- The runner cut this branch from the stale base `3503537` again. I restored the previous round's tip `c989bf0` (`2026-11-11_0034`) onto it as its own commit (`43c09fc`). `HEAD^{tree}` and `c989bf0^{tree}` both print `dc4a5c8e00d7d8bd160f0442e548b3cee3a01719`, so every path matches.
+- The runner cut this branch from the stale base `3503537` again. I restored the previous round's tip `71ed10f` (`2026-11-12_0001`) onto it as its own commit. `HEAD^{tree}` and `71ed10f^{tree}` both print `8037353ea4e3512fb06632ae01771dfdc2a9209f`, so every path matches.
 - Checked all five owner-answer channels. None of them has an answer.
 - Ran the Verify command and all five `docs/btn-parity-proof.mjs` harness keys. Every result matches the previous round.
-- Added this round's entry to `AUTOPILOT.md → ## Next task` (commit `125c486`). The "tip to restore next" line now points at `2026-11-12_0001`. The task itself is unchanged.
+- Added this round's entry to `AUTOPILOT.md → ## Next task`. The "tip to restore next" line now points at `2026-11-12_0011`. The task itself is unchanged.
 
 ## Why
 - The prompt's `## Next task` arrived empty, so I followed the one in the restored `AUTOPILOT.md`. It says that while none of the eight `README.md → ## Open decisions` items has an answer, the round is a no-op: restore, check the channels, verify, write SUMMARY, and invent nothing else. Hard rule 5 says the same.
 - I restored before reading any project file. On the stale tree the work looks finished rather than broken, so reading first is how earlier rounds went wrong.
-- I measured the A/B forecast live. After dropping my own ref (`43c09fc`, dated 11-12), the newest date 2026-11-11 held four tips. The correct formula (`--sort=-committerdate`) put the real tip `c989bf0` (`_0034`) at row 1. The wrong formula (short date + sha + `sort -r`) put `e9fefaf` (`_0014`) at row 1 and sank the real tip to row 3/4. Applying the wrong formula would have discarded `_0024` and `_0034`. The result is TAILS, as `_0034` forecast. The wrong-formula record is now **tails 125/187 (125/183)**.
+- This round is MASKED, as `_0001` forecast. My own ref was still on `3503537`, so `2026-11-12` held exactly one tip (`71ed10f`), and the two tip-ranking formulas cannot disagree on a single tip. I did not run the A/B or count this round. The record stays at **tails 125/187 (125/183)**.
 
 ## Verification
-- **Tip selection:** `git for-each-ref --sort=-committerdate` put `c989bf0` (`_0034`) at row 1, and the local and `origin/` refs agree (tree `dc4a5c8`).
-- **Restore:** `git rev-parse HEAD^{tree} c989bf0^{tree}` printed the same sha twice (`dc4a5c8e…`).
-- **Owner channels:**
-  1. README: `grep -c "| Option | Cost |"` = 8 and `grep -c "If you answer:"` = 8, so the counters agree and nothing is answered.
-  2. No `jspdf*` file is tracked or present.
-  3. `main` = `ef3220e` (2026-06-27).
-  4. `git status --short --untracked-files=all` is empty.
-  5. The newest non-`auto/*` ref is 2026-08-13 (`design-system`/`origin/design-system` = `3503537`).
-- **Verify** (run bare): `node tools/test.mjs` printed `54 passed, 0 failed`. `node tools/check-tokens.mjs` passed all six checks (22/22 tokens, 4/4 fonts, and the colour/weight/radius/font-family checks across 15 CSS sources). `npm --prefix design-system test` printed 12 files and 31 tests passed.
+- **Tip selection:** `git for-each-ref --sort=-committerdate` put `71ed10f` (`2026-11-12_0001`) at row 1, and the local and `origin/` refs agree (tree `8037353`). The author of the tip and its two parents is `PHANTOM AUTOPILOT <autopilot@phantom.local>`, so it is the runner's commit and not an owner commit. `git merge-base --is-ancestor 3503537 71ed10f` printed `ancestor-ok`.
+- **Five channels:**
+  - `grep -c "| Option | Cost |" README.md` printed 8, and `grep -c "If you answer:"` printed 8.
+  - `git ls-files | grep -ic jspdf` printed 0.
+  - `git status --short --untracked-files=all` printed nothing.
+  - `main`, `origin/main` and `mac/main` are all `ef3220e` (2026-06-27).
+  - The newest non-`auto/*` ref is `design-system`/`origin/design-system` at `3503537` (2026-08-13).
+- **Verify** (run bare, all three stages chained with `&&`):
+  - `54 passed, 0 failed`
+  - `check-tokens` 6/6 passed: tokens 22/22, fonts 4/4, and the colour, weight, radius and font-family checks across 15 CSS sources.
+  - Vitest: `Test Files 12 passed (12)`, `Tests 31 passed (31)`.
 - **Harness:**
-  - `buttons` (`2488f2d`→live): 85 pairs / 17 elements, PASS, markup OK.
-  - `segmented` (`021b966`→live): 45/9, PASS.
-  - `toast` (`de07ea8`→`10e8f39`): 5/1, PASS.
-  - `ds-disabled-hover` (`c989bf0:design-system/src/styles.css`→live): 15/3, PASS + 1 undecidable rule.
-  - `toast-hit` (`3d3d5cc`→live): `FAIL — 5 declaration(s) differ` across 10 pairs, which is the expected result. All five `✗` rows are `#toastUndo` (`(base)`, `:hover`, `:disabled`, `:disabled:hover`, `:focus`), each with `after : auto <- .toast-act`. No row is `#toast`.
+  - `buttons` (`2488f2d:index.html` → live): 85 pairs / 17 elements, PASS, markup coverage OK.
+  - `segmented` (`021b966:index.html` → live): 45 / 9, PASS.
+  - `toast` (`de07ea8:index.html` → `10e8f39:index.html`): 5 / 1, PASS.
+  - `ds-disabled-hover` (`71ed10f:design-system/src/styles.css` → live): 15 / 3, PASS, plus `1 undecidable rule(s)`.
+  - `toast-hit` (`3d3d5cc:index.html` → live): exit 1 with `FAIL — 5 declaration(s) differ` over 10 pairs. This failure is the expected result. All five `✗` rows are `#toastUndo` (`(base)`, `:hover`, `:disabled`, `:disabled:hover`, `:focus`), the property is `pointer-events` going `(unset)` → `auto <- .toast-act`, and there is no `#toast` row.
 
 ## What I did NOT do
-- I did not answer or act on any of the eight open decisions (jsPDF, chip padding, spacing scale, browser verification, segmented padding, input sizes, disabled-hover, `docs/design-parity.md`). Each one moves pixels or adds a file, so they are the owner's call.
-- I did not tick any acceptance box, because nothing new was completed.
-- I did not open a browser. Decision 4 is still unanswered, and the MCPs are permission-blocked.
+- I did not answer or act on any of the eight open decisions (jsPDF, chip padding, spacing scale, browser verification, segmented padding, input sizes, disabled-hover, `docs/design-parity.md`). Each one moves pixels or adds a file, so each is the owner's call.
+- I did not run the A/B, because this round is masked (one tip on the newest date).
+- I made no CSS, JS or test change.
 
 ## Risk
-- This round changed no code. The only content diff is the new block in `AUTOPILOT.md`. The restore commit `43c09fc` is large because the branch base is stale, but its tree is byte-identical to `c989bf0`.
-- The project has been stalled for weeks on owner decisions. More rounds will not change that; a person needs to answer `README.md → ## Open decisions`.
-- The next round on 2026-11-12 is **MASKED** for the A/B record (only one tip that day after it drops its own ref). If this round isn't pushed, the newest date falls back to 11-11, where the wrong formula would again restore the wrong tip (`e9fefaf`).
+- Low. This round changed only `AUTOPILOT.md` (one round entry) and `SUMMARY.md`, plus the restore commit, which is tree-identical to `71ed10f`.
+- Next round's forecast: if it is still 2026-11-12, that date will hold 2 tips and the comparand is `71ed10f`. The forecast is TAILS if and only if this round's closing sha is less than `71ed10f`. The next round should settle that from `for-each-ref` using `node -e`, not by eye.
+- The project remains stalled on owner input. No acceptance criterion can move until someone answers a decision in `README.md → ## Open decisions` or drops `jspdf.umd.min.js` into the repo.
