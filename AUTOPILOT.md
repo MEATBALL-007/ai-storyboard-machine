@@ -347,8 +347,21 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 + `head -16` + ตรวจซ้ำด้วย refname **ห้ามใช้หมายเลขแถว** และ **ห้ามใช้ `| sort -r` แทน `--sort=`**),
 ตรวจ 5 ช่องทาง, รัน Verify 3 ขั้น + harness ครบ 5 key, เขียน SUMMARY แล้วจบรอบ
 ห้ามประดิษฐ์งานอื่นเด็ดขาด**
-⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-11-12_0011` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
+⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-11-12_0021` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
 จากบล็อกนี้ — มันคือ sha ที่ยังไม่มีอยู่ตอนเขียนบรรทัดนี้)**
+🟩 **รอบ `2026-11-12_0021`: คำทำนายของ `_0011` = "หัว" (`bf305bb` > `71ed10f`) — *วัดจริง นับเข้าสถิติ* → หัว**
+ ref ของตัวเองหลัง restore = `185c506` (ลงวันที่ 11-12, แถว 3) → ตัดทิ้งก่อนอ่าน → `2026-11-12` มี 2 tip (`bf305bb` `_0011`, `71ed10f` `_0001`)
+ สูตรถูก (`--sort=-committerdate`) แถว 1 = `bf305bb` `_0011` ✅ / สูตรผิด (`%(committerdate:short)` + sha + `| sort -r`) แถว 1 = `bf305bb` เช่นกัน
+ (`'b'` > `'7'`) สถิติสูตรผิด: **ก้อย 125 จาก 188 (125/184)**
+ restore `bf305bb` แล้ว (local + `origin/` ตรงกัน), tree identity `7e554e2d…` ตรงกันทุก path (`HEAD^{tree}` = `bf305bb^{tree}`)
+ 5 ช่องทางไม่มีคำตอบ (README 8/8 ทั้งสองตัวนับ, ไม่มี jspdf, status สะอาด, `main` = `ef3220e`, ref อื่นใหม่สุด 2026-08-13)
+ Verify 3 ขั้นเขียว (54/54, check-tokens 6/6 ที่ 15 CSS sources, 31/31), harness 5 key: `buttons` (`2488f2d`→live) 85/17 /
+ `segmented` (`021b966`→live) 45/9 / `toast` (`de07ea8`→`10e8f39`) 5/1 PASS, `ds-disabled-hover`
+ (`bf305bb:design-system/src/styles.css` → live) 15/3 PASS + 1 undecidable, `toast-hit` (`3d3d5cc`→live) FAIL-5 ที่ 10 pairs — `✗` ทั้ง 5 แถวเป็น `#toastUndo` ล้วน
+ prompt ของรอบนี้ส่ง Next task มา**ว่างเปล่า** → ทำตาม Next task ใน repo
+ 🔴 **รอบหน้าต้องวัดจริง** (ถ้ายังอยู่ 11-12): `2026-11-12` จะมี 3 tip, comparand = `bf305bb`
+ → ก้อยก็ต่อเมื่อ sha ปิดรอบของ `_0021` < `bf305bb` ความเสียหายถ้าก้อย = ทิ้ง `_0021` (docs ล้วน)
+ — รอบหน้าเฉลยจาก `for-each-ref` เอง (เทียบ hex ด้วย `node -e` ห้ามดูด้วยตา)
 🟦 **รอบ `2026-11-12_0011`: ถูก MASK ตามที่ `_0001` ทำนายไว้ — ไม่รัน A/B ไม่นับสถิติ (คงที่ ก้อย 125/187 (125/183))**
  ref ของตัวเองก่อน restore ยังอยู่ที่ `3503537` → `2026-11-12` มี tip เดียว = `71ed10f` `_0001` (local + `origin/` ตรงกัน,
  author `PHANTOM AUTOPILOT <autopilot@phantom.local>`, `merge-base --is-ancestor 3503537 71ed10f` ผ่าน)
