@@ -347,8 +347,20 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 + `head -16` + ตรวจซ้ำด้วย refname **ห้ามใช้หมายเลขแถว** และ **ห้ามใช้ `| sort -r` แทน `--sort=`**),
 ตรวจ 5 ช่องทาง, รัน Verify 3 ขั้น + harness ครบ 5 key, เขียน SUMMARY แล้วจบรอบ
 ห้ามประดิษฐ์งานอื่นเด็ดขาด**
-⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-11-12_0001` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
+⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-11-12_0011` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
 จากบล็อกนี้ — มันคือ sha ที่ยังไม่มีอยู่ตอนเขียนบรรทัดนี้)**
+🟦 **รอบ `2026-11-12_0011`: ถูก MASK ตามที่ `_0001` ทำนายไว้ — ไม่รัน A/B ไม่นับสถิติ (คงที่ ก้อย 125/187 (125/183))**
+ ref ของตัวเองก่อน restore ยังอยู่ที่ `3503537` → `2026-11-12` มี tip เดียว = `71ed10f` `_0001` (local + `origin/` ตรงกัน,
+ author `PHANTOM AUTOPILOT <autopilot@phantom.local>`, `merge-base --is-ancestor 3503537 71ed10f` ผ่าน)
+ restore `71ed10f` แล้ว, tree identity `8037353e…` ตรงกันทุก path (`HEAD^{tree}` = `71ed10f^{tree}`)
+ 5 ช่องทางไม่มีคำตอบ (README 8/8 ทั้งสองตัวนับ, ไม่มี jspdf, status สะอาด, `main` = `ef3220e`, ref อื่นใหม่สุด 2026-08-13)
+ Verify 3 ขั้นเขียว (54/54, check-tokens 6/6 ที่ 15 CSS sources, 31/31), harness 5 key: `buttons` (`2488f2d`→live) 85/17 /
+ `segmented` (`021b966`→live) 45/9 / `toast` (`de07ea8`→`10e8f39`) 5/1 PASS, `ds-disabled-hover`
+ (`71ed10f:design-system/src/styles.css` → live) 15/3 PASS + 1 undecidable, `toast-hit` (`3d3d5cc`→live) FAIL-5 ที่ 10 pairs — `✗` ทั้ง 5 แถวเป็น `#toastUndo` ล้วน
+ prompt ของรอบนี้ส่ง Next task มา**ว่างเปล่า** → ทำตาม Next task ใน repo
+ 🔴 **รอบหน้าต้องวัดจริง** (ถ้ายังอยู่ 11-12): `2026-11-12` จะมี 2 tip, comparand = `71ed10f`
+ → ก้อยก็ต่อเมื่อ sha ปิดรอบของ `_0011` < `71ed10f` ความเสียหายถ้าก้อย = ทิ้ง `_0011` (docs ล้วน)
+ — รอบหน้าเฉลยจาก `for-each-ref` เอง (เทียบ hex ด้วย `node -e` ห้ามดูด้วยตา)
 🟥 **รอบ `2026-11-12_0001`: คำทำนายของ `_0034` = "ก้อย" (`c989bf0` < `e9fefaf`) — *วัดจริง นับเข้าสถิติ* → ก้อย**
  รอบแรกของวัน ref ของตัวเองหลัง restore = `43c09fc` (ลงวันที่ 11-12) → ตัดทิ้งก่อนอ่าน → วันใหม่สุด `2026-11-11` มี 4 tip
  (`c989bf0` `_0034`, `0656209` `_0024`, `e9fefaf` `_0014`, `cd098b5` `_0004`)
