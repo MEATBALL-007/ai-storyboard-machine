@@ -1,45 +1,50 @@
-# SUMMARY — round 2026-11-14_0001
+# SUMMARY — round 2026-11-14_0011
 
 ## What I did
-- Restored the previous round's tip `c0b2484` (`2026-11-13_0031`) onto this branch. The runner had cut this branch from the stale base `3503537` again. The restore is its own commit, and the tree shas match: `HEAD^{tree}` = `c0b2484^{tree}` = `04046721e4cd0b20d46560d69298014eb5d25f5b`.
-- Checked the five channels where an owner answer could appear. None had one, so this round is a no-op, which is what the restored `## Next task` says to do in that case.
-- Ran the full Verify command and all five parity-harness keys. Every result matched the expected values.
-- Added this round's log entry under `## Next task` in `AUTOPILOT.md` and pointed the "tip to restore" line at `2026-11-14_0001`.
+- Restored the previous round's tip `b9c50a7` (`2026-11-14_0001`) onto this branch, which the runner
+  again cut from the stale base `3503537`. Kept it as its own commit. Tree identity holds:
+  `HEAD^{tree}` = `b9c50a7^{tree}` = `3287a77182f8…`.
+- Checked all five owner-answer channels. None has an answer, so this is a no-op round, which is
+  what the restored `## Next task` says to do in that case.
+- Ran Verify (3 stages) and all 5 parity-harness keys. Every result matches the known baseline.
+- Logged the round in `AUTOPILOT.md` under `## Next task` and pointed the "tip to restore" line at
+  `2026-11-14_0011`.
 
 ## Why
-- The prompt's `## Next task` was empty. The real task lives in the branch's own `AUTOPILOT.md`, which only exists after the restore. It says that when no owner decision has been answered, the round should restore, check the channels, verify, write SUMMARY and stop, without inventing other work.
-- Every remaining acceptance criterion is blocked on one of the 8 owner decisions in `README.md` → `## Open decisions`. Each one either moves pixels or adds a file, so the owner has to make the call. An agent should not.
+- The prompt's `## Next task` arrived empty. The real task lives in the restored `AUTOPILOT.md`. It
+  says that with no answer in `README.md → ## Open decisions`, a round only restores, checks, verifies
+  and stops. Per hard rule 5 I did not invent a substitute task.
+- Tip selection: `git for-each-ref --sort=-committerdate`. The only ref dated 2026-11-14 was
+  `b9c50a7` (local and `origin/` agree), so the trap-form A/B was masked and is not counted.
 
 ## Verification
-- Owner-answer channels:
-  - `grep -c "| Option | Cost |" README.md` → `8`, and `grep -c "If you answer:" README.md` → `8`. The two counts agree, so nothing has been answered.
-  - No `jspdf` file is tracked or present at the repo root.
-  - `git status --short --untracked-files=all` → empty.
-  - `main` and `origin/main` are both `ef3220e`.
-  - The newest non-`auto/*` ref is `design-system`/`origin/design-system` at 2026-08-13.
-- Choosing the tip: the previous tip's author is `PHANTOM AUTOPILOT <autopilot@phantom.local>`, and `git merge-base --is-ancestor 3503537 c0b2484` → `ancestor-ok`. The local and `origin/` refs both point at `c0b2484`.
-- A/B measurement that the in-repo block asks for: after dropping my own ref (`ee20789`, dated 11-14), the trap form (`committerdate:short` + `| sort -r`) puts `c0b2484` in row 1, which is the real tip. Result: HEADS. `node -e` confirmed that `c0b2484` sorts above the other three 11-13 shas.
-- Verify: `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`, run bare with exit 0:
-  - `54 passed, 0 failed`
-  - check-tokens: 6/6 checks pass. Tokens are 22/22, fonts 4/4, and 15 CSS sources were scanned.
-  - vitest: `12 passed (12)` test files and `31 passed (31)` tests.
-- Harness (`docs/btn-parity-proof.mjs`):
-
-  | Key | Pair | Result |
-  |---|---|---|
-  | `buttons` | `2488f2d` → live | 85 pairs / 17 elements, PASS |
-  | `segmented` | `021b966` → live | 45 / 9, PASS |
-  | `toast` | `de07ea8` → `10e8f39` | 5 / 1, PASS |
-  | `ds-disabled-hover` | `c0b2484:design-system/src/styles.css` → live | 15 / 3, PASS, plus 1 undecidable rule |
-  | `toast-hit` | `3d3d5cc` → live | `FAIL — 5 declaration(s) differ` across 10 pairs, as designed |
-
-  All five ✗ rows from `toast-hit` are `#toastUndo` (`(base)`, `:hover`, `:disabled`, `:disabled:hover`, `:focus`), and none are `#toast`.
+- `node tools/test.mjs` → `54 passed, 0 failed`
+- `node tools/check-tokens.mjs` → 6/6 checks OK (tokens 22/22, fonts 4/4, plus 4 scans over 15 CSS sources)
+- `npm --prefix design-system test` → `Test Files 12 passed (12)`, `Tests 31 passed (31)`
+- Harness `docs/btn-parity-proof.mjs`:
+  - `buttons 2488f2d:index.html index.html` → 85 pairs / 17 elements, PASS
+  - `segmented 021b966:index.html index.html` → 45 / 9, PASS
+  - `toast de07ea8:index.html 10e8f39:index.html` → 5 / 1, PASS
+  - `ds-disabled-hover b9c50a7:design-system/src/styles.css design-system/src/styles.css` → 15 / 3, PASS + 1 undecidable
+  - `toast-hit 3d3d5cc:index.html index.html` → `FAIL — 5 declaration(s) differ` over 10 pairs. All 5 `✗`
+    rows are `#toastUndo` and none is `#toast`. This FAIL is the expected result: it records the
+    deliberate 2026-08-24 `pointer-events:auto` fix.
+- Channels: `grep -c "| Option | Cost |" README.md` = 8 and `grep -c "If you answer:"` = 8 (they agree);
+  no `jspdf` in `git ls-files`; `git status --untracked-files=all` is clean; `main` = `ef3220e`;
+  the newest non-`auto/*` ref is 2026-08-13.
 
 ## What I did NOT do
-- I did not answer, implement or work around any of the 8 open decisions. That includes chip, segmented and input padding, the spacing scale, jsPDF, browser checks, disabled-hover and `docs/design-parity.md`.
-- I did not start any other task.
-- I did not retry the browser MCPs, because they are blocked by permissions.
+- I did not answer or act on any of the 8 open decisions. Each one moves pixels or adds a file, so
+  each is the owner's call.
+- I did not touch `index.html`, any CSS, any test, or the Verify command.
+- I did not retry the browser MCPs, which are permission-blocked (decision 4).
 
 ## Risk
-- None in code. This round changed only `AUTOPILOT.md` and `SUMMARY.md`, beyond the restore commit, which matches `c0b2484` exactly by tree sha.
-- The project is still stalled. Nothing will move until the owner answers a decision in `README.md` → `## Open decisions` or drops `jspdf.umd.min.js` into the repo. The runner also keeps cutting every branch from `3503537` instead of from the previous round's tip.
+- This round changes documentation only. Apart from the restore commit, the diff touches
+  `AUTOPILOT.md` and `SUMMARY.md`.
+- The runner still cuts every round from `3503537`. The restore depends on picking the right tip.
+  If the newest 2026-11-14 ref was not the live tip (for example, if an owner pushed to `_0001`
+  after this round read it), the restore would be wrong. Tree identity rules that out for the sha
+  this round read.
+- Integration is still stalled. The work cannot move until the owner answers a decision in
+  `README.md → ## Open decisions`.
