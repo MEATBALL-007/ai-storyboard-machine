@@ -1,22 +1,25 @@
-# SUMMARY — round 2026-11-15_0012
+# SUMMARY — round 2026-11-15_0022
 
 ## What I did
-- Restored the previous round's tip `42398a5` (`2026-11-15_0002`) onto this branch. The runner cut
+- Restored the previous round's tip `0c221bf` (`2026-11-15_0012`) onto this branch. The runner cut
   it from the stale base `3503537` again. The restore is its own commit, and tree identity holds:
-  `HEAD^{tree}` = `42398a5^{tree}` = `45f7433bd699…`.
+  `HEAD^{tree}` = `0c221bf^{tree}` = `2d3e657c2362…`.
 - Checked all five owner-answer channels. None has an answer, so this is a no-op round. That is what
   the restored `## Next task` says to do when nothing is answered.
 - Ran Verify (all 3 stages) and all 5 parity-harness keys. Every result matches the known baseline.
-- Logged the round in `AUTOPILOT.md` under `## Next task` and pointed the "tip to restore" line at
-  `2026-11-15_0012`.
+- Measured the trap-form tip ranking live. It came up TAILS, as `_0012` forecast. Logged the round in
+  `AUTOPILOT.md` under `## Next task` and pointed the "tip to restore" line at `2026-11-15_0022`.
 
 ## Why
 - The prompt's `## Next task` arrived empty. The real task is in the restored `AUTOPILOT.md`. It says
   that if `README.md → ## Open decisions` has no answer, a round only restores, checks, verifies and
   stops. Hard rule 5 rules out inventing a substitute task.
-- I picked the tip with `git for-each-ref --sort=-committerdate` while my own ref was still on
-  `3503537`. `2026-11-15` held exactly one tip (`42398a5`, matching on local and `origin/`), so the
-  round is **MASKED** as `_0002` predicted. I ran no A/B and left the tally at 129/196.
+- I picked the tip with `git for-each-ref --sort=-committerdate`. Row 1 was `0c221bf` `_0012`
+  (local and `origin/` match), and `git log --oneline` showed it holds real work, not a bare restore.
+- The A/B counts this round because `2026-11-15` held two tips after I dropped my own ref (`0d2c822`).
+  With the trap form (`%(committerdate:short)` + sha + `| sort -r`), row 1 was `42398a5` and the real
+  tip `0c221bf` was row 2 of 2. `node -e "console.log('0c221bf'<'42398a5')"` printed `true`. Result:
+  TAILS, and the tally is now **tails 130/197 (130/193)**.
 
 ## Verification
 - `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`, run bare,
@@ -30,10 +33,10 @@
   - `buttons 2488f2d:index.html index.html`: 85 pairs / 17 elements, PASS
   - `segmented 021b966:index.html index.html`: 45 / 9, PASS
   - `toast de07ea8:index.html 10e8f39:index.html`: 5 / 1, PASS
-  - `ds-disabled-hover 42398a5:design-system/src/styles.css design-system/src/styles.css`: 15 / 3,
+  - `ds-disabled-hover 0c221bf:design-system/src/styles.css design-system/src/styles.css`: 15 / 3,
     PASS, plus `1 undecidable rule(s)`
-  - `toast-hit 3d3d5cc:index.html index.html`: exit 1, `FAIL — 5 declaration(s) differ` across 10
-    pairs. All five `✗` rows are `#toastUndo` (`(base)`, `:hover`, `:disabled`, `:disabled:hover`,
+  - `toast-hit 3d3d5cc:index.html index.html`: `FAIL — 5 declaration(s) differ` across 10 pairs.
+    All five `✗` rows are `#toastUndo` (`(base)`, `:hover`, `:disabled`, `:disabled:hover`,
     `:focus`) and none is `#toast`. That is the intended result.
 
 ## What I did NOT do
@@ -44,11 +47,11 @@
 - I did not touch `index.html`, any `.css` file, the test markers, or `storyboard-simulator.html`.
 
 ## Risk
-- Low. The only content changes are the restore, which is tree-identical to `42398a5`, and two
+- Low. The only content changes are the restore, which is tree-identical to `0c221bf`, and two
   documentation files (`AUTOPILOT.md`, `SUMMARY.md`).
 - The project has stalled. Every acceptance criterion still open is waiting on an owner decision in
   `README.md → ## Open decisions`, and more rounds cannot change that. The runner also still cuts
   every branch from `3503537`, so nothing reaches `main`.
-- Next round's tiebreak: `2026-11-15` will hold two tips. The trap form gives TAILS (and drops
-  `_0012`) if this round's closing sha sorts below `42398a5`. The real tip still has to be read
-  from `for-each-ref --sort=-committerdate`.
+- Next round's tiebreak: `2026-11-15` will hold three tips, and the comparand stays `42398a5`. The
+  trap form gives TAILS (dropping `_0012` and `_0022`) if this round's closing sha sorts below
+  `42398a5`. The real tip still has to be read from `for-each-ref --sort=-committerdate`.
