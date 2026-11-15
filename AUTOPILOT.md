@@ -347,8 +347,24 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 + `head -16` + ตรวจซ้ำด้วย refname **ห้ามใช้หมายเลขแถว** และ **ห้ามใช้ `| sort -r` แทน `--sort=`**),
 ตรวจ 5 ช่องทาง, รัน Verify 3 ขั้น + harness ครบ 5 key, เขียน SUMMARY แล้วจบรอบ
 ห้ามประดิษฐ์งานอื่นเด็ดขาด**
-⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-11-16_0022` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
+⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-11-16_0032` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
 จากบล็อกนี้ — มันคือ sha ที่ยังไม่มีอยู่ตอนเขียนบรรทัดนี้)**
+🟥 **รอบ `2026-11-16_0032`: คำทำนายของ `_0022` = "ก้อย" (`16ee57b` < `f0dcde6`) — *วัดจริง นับเข้าสถิติ* → ก้อย**
+ ref ของตัวเองหลัง restore = `9c395e2` (ลงวันที่ 11-16, แถว 3) → ตัดทิ้งก่อนอ่าน → `2026-11-16` มี 3 tip (`16ee57b` `_0022`, `f0dcde6` `_0012`, `7c4302b` `_0002`)
+ สูตรถูก (`--sort=-committerdate`) แถว 1 = `16ee57b` `_0022` ✅ / สูตรผิด (`%(committerdate:short)` + sha + `| sort -r`) แถว 1 = `f0dcde6` ❌
+ (tip จริงหลุดออกจาก `head -5` และจะทิ้ง `_0022`) (`node -e "console.log('16ee57b'<'f0dcde6')"` → `true`)
+ สถิติสูตรผิด: **ก้อย 132 จาก 201 (132/197)**
+ `git log --format="%h | %an | %s" -3 16ee57b` มีงานจริง (SUMMARY + no-op commit + restore), author = PHANTOM AUTOPILOT
+ restore `16ee57b` แล้ว (local + `origin/` ตรงกัน), tree identity `840766a0…` ตรงกันทุก path (`HEAD^{tree}` = `16ee57b^{tree}`)
+ 5 ช่องทางไม่มีคำตอบ (README 8/8 ทั้งสองตัวนับ, ไม่มี jspdf, status สะอาด, `main` = `ef3220e`, ref อื่นใหม่สุด 2026-08-13)
+ Verify 3 ขั้นเขียว (54/54, check-tokens 6/6 ที่ 15 CSS sources, 31/31), harness 5 key: `buttons` (`2488f2d`→live) 85/17 /
+ `segmented` (`021b966`→live) 45/9 / `toast` (`de07ea8`→`10e8f39`) 5/1 PASS, `ds-disabled-hover`
+ (`16ee57b:design-system/src/styles.css` → live) 15/3 PASS + 1 undecidable, `toast-hit` (`3d3d5cc`→live) FAIL-5 ที่ 10 pairs — `✗` ทั้ง 5 แถวเป็น `#toastUndo` ล้วน
+ prompt ของรอบนี้ส่ง Next task มา**ว่างเปล่า** → ทำตาม Next task ใน repo
+ 🔴 **รอบหน้าต้องวัดจริง** (ถ้ายังอยู่ 11-16): `2026-11-16` จะมี 4 tip, comparand = `f0dcde6`
+ → ก้อยก็ต่อเมื่อ sha ปิดรอบของ `_0032` < `f0dcde6` ความเสียหายถ้าก้อย = ทิ้ง `_0022`+`_0032` (docs ล้วน)
+ — รอบหน้าเฉลยจาก `for-each-ref` เอง (เทียบ hex ด้วย `node -e` ห้ามดูด้วยตา)
+ (ถ้ารอบหน้าข้ามไป 11-17 = รอบแรกของวัน → วัดกับ 4 tip ของ 11-16 แบบเดียวกัน)
 🟩 **รอบ `2026-11-16_0022`: คำทำนายของ `_0012` = "หัว" (`f0dcde6` > `7c4302b`) — *วัดจริง นับเข้าสถิติ* → หัว**
  ref ของตัวเองหลัง restore = `465c851` (ลงวันที่ 11-16, แถว 3) → ตัดทิ้งก่อนอ่าน → `2026-11-16` มี 2 tip (`f0dcde6` `_0012`, `7c4302b` `_0002`)
  สูตรถูก (`--sort=-committerdate`) แถว 1 = `f0dcde6` `_0012` ✅ / สูตรผิด (`%(committerdate:short)` + sha + `| sort -r`) แถว 1 = `f0dcde6` เช่นกัน
