@@ -347,8 +347,23 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 + `head -16` + ตรวจซ้ำด้วย refname **ห้ามใช้หมายเลขแถว** และ **ห้ามใช้ `| sort -r` แทน `--sort=`**),
 ตรวจ 5 ช่องทาง, รัน Verify 3 ขั้น + harness ครบ 5 key, เขียน SUMMARY แล้วจบรอบ
 ห้ามประดิษฐ์งานอื่นเด็ดขาด**
-⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-11-16_0032` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
+⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-11-17_0007` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
 จากบล็อกนี้ — มันคือ sha ที่ยังไม่มีอยู่ตอนเขียนบรรทัดนี้)**
+🟥 **รอบ `2026-11-17_0007`: คำทำนายของ `_0032` = "รอวัดจริง" (comparand `f0dcde6`) — *วัดจริง นับเข้าสถิติ* → ก้อย**
+ รอบแรกของวัน ref ของตัวเองหลัง restore = `d505623` (ลงวันที่ 11-17, แถว 1) → ตัดทิ้งก่อนอ่าน → วันใหม่สุด `2026-11-16` มี 4 tip
+ (`97982ac` `_0032`, `16ee57b` `_0022`, `f0dcde6` `_0012`, `7c4302b` `_0002`)
+ สูตรถูก (`--sort=-committerdate`) แถว 1 = `97982ac` `_0032` ✅ / สูตรผิด (`%(committerdate:short)` + sha + `| sort -r`) แถว 1 = `f0dcde6` ❌
+ (tip จริงจมไปแถว 2/4 หลังตัด ref ตัวเอง และจะทิ้ง `_0022`+`_0032`) (`node -e "console.log('97982ac'<'f0dcde6')"` → `true`)
+ สถิติสูตรผิด: **ก้อย 133 จาก 202 (133/198)**
+ `git log -1 97982ac` author = PHANTOM AUTOPILOT, subject `autopilot: SUMMARY for round 2026-11-16_0032` (งานของ runner ไม่ใช่คำตอบเจ้าของ)
+ restore `97982ac` แล้ว (local + `origin/` ตรงกัน, `merge-base --is-ancestor 3503537` ผ่าน), tree identity `0b638945…` ตรงกันทุก path (`HEAD^{tree}` = `97982ac^{tree}`)
+ 5 ช่องทางไม่มีคำตอบ (README 8/8 ทั้งสองตัวนับ, ไม่มี jspdf, status สะอาด, `main` = `ef3220e`, ref อื่นใหม่สุด 2026-08-13)
+ Verify 3 ขั้นเขียว (54/54, check-tokens 6/6 ที่ 15 CSS sources, 31/31), harness 5 key: `buttons` (`2488f2d`→live) 85/17 /
+ `segmented` (`021b966`→live) 45/9 / `toast` (`de07ea8`→`10e8f39`) 5/1 PASS, `ds-disabled-hover`
+ (`97982ac:design-system/src/styles.css` → live) 15/3 PASS + 1 undecidable, `toast-hit` (`3d3d5cc`→live) FAIL-5 ที่ 10 pairs — `✗` ทั้ง 5 แถวเป็น `#toastUndo` ล้วน
+ prompt ของรอบนี้ส่ง Next task มา**ว่างเปล่า** → ทำตาม Next task ใน repo
+ 🟦 **รอบหน้าถูก MASK** (ห้ามรัน A/B ห้ามนับสถิติ): หลังตัด ref ของตัวเอง `2026-11-17` จะมี tip เดียว = tip ของรอบนี้
+ (ถ้ารอบนี้ไม่ถูก push วันใหม่สุดจะย้อนเป็น 11-16 ซึ่งแถว 1 ของสูตรผิด = `f0dcde6` ≠ tip จริง `97982ac` → ก้อย)
 🟥 **รอบ `2026-11-16_0032`: คำทำนายของ `_0022` = "ก้อย" (`16ee57b` < `f0dcde6`) — *วัดจริง นับเข้าสถิติ* → ก้อย**
  ref ของตัวเองหลัง restore = `9c395e2` (ลงวันที่ 11-16, แถว 3) → ตัดทิ้งก่อนอ่าน → `2026-11-16` มี 3 tip (`16ee57b` `_0022`, `f0dcde6` `_0012`, `7c4302b` `_0002`)
  สูตรถูก (`--sort=-committerdate`) แถว 1 = `16ee57b` `_0022` ✅ / สูตรผิด (`%(committerdate:short)` + sha + `| sort -r`) แถว 1 = `f0dcde6` ❌
