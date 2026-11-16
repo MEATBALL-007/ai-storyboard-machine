@@ -347,8 +347,24 @@ combinator ตั้ง flag แล้ว `computed()` ทิ้ง ส่วน
 + `head -16` + ตรวจซ้ำด้วย refname **ห้ามใช้หมายเลขแถว** และ **ห้ามใช้ `| sort -r` แทน `--sort=`**),
 ตรวจ 5 ช่องทาง, รัน Verify 3 ขั้น + harness ครบ 5 key, เขียน SUMMARY แล้วจบรอบ
 ห้ามประดิษฐ์งานอื่นเด็ดขาด**
-⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-11-17_0027` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
+⚠️ **tip ที่รอบหน้าต้อง restore คือ tip ของ `2026-11-17_0037` (ดูจาก `for-each-ref` เอง ห้ามลอก sha
 จากบล็อกนี้ — มันคือ sha ที่ยังไม่มีอยู่ตอนเขียนบรรทัดนี้)**
+🟥 **รอบ `2026-11-17_0037`: คำทำนายของ `_0027` = "รอวัดจริง" (comparand `a558e40`) — *วัดจริง นับเข้าสถิติ* → ก้อย**
+ ref ของตัวเองหลัง restore = `96dfd9c` (ลงวันที่ 11-17, แถว 3) → ตัดทิ้งก่อนอ่าน → `2026-11-17` มี 3 tip (`4bab4d7` `_0027`, `a558e40` `_0017`, `4d6c8f7` `_0007`)
+ สูตรถูก (`--sort=-committerdate`) แถว 1 = `4bab4d7` `_0027` ✅ / สูตรผิด (`%(committerdate:short)` + sha + `| sort -r`) แถว 1 = `a558e40` ❌
+ (tip จริงจมไปแถว 3/3 หลังตัด ref ตัวเอง และจะทิ้ง `_0027`) (`node -e "console.log('4bab4d7'<'a558e40')"` → `true`)
+ สถิติสูตรผิด: **ก้อย 134 จาก 204 (134/200)**
+ `git log -1 4bab4d7` author = PHANTOM AUTOPILOT, subject `autopilot: SUMMARY for round 2026-11-17_0027` (งานของ runner ไม่ใช่คำตอบเจ้าของ)
+ restore `4bab4d7` แล้ว (local + `origin/` ตรงกัน, `merge-base --is-ancestor 3503537` ผ่าน), tree identity `bc5097fd…` ตรงกันทุก path (`HEAD^{tree}` = `4bab4d7^{tree}`)
+ 5 ช่องทางไม่มีคำตอบ (README 8/8 ทั้งสองตัวนับ, ไม่มี jspdf, status สะอาด, `main` = `ef3220e`, ref อื่นใหม่สุด 2026-08-13)
+ Verify 3 ขั้นเขียว (54/54, check-tokens 6/6 ที่ 15 CSS sources, 31/31), harness 5 key: `buttons` (`2488f2d`→live) 85/17 /
+ `segmented` (`021b966`→live) 45/9 / `toast` (`de07ea8`→`10e8f39`) 5/1 PASS, `ds-disabled-hover`
+ (`4bab4d7:design-system/src/styles.css` → live) 15/3 PASS + 1 undecidable, `toast-hit` (`3d3d5cc`→live) FAIL-5 ที่ 10 pairs — `✗` ทั้ง 5 แถวเป็น `#toastUndo` ล้วน
+ prompt ของรอบนี้ส่ง Next task มา**ว่างเปล่า** → ทำตาม Next task ใน repo
+ 🔴 **รอบหน้าต้องวัดจริง** (ถ้ายังอยู่ 11-17): หลังตัด ref ของตัวเอง `2026-11-17` จะมี 4 tip, comparand = `a558e40`
+ → ก้อยก็ต่อเมื่อ sha ปิดรอบของ `_0037` < `a558e40` ความเสียหายถ้าก้อย = ทิ้ง `_0027`+`_0037` (docs ล้วน)
+ — รอบหน้าเฉลยจาก `for-each-ref` เอง (เทียบ hex ด้วย `node -e` ห้ามดูด้วยตา)
+ (ถ้ารอบหน้าข้ามไป 11-18 = รอบแรกของวัน → วัดกับ 4 tip ของ 11-17 แบบเดียวกัน)
 🟩 **รอบ `2026-11-17_0027`: คำทำนายของ `_0017` = "รอวัดจริง" (comparand `4d6c8f7`) — *วัดจริง นับเข้าสถิติ* → หัว**
  ref ของตัวเองหลัง restore = `b2d445e` (ลงวันที่ 11-17, แถว 1) → ตัดทิ้งก่อนอ่าน → `2026-11-17` มี 2 tip (`a558e40` `_0017`, `4d6c8f7` `_0007`)
  สูตรถูก (`--sort=-committerdate`) แถว 1 = `a558e40` `_0017` ✅ / สูตรผิด (`%(committerdate:short)` + sha + `| sort -r`) แถว 1 = `a558e40` เช่นกัน
