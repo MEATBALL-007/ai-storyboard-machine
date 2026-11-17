@@ -1,4 +1,4 @@
-.pui-swatch{height:34px; border-radius:3px; position:relative; border:1px solid rgba(255,255,255,.06)}
+.pui-swatch{height:34px; border-radius:var(--r-md); position:relative; border:1px solid rgba(255,255,255,.06)}
 .pui-swatch__label{
   position:absolute; bottom:1px; left:0; right:0; text-align:center; font-size:7px;
   color:rgba(255,255,255,.85); text-shadow:0 1px 2px #000; letter-spacing:.3px; font-family:var(--mono);
