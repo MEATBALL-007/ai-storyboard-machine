@@ -1,66 +1,61 @@
-# SUMMARY — round 2026-11-19_0002
+# SUMMARY — round 2026-11-19_0012
 
 ## What I did
-- Restored the previous round's tip, `537e483` (`2026-11-18_0027`). The runner had cut this branch
+- Restored the previous round's tip, `7280217` (`2026-11-19_0002`). The runner had cut this branch
   from the stale base `3503537` again. The restore is its own commit, and the trees match:
-  `HEAD^{tree}` = `537e483^{tree}` = `937c32e80f92…`.
+  `HEAD^{tree}` = `7280217^{tree}` = `9cb493ef4e94…`.
 - Checked all five owner-answer channels. None has an answer, so this is a no-op round, which is
   what the restored `## Next task` says to do in that case.
-- Ran Verify (all 3 stages, from the restored contract) and all 5 parity-harness keys. Every result
-  matches the known baseline.
+- Ran Verify (all 3 stages) and all 5 parity-harness keys. Every result matches the known baseline.
 - Logged the round in `AUTOPILOT.md` under `## Next task` and moved the "tip to restore" line to
-  `2026-11-19_0002`. The Next task itself is unchanged: wait for owner answers.
+  `2026-11-19_0012`. The Next task itself is unchanged: wait for owner answers.
 
 ## Why
-- **The prompt's task was already done, so I did not do it again (hard rule 5).** This round's
-  prompt carried the original `3503537` contract: "3,756 lines", a 2-stage Verify, and the first
-  token pass as the Next task. The restored tree shows that pass finished long ago. `index.html` is
-  4,043 lines with 235 `var(--` uses, and `tools/check-tokens.mjs` reports 22/22 tokens present and
-  identical. Redoing it on the stale tree would have produced a commit that conflicts with
-  everything since. I followed the Next task in the restored `AUTOPILOT.md` instead.
-- **Why no-op:** all remaining acceptance criteria are blocked on the eight decisions in
-  `README.md → ## Open decisions` (criterion 1 on decision 3, criterion 2 on 2/5/6/7, criterion 3 on
-  1/4). Each one moves pixels or adds a file, so it is the owner's call. Inventing work here would
-  be scope creep.
-- I measured the trap ranking form live, as `_0027` asked. After dropping my own ref (`b6e6250`),
-  11-18 held three tips. The trap form (`committerdate:short` + `| sort -r`) put `f19d2c5` (`_0007`)
-  in row 1 instead of the real tip `537e483`, which would have discarded `_0017` and `_0027`. That
-  is TAILS, and the tally is now 137/207 (137/203). The correct form is `--sort=-committerdate`.
+- **The prompt's `## Next task` was empty.** The real one is in the branch's `AUTOPILOT.md` and
+  only shows up after the restore. Following it is a no-op unless the owner has answered one of
+  the eight open decisions in `README.md`. Each of those decisions moves pixels or adds a file, so
+  making them is the owner's job, not mine.
+- **This round was MASKED, so I didn't run the A/B check and didn't update its tally.** Before the
+  restore, `2026-11-19` had one tip (`7280217`), and this branch's own ref still pointed at
+  `3503537`. With one tip, the correct ranking and the faulty one pick the same row. The tally
+  stays at tails 137/207.
 
 ## Verification
-- `git rev-parse HEAD^{tree} 537e483^{tree}` printed the same sha twice: `937c32e80f928cfa1e0bd7524e43301b8d4d6d75`.
-- Owner-answer channels:
-  - `grep -c "| Option | Cost |" README.md` printed 8, and `grep -c "If you answer:"` printed 8.
-  - `git ls-files | grep -ci jspdf` printed 0.
-  - `git status --short --untracked-files=all` printed nothing.
-  - `main` is still `ef3220e`, and the newest non-`auto/*` ref is dated 2026-08-13.
-- Verify, from the restored `AUTOPILOT.md`:
-  `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`
-  - Test runner: `54 passed, 0 failed`.
-  - check-tokens: tokens in sync 22/22; fonts in sync 4/4. Its four other checks passed over 15 CSS
-    sources: no derived-colour literals, font weights, radius literals, single typeface.
-  - Vitest: `12 passed (12)` test files, `31 passed (31)` tests.
-  - The prompt's 2-stage Verify is a subset of this chain, so it passes too.
-- Parity harness (`docs/btn-parity-proof.mjs`):
-  - `buttons` (`2488f2d` → live): 85 pairs across 17 elements, PASS.
-  - `segmented` (`021b966` → live): 45 pairs across 9 elements, PASS.
-  - `toast` (`de07ea8` → `10e8f39`): 5 pairs across 1 element, PASS.
-  - `ds-disabled-hover` (`537e483:design-system/src/styles.css` → live): 15 pairs across 3 elements,
-    PASS, plus 1 undecidable rule.
-  - `toast-hit` (`3d3d5cc` → live): FAIL with 5 differences over 10 pairs, which is the expected
-    result. All five `✗` rows are `#toastUndo`.
+- `git for-each-ref --sort=-committerdate …`: row 1 is `7280217` `2026-11-19_0002`, the same sha
+  locally and on `origin/`. `git log --format="%h | %an | %s" -3 7280217`: all three commits are by
+  PHANTOM AUTOPILOT (`_0002` SUMMARY, `_0002` record, `_0002` restore). That's runner work, not an
+  owner answer.
+- Owner channels: `grep -c "| Option | Cost |" README.md` printed `8` and `grep -c "If you answer:"`
+  printed `8`, so both counters agree. `git ls-files | grep -i jspdf` printed nothing.
+  `git status --short --untracked-files=all` printed nothing. `main` is still `ef3220e`. The
+  newest non-`auto/*` ref is dated 2026-08-13.
+- `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`: all green.
+  - Stage 1: `54 passed, 0 failed`.
+  - Stage 2: tokens 22/22, fonts 4/4, and the 4 literal/weight/radius/family checks all pass over 15 CSS sources.
+  - Stage 3: `Test Files 12 passed (12)`, `Tests 31 passed (31)`.
+- Harness (`docs/btn-parity-proof.mjs`):
+  - `buttons` (`2488f2d` → live): 85 pairs / 17 elements, PASS, markup OK.
+  - `segmented` (`021b966` → live): 45 / 9, PASS.
+  - `toast` (`de07ea8` → `10e8f39`): 5 / 1, PASS.
+  - `ds-disabled-hover` (`7280217:design-system/src/styles.css` → live): 15 / 3, PASS, plus 1
+    undecidable rule (same in both versions).
+  - `toast-hit` (`3d3d5cc` → live): `FAIL — 5 declaration(s) differ` across 10 pairs, which is the
+    expected result. I read all five `✗` rows: every one is `#toastUndo`
+    (`(base)`/`:hover`/`:disabled`/`:disabled:hover`/`:focus`) and none is `#toast`.
 
 ## What I did NOT do
-- I did not redo the token pass the prompt asked for, because it is already complete (see Why).
-- I did not answer or act on any of the eight open decisions; each one is the owner's call.
-- I ticked no acceptance boxes, since nothing new was completed.
-- I did not touch `storyboard-simulator.html`, the test markers, or any CSS/JS.
+- I didn't answer any of the eight open decisions (jsPDF, chip padding, spacing scale, browser
+  verification, segmented padding, input sizes, disabled-hover, `docs/design-parity.md`). They're
+  the owner's call.
+- I didn't edit any CSS, HTML, JS or tests. The only file changes are the restore commit, the
+  `AUTOPILOT.md` record and this file.
+- I didn't retry the browser MCPs. They're blocked by permissions, and that hasn't changed.
 
 ## Risk
-- Low. The only content changes are the restore commit (tree-identical to `537e483`) and doc text in
-  `AUTOPILOT.md` and this file.
-- The runner keeps cutting branches from `3503537` and keeps sending a stale contract in the prompt.
-  Until someone merges a branch into `main` or fixes the runner, every round has to restore first.
-  A round that skips the restore will see a tree that looks finished and could commit work against it.
-- The project is stalled on owner input, not on agent work. The next useful step is for the owner
-  to answer any item in `README.md → ## Open decisions`.
+- None from this round's changes, since they're docs only.
+- The project is still stalled. Three acceptance criteria stay open until someone answers in
+  `README.md → ## Open decisions` or drops `jspdf.umd.min.js` into the repo. More autopilot rounds
+  won't unblock them.
+- **Next round, if it's still 11-19:** there will be two tips on that day, and the comparand is
+  `7280217`. The faulty `| sort -r` ranking would throw this round away only if this round's
+  closing sha sorts below `7280217`. Rank by `--sort=-committerdate` and check by refname.
