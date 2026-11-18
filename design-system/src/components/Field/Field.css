@@ -4,7 +4,7 @@
 
 .pui-input,.pui-textarea,.pui-select{
   width:100%; background:var(--surface); border:1px solid var(--line);
-  border-radius:3px; padding:6px 8px; font-size:11px; color:var(--text); font-family:var(--mono);
+  border-radius:var(--r-md); padding:6px 8px; font-size:11px; color:var(--text); font-family:var(--mono);
 }
 .pui-textarea{resize:vertical; min-height:60px; line-height:1.5}
 .pui-input:focus,.pui-textarea:focus,.pui-select:focus{outline:1px solid var(--accent); outline-offset:-1px}
