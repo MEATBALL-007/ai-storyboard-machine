@@ -1,12 +1,12 @@
 .pui-btn{
   font-family:var(--mono); cursor:pointer; display:inline-flex; align-items:center;
-  gap:6px; border:1px solid transparent; border-radius:3px; letter-spacing:.4px;
+  gap:6px; border:1px solid transparent; border-radius:var(--r-md); letter-spacing:.4px;
   transition:.12s; font-size:10.5px;
 }
 .pui-btn:disabled{opacity:.5; cursor:not-allowed; box-shadow:none}
 
 .pui-btn--primary{background:var(--accent); color:#000; font-weight:700; padding:7px 16px; font-size:11px}
-.pui-btn--primary:hover{box-shadow:0 0 14px rgba(255,199,44,.4)}
+.pui-btn--primary:hover{box-shadow:0 0 14px rgba(var(--accent-rgb),.4)}
 
 .pui-btn--ghost{background:none; color:var(--muted); border-color:var(--line); padding:7px 16px; font-size:11px}
 .pui-btn--ghost:hover{color:var(--text); border-color:var(--dim)}
