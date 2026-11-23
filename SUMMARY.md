@@ -1,57 +1,55 @@
-# SUMMARY — round `2026-11-23_0036`
+# SUMMARY — round `2026-11-24_0006`
 
 ## What I did
-- Restored the previous round's tip `ebec592` (`2026-11-23_0025`) onto this branch. The runner
-  had cut it from the stale base `3503537` again. The restore is its own commit, and the trees
-  match: `HEAD^{tree}` = `ebec592^{tree}` = `19207803b5c84dca2c80b656c707180adcfee27e`.
-- Checked all five owner-answer channels and found no answer in any of them, so this round is a
-  no-op, as the queued Next task requires.
+- Restored the previous round's tip `df67579` (`2026-11-23_0036`) onto this branch. The runner cut
+  it from the stale base `3503537` again. The restore is its own commit, and the trees match:
+  `HEAD^{tree}` = `df67579^{tree}` = `721ea45c517f1fdd7d9a31bacbd01e21bcf49ca9`.
+- Checked all five owner-answer channels and found no answer, so this round is a no-op, as the
+  queued Next task requires.
 - Ran Verify and all five parity-harness keys. Every result matched its expected value.
 - Added this round's block to `## Next task` in `AUTOPILOT.md` and moved the restore target to
-  `2026-11-23_0036`.
+  `2026-11-24_0006`.
 
 ## Why
 - The prompt's `## Next task` arrived empty, so I followed the one in the restored `AUTOPILOT.md`.
-  It says: if nobody has answered an entry under `## Open decisions` in `README.md`, restore, check,
-  verify, write SUMMARY, and stop. It also says not to invent other work.
-- All eight open decisions change pixels or add files, so only the owner can make them. I answered
-  none of them.
+  It says that if nobody has answered an entry under `## Open decisions` in `README.md`, the round
+  restores, checks, verifies, writes SUMMARY and stops. Hard rule 5 forbids inventing a substitute.
+- I chose the restore target with `for-each-ref --sort=-committerdate`, not by sorting shas. On
+  2026-11-23 the sha sort would have picked `ebec592` (`node -e` gave `'df67579' < 'ebec592'` →
+  `true`) and thrown away `_0036`. This was a live measurement, so the record is now tails 145/222.
+- Before restoring, I checked the tip's author (`PHANTOM AUTOPILOT <autopilot@phantom.local>`) and
+  confirmed `3503537` is its ancestor. That shows the tip is the runner's own commit, not an owner
+  answer, and that checking out its paths is equivalent to a fast-forward.
 
 ## Verification
-- `git for-each-ref --sort=-committerdate`, run before the restore: row 1 was `ebec592` `_0025`
-  (local and `origin/` agree). 11-23 then held 3 tips: `ebec592`, `3a88062`, `9980046`. My own
-  ref still pointed at `3503537`.
-- The prediction from the previous round was checked live and came out **HEADS**.
-  `node -e "console.log('ebec592'<'9980046')"` printed `false`, so the wrong ranking formula would
-  have picked the real tip by luck this time. Record: tails 144/221 (144/217).
-- Owner channels: `README.md` still has 8 `| Option | Cost |` tables and 8 `If you answer:`
-  lines. There is no `jspdf*` file. `git status` is clean. `main`, `origin/main` and `mac/main`
-  are all `ef3220e`. The newest non-auto ref is `design-system` at `3503537`, dated 2026-08-13.
-- Verify: `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`
-  passed. It printed `54 passed, 0 failed`, then tokens 22/22, fonts 4/4, and four checks that
-  each scanned 15 CSS sources, then `Tests 31 passed (31)`.
-- Harness, all five keys:
-  - `buttons` (`2488f2d:index.html` → live): PASS, 85 pairs across 17 elements.
-  - `segmented` (`021b966:index.html` → live): PASS, 45 pairs across 9 elements.
-  - `toast` (`de07ea8:index.html` → `10e8f39:index.html`): PASS, 5 pairs across 1 element.
-  - `ds-disabled-hover` (`ebec592:design-system/src/styles.css` → live): PASS, 15 pairs across
-    3 elements, plus 1 undecidable rule.
-  - `toast-hit` (`3d3d5cc:index.html` → live): `FAIL — 5 declaration(s) differ` across 10 pairs.
-    This is the expected result, because the key exists to show the intended pointer-events change.
-    All five ✗ rows are `#toastUndo`, and none are `#toast`.
+- Owner-answer channels:
+  - `grep -c "| Option | Cost |" README.md` → 8, and `grep -c "If you answer:"` → 8.
+  - No `jspdf` file is tracked or present.
+  - `git status` is clean.
+  - `main` = `ef3220e`.
+  - The newest non-`auto/*` ref is dated 2026-08-13.
+- `node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test` printed:
+  - `54 passed, 0 failed`
+  - tokens 22/22, fonts 4/4, and the colour, weight, radius and font-family checks each across
+    15 CSS sources
+  - `Tests 31 passed (31)`
+- Harness:
+  - `buttons` (`2488f2d`→live): 85 pairs / 17 elements, PASS.
+  - `segmented` (`021b966`→live): 45 / 9, PASS.
+  - `toast` (`de07ea8`→`10e8f39`): 5 / 1, PASS.
+  - `ds-disabled-hover` (`df67579:design-system/src/styles.css`→live): 15 / 3, PASS, plus 1
+    undecidable rule.
+  - `toast-hit` (`3d3d5cc`→live): `FAIL — 5 declaration(s) differ` across 10 pairs. All five `✗`
+    rows are `#toastUndo` (`pointer-events` `(unset)`→`auto`). This is the expected, deliberate
+    result.
 
 ## What I did NOT do
-- I didn't answer, apply or reword any of the eight open decisions (jsPDF, chip padding, spacing
-  scale, browser verification, segmented padding, input sizes, disabled-hover, design-parity.md).
-- I didn't touch any CSS, the JS, the tests, or the Verify command.
-- I didn't tick any acceptance-criterion box, because none changed state.
+- I did not answer or apply any of the eight open decisions (jsPDF, chip/segmented/input
+  padding, spacing scale, browser verification, disabled-hover, `docs/design-parity.md`). Each one
+  moves pixels or adds files, so the owner has to make the call.
+- I did not tick any acceptance criterion. None changed state this round.
 
 ## Risk
-- Low. The diff on top of the restore is docs only: `AUTOPILOT.md` and this file.
-- The real risk is still outside the repo. Every round branch is cut from `3503537`, so merging
-  any single `auto/*` branch other than the newest one would drop later work. Merge the newest one
-  only.
-- Nothing has been checked in a real browser. Decision 4 is still unanswered.
-- If the next round is still on 11-23 it must measure the prediction live. 11-23 will hold 4 tips
-  and the comparand becomes `ebec592`. The result is TAILS if this round's closing sha sorts below
-  `ebec592`.
+- Low. The only change beyond the byte-exact restore is documentation (`AUTOPILOT.md` and this
+  file). The integration stays stalled until a person answers `README.md → ## Open decisions`;
+  more rounds will not clear it.
