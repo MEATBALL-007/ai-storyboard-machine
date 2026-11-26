@@ -1,43 +1,32 @@
-# SUMMARY — round `2026-11-27_0027`
+# SUMMARY — round `2026-11-27_0039`
 
 ## What I did
-- The runner cut this branch from the stale base `3503537` again. I restored the previous round's tip, `cfe6a43` (`2026-11-27_0017`; the local ref and `origin/` agree), with `git checkout cfe6a43 -- .` and committed that on its own. `HEAD^{tree}` and `cfe6a43^{tree}` both print `a3042fd8138f6a8bcd3bdaee1648594b4c1374ea`.
+- The runner cut this branch from the stale base `3503537` again. I restored the previous round's tip, `8443ec2` (`2026-11-27_0027`; the local ref and `origin/` agree), with `git checkout 8443ec2 -- .` and committed that on its own. `HEAD^{tree}` and `8443ec2^{tree}` both print `2f66e2e34ecc7fac7c4f60f9379866382feaec89`.
 - I checked all five places an owner answer could show up. None had one, so the restored `## Next task` makes this a no-op round.
-- I added this round's record to `AUTOPILOT.md` under `## Next task`. The next tip to restore is now `2026-11-27_0027`.
+- I added this round's record to `AUTOPILOT.md` under `## Next task`. The next tip to restore is now `2026-11-27_0039`.
 
 ## Why
 - The prompt's `## Next task` was empty. The restored file's Next task says to end the round as a no-op while all eight decisions in `README.md → ## Open decisions` are unanswered. They still are, so I did not make up other work (hard rule 5).
-- `_0017` predicted a live measurement for this round, and I took it: `2026-11-27` held 2 tips (`cfe6a43` `_0017`, `d613e76` `_0007`), and my own ref still pointed at `3503537` when I read the list. `node -e` sorted them `["d613e76","cfe6a43"]`, so the wrong ranking method (sha tie-break plus `| sort -r`) would have restored `d613e76` and dropped `_0017`. The result is TAILS, and the wrong-method tally is now tails 148/229.
-- Next round: 11-27 will hold 3 tips and the comparand stays `d613e76`. It comes up TAILS only if this round's closing sha sorts below `d613e76`. That round should compare the hex with `node -e`, not by eye.
+- `_0027` predicted a live measurement for this round. `2026-11-27` held 3 tips (`8443ec2` `_0027`, `cfe6a43` `_0017`, `d613e76` `_0007`), and my own ref still pointed at `3503537` when I read the list. `node -e` sorted them `["d613e76","cfe6a43","8443ec2"]`, so the wrong ranking method (sha tie-break plus `| sort -r`) would have restored `d613e76` and dropped `_0017` and `_0027`. The result is TAILS, and the wrong-method tally is now tails 149/230.
+- Next round: 11-27 will hold 4 tips and the comparand stays `d613e76`. It comes up TAILS only if this round's closing sha sorts below `d613e76`.
 
 ## Verification
-- `git log --oneline -2` before the restore: `3503537`, `e3a355c` (the stale base).
-- `git for-each-ref --sort=-committerdate`: the top row is `cfe6a43` `_0017` (local and `origin/`), then `d613e76` `_0007`, then `6666c5d` `_0037` on 11-25.
-- `git merge-base --is-ancestor 3503537 cfe6a43` printed `ancestor-ok`.
-- `git rev-parse HEAD^{tree} cfe6a43^{tree}`: both print `a3042fd8138f6a8bcd3bdaee1648594b4c1374ea`.
-- The five channels:
-  1. `grep -c "| Option | Cost |" README.md` = 8 and `grep -c "If you answer:" README.md` = 8. Both counters agree.
-  2. No `jspdf*` file, tracked or untracked.
-  3. `main` = `ef3220e` (2026-06-27).
-  4. `git status --short --untracked-files=all` is empty.
-  5. The newest non-`auto/*` refs are `design-system` and `origin/design-system`, both `3503537` from 2026-08-13.
-- Verify (`node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`), run bare: exit 0.
-  - `54 passed, 0 failed`
-  - `tokens in sync: 22/22`, `fonts in sync: 4/4`, and the four lint checks each print "15 CSS source(s) scanned"
-  - vitest: `Test Files 12 passed (12)`, `Tests 31 passed (31)`
+- `git log --oneline -5` before the restore: `3503537` at HEAD (the stale base).
+- `git for-each-ref --sort=-committerdate`: the top rows are `8443ec2` `_0027`, `cfe6a43` `_0017`, `d613e76` `_0007` (local and `origin/` each), then `6666c5d` `_0037` on 11-25.
+- Owner channels: `grep -c "| Option | Cost |" README.md` = 8 and `grep -c "If you answer:" README.md` = 8; no `jspdf` file tracked or present; `git status --short --untracked-files=all` printed nothing; `main` = `ef3220e` (2026-06-27); the newest non-`auto/*` ref is `design-system` / `origin/design-system` at `3503537` (2026-08-13).
+- Verify (`node tools/test.mjs && node tools/check-tokens.mjs && npm --prefix design-system test`), run bare: exit 0. It printed `54 passed, 0 failed`; check-tokens printed tokens 22/22, fonts 4/4, and the four checks over 15 CSS sources all clean; vitest printed 12 files and 31 tests passed.
 - Harness (`docs/btn-parity-proof.mjs`):
-  - `buttons 2488f2d:index.html index.html`: 85 pairs / 17 elements, PASS
-  - `segmented 021b966:index.html index.html`: 45 / 9, PASS
-  - `toast de07ea8:index.html 10e8f39:index.html`: 5 / 1, PASS
-  - `ds-disabled-hover cfe6a43:design-system/src/styles.css design-system/src/styles.css`: 15 / 3, PASS, plus 1 undecidable rule (`:last-child`)
-  - `toast-hit 3d3d5cc:index.html index.html`: `FAIL — 5 declaration(s) differ` across 10 pairs, which is the expected result. All five `✗` rows are `#toastUndo` (`(base)`, `:hover`, `:disabled`, `:disabled:hover`, `:focus`) with `after : auto <- .toast-act`. None is `#toast`.
+  - `buttons 2488f2d:index.html index.html`: 85 pairs across 17 elements, PASS.
+  - `segmented 021b966:index.html index.html`: 45 pairs across 9 elements, PASS.
+  - `toast de07ea8:index.html 10e8f39:index.html`: 5 pairs across 1 element, PASS.
+  - `ds-disabled-hover 8443ec2:design-system/src/styles.css design-system/src/styles.css`: 15 pairs across 3 elements, PASS, plus 1 undecidable rule.
+  - `toast-hit 3d3d5cc:index.html index.html`: `FAIL — 5 declaration(s) differ` over 10 pairs. All five `✗` rows are `#toastUndo` (`pointer-events` `(unset)` → `auto` from `.toast-act`), with none on `#toast`. FAIL-5 is the expected result for this key.
 
 ## What I did NOT do
-- I did not answer any of the eight open decisions (jsPDF, chip padding, spacing scale, browser verification, segmented padding, input sizes, disabled-hover, `docs/design-parity.md`). Each one moves pixels or changes what is in the repo, so each is the owner's call.
-- I did not retry the Playwright or Chrome-DevTools MCPs. Earlier rounds found them blocked by permissions.
-- I made no CSS, HTML, or JS changes. This round's diff is limited to the restore commit, `AUTOPILOT.md`, and this file.
+- I did not answer any of the eight open decisions or apply decisions 2, 5, 6 or 7 on my own. Each one moves pixels or adds a file, so the owner has to make those calls.
+- I did not retry the browser MCPs (decision 4). They are blocked by permissions.
+- I did not restore `docs/design-parity.md` (decision 8).
 
 ## Risk
-- Low. Nothing outside the docs changed. The tree-sha match shows the restore is identical to the previous tip on every path.
-- The stall continues: the work can only move forward once the owner answers something in `README.md → ## Open decisions`. Each further round produces the same no-op.
-- The runner still cuts every round from `3503537`. Any round that skips the restore will see a stale tree that looks finished.
+- Low. This round changes only `AUTOPILOT.md` (one record block) and `SUMMARY.md`. The restore commit is tree-identical to `8443ec2`.
+- The stall has not changed. The runner keeps cutting branches from `3503537`, and nothing has been merged to `main`. Rounds will keep producing no-op PRs until the owner answers an item in `README.md → ## Open decisions` or fixes the runner's branch base.
