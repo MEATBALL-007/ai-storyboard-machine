@@ -1,19 +1,20 @@
-# SUMMARY — round `2026-11-27_0017`
+# SUMMARY — round `2026-11-27_0027`
 
 ## What I did
-- The runner cut this branch from the stale base `3503537` again. I restored the previous round's tip, `d613e76` (`2026-11-27_0007`; the local ref and `origin/` agree, author `PHANTOM AUTOPILOT <autopilot@phantom.local>`), with `git checkout d613e76 -- .` and committed that on its own. `HEAD^{tree}` and `d613e76^{tree}` both print `cadde04f421f8ad2152aaf3ce61e0733558b9fdc`.
+- The runner cut this branch from the stale base `3503537` again. I restored the previous round's tip, `cfe6a43` (`2026-11-27_0017`; the local ref and `origin/` agree), with `git checkout cfe6a43 -- .` and committed that on its own. `HEAD^{tree}` and `cfe6a43^{tree}` both print `a3042fd8138f6a8bcd3bdaee1648594b4c1374ea`.
 - I checked all five places an owner answer could show up. None had one, so the restored `## Next task` makes this a no-op round.
-- I added this round's record to `AUTOPILOT.md` under `## Next task`. The next tip to restore is now `2026-11-27_0017`.
+- I added this round's record to `AUTOPILOT.md` under `## Next task`. The next tip to restore is now `2026-11-27_0027`.
 
 ## Why
 - The prompt's `## Next task` was empty. The restored file's Next task says to end the round as a no-op while all eight decisions in `README.md → ## Open decisions` are unanswered. They still are, so I did not make up other work (hard rule 5).
-- This round was a MASK, as `_0007` predicted. `2026-11-27` held one tip (`d613e76`), and my own ref still pointed at `3503537` when I read the list. With one tip, the right and wrong ranking methods give the same answer, so I ran no A/B and the wrong-method tally stays at tails 147/228.
-- The next round is a live measurement if it lands on 11-27 or is the first round of 11-28. There will be 2 tips on 11-27 and the comparand is `d613e76`. It comes up TAILS only if this round's closing sha sorts below `d613e76`. That round should compare the hex with `node -e`, not by eye.
+- `_0017` predicted a live measurement for this round, and I took it: `2026-11-27` held 2 tips (`cfe6a43` `_0017`, `d613e76` `_0007`), and my own ref still pointed at `3503537` when I read the list. `node -e` sorted them `["d613e76","cfe6a43"]`, so the wrong ranking method (sha tie-break plus `| sort -r`) would have restored `d613e76` and dropped `_0017`. The result is TAILS, and the wrong-method tally is now tails 148/229.
+- Next round: 11-27 will hold 3 tips and the comparand stays `d613e76`. It comes up TAILS only if this round's closing sha sorts below `d613e76`. That round should compare the hex with `node -e`, not by eye.
 
 ## Verification
 - `git log --oneline -2` before the restore: `3503537`, `e3a355c` (the stale base).
-- `git for-each-ref --sort=-committerdate`: the top row is `d613e76` `_0007` (local and `origin/`), then `6666c5d` `_0037` on 11-25.
-- `git rev-parse HEAD^{tree} d613e76^{tree}`: both print `cadde04f421f8ad2152aaf3ce61e0733558b9fdc`.
+- `git for-each-ref --sort=-committerdate`: the top row is `cfe6a43` `_0017` (local and `origin/`), then `d613e76` `_0007`, then `6666c5d` `_0037` on 11-25.
+- `git merge-base --is-ancestor 3503537 cfe6a43` printed `ancestor-ok`.
+- `git rev-parse HEAD^{tree} cfe6a43^{tree}`: both print `a3042fd8138f6a8bcd3bdaee1648594b4c1374ea`.
 - The five channels:
   1. `grep -c "| Option | Cost |" README.md` = 8 and `grep -c "If you answer:" README.md` = 8. Both counters agree.
   2. No `jspdf*` file, tracked or untracked.
@@ -25,10 +26,10 @@
   - `tokens in sync: 22/22`, `fonts in sync: 4/4`, and the four lint checks each print "15 CSS source(s) scanned"
   - vitest: `Test Files 12 passed (12)`, `Tests 31 passed (31)`
 - Harness (`docs/btn-parity-proof.mjs`):
-  - `buttons 2488f2d:index.html index.html`: 85 pairs / 17 elements, PASS, markup coverage OK
+  - `buttons 2488f2d:index.html index.html`: 85 pairs / 17 elements, PASS
   - `segmented 021b966:index.html index.html`: 45 / 9, PASS
   - `toast de07ea8:index.html 10e8f39:index.html`: 5 / 1, PASS
-  - `ds-disabled-hover d613e76:design-system/src/styles.css design-system/src/styles.css`: 15 / 3, PASS, plus `1 undecidable rule(s)`
+  - `ds-disabled-hover cfe6a43:design-system/src/styles.css design-system/src/styles.css`: 15 / 3, PASS, plus 1 undecidable rule (`:last-child`)
   - `toast-hit 3d3d5cc:index.html index.html`: `FAIL — 5 declaration(s) differ` across 10 pairs, which is the expected result. All five `✗` rows are `#toastUndo` (`(base)`, `:hover`, `:disabled`, `:disabled:hover`, `:focus`) with `after : auto <- .toast-act`. None is `#toast`.
 
 ## What I did NOT do
