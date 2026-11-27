@@ -1,5 +1,5 @@
 .pui-menu{
-  background:var(--surface); border:1px solid var(--dim); border-radius:5px; min-width:200px;
+  background:var(--surface); border:1px solid var(--dim); border-radius:var(--r-xl); min-width:200px;
   box-shadow:0 10px 30px rgba(0,0,0,.6); overflow:hidden; font-family:var(--mono);
 }
 .pui-menu__header{padding:6px 12px; font-size:8.5px; color:var(--muted); letter-spacing:1px; background:#0a0a0a}
